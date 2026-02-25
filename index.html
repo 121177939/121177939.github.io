@@ -1,15 +1,3 @@
-﻿<!--
-
-订单利润管理系统
-
-Version: v15k.1
-
-Build: 2026-02-25
-
-新增：普通用户自助修改密码
-
--->
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ======== 域名统一（避免 www/非www 导致 localStorage 登录态不共享） ======== */
@@ -2360,6 +2348,7 @@ border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;cursor:pointer}
       <div id="loginMsg" class="login-msg" style="display:none"></div>
     </div>
     <button id="btnCloudLogout">🚪 退出</button>
+    <button id="btnCloudChangePwd">🔑 修改密码</button>
     <button id="btnCloudSave">⬆️ 保存到云端</button>
     <button id="btnCloudLoad">⬇️ 从云端拉取</button>
     <button id="btnCloudAdmin" style="display:none">👤 管理员</button>
@@ -2853,8 +2842,11 @@ with check (
   function refreshAdminVisibility(){
     const btn = document.getElementById("btnCloudAdmin");
     const box = document.getElementById("adminBox");
+    const btnChange = document.getElementById("btnCloudChangePwd");
     if(btn) btn.style.display = isAdmin() ? "block" : "none";
     if(box && !isAdmin()) box.style.display = "none";
+    // 普通用户也可修改自己的密码（需登录）
+    if(btnChange) btnChange.style.display = isLoggedIn() ? "block" : "none";
   }
 
   function showAdminUI(){
@@ -2983,16 +2975,54 @@ async function doLogin(email, pw){
     refreshAdminVisibility();
     alert("已退出");
   }
+  async function doChangePassword(){
+    if(!isLoggedIn()){
+      if(window.cloudAlert) await window.cloudAlert('请先登录','需要登录');
+      else alert('请先登录');
+      return;
+    }
+    const pw1 = (prompt('请输入新密码（至少8位）：') || '').trim();
+    if(!pw1) return;
+    if(pw1.length < 8){
+      alert('密码至少 8 位');
+      return;
+    }
+    const pw2 = (prompt('请再次输入新密码：') || '').trim();
+    if(!pw2) return;
+    if(pw1 !== pw2){
+      alert('两次密码不一致，请重试');
+      return;
+    }
+
+    const client = getClient();
+    if(!client){
+      alert('Supabase 未初始化');
+      return;
+    }
+
+    try{
+      const { error } = await client.auth.updateUser({ password: pw1 });
+      if(error) throw error;
+      if(window.showAppNotice) window.showAppNotice('修改成功','下次登录请使用新密码');
+      else if(window.cloudAlert) await window.cloudAlert('密码已修改','成功');
+      else alert('密码已修改');
+    }catch(e){
+      alert('修改失败：' + (e?.message || e));
+    }
+  }
+
 
   function bind(){
     const btnLogin = document.getElementById("btnCloudLogin");
     const btnLogout = document.getElementById("btnCloudLogout");
+    const btnChangePwd = document.getElementById("btnCloudChangePwd");
     const btnSave = document.getElementById("btnCloudSave");
     const btnLoad = document.getElementById("btnCloudLoad");
     const btnAdmin = document.getElementById("btnCloudAdmin");
 
     if(btnLogin) btnLogin.onclick = ()=>toggleLoginBox(true);
     if(btnLogout) btnLogout.onclick = doLogout;
+    if(btnChangePwd) btnChangePwd.onclick = doChangePassword;
     if(btnSave) btnSave.onclick = ()=>window.saveSnapshotToCloud && window.saveSnapshotToCloud();
     if(btnLoad) btnLoad.onclick = ()=>window.loadSnapshotFromCloud && window.loadSnapshotFromCloud();
 
@@ -3897,131 +3927,6 @@ thead{
 })();
 </script>
 <!-- NEW_MENU_PROXY_END -->
-<script>
-
-// ===== v15k.1 普通用户自助修改密码 =====
-
-(function(){
-
-  function injectMenu(){
-
-    const nodes=[...document.querySelectorAll('button,div,span')];
-
-    const logoutBtn=nodes.find(n=>n.innerText && n.innerText.includes('退出'));
-
-    if(!logoutBtn){ setTimeout(injectMenu,500); return; }
-
-    if(document.getElementById('selfChangePwdBtn')) return;
-
-
-
-    const btn=document.createElement('div');
-
-    btn.id='selfChangePwdBtn';
-
-    btn.innerText='修改密码';
-
-    btn.style.cssText='padding:10px;text-align:center;border-top:1px solid #eee;cursor:pointer';
-
-    btn.onclick=showChangePasswordModal;
-
-
-
-    logoutBtn.parentNode.insertBefore(btn,logoutBtn);
-
-  }
-
-  document.addEventListener('DOMContentLoaded',injectMenu);
-
-})();
-
-
-
-function showChangePasswordModal(){
-
-  if(typeof showModal!=='function'){ alert('系统异常'); return; }
-
-  showModal(`
-
-    <h3 style="text-align:center">修改密码</h3>
-
-    <input id="oldPwd" type="password" placeholder="原密码"/>
-
-    <input id="newPwd" type="password" placeholder="新密码（≥6位）"/>
-
-    <input id="confirmPwd" type="password" placeholder="确认新密码"/>
-
-    <button onclick="submitPasswordChange()">确认修改</button>
-
-  `);
-
-}
-
-
-
-async function submitPasswordChange(){
-
-  const oldPwd=document.getElementById('oldPwd').value.trim();
-
-  const newPwd=document.getElementById('newPwd').value.trim();
-
-  const confirmPwd=document.getElementById('confirmPwd').value.trim();
-
-
-
-  if(!oldPwd||!newPwd||!confirmPwd){ showToast('请填写完整'); return; }
-
-  if(newPwd.length<6){ showToast('新密码至少6位'); return; }
-
-  if(newPwd!==confirmPwd){ showToast('两次密码不一致'); return; }
-
-
-
-  try{
-
-    const email=window.__currentUser?.email;
-
-    if(!email){ showToast('登录状态异常'); return; }
-
-
-
-    const { error:loginError }=await supabase.auth.signInWithPassword({
-
-      email, password: oldPwd
-
-    });
-
-    if(loginError){ showToast('原密码错误'); return; }
-
-
-
-    const { error:updateError }=await supabase.auth.updateUser({
-
-      password:newPwd
-
-    });
-
-    if(updateError){ showToast('修改失败：'+updateError.message); return; }
-
-
-
-    showToast('密码修改成功，请重新登录');
-
-    logout();
-
-
-
-  }catch(e){
-
-    console.error(e);
-
-    showToast('网络异常');
-
-  }
-
-}
-
-</script>
 
 </body>
 </html>
