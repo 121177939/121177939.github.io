@@ -2348,6 +2348,7 @@ border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;cursor:pointer}
       <div id="loginMsg" class="login-msg" style="display:none"></div>
     </div>
     <button id="btnCloudLogout">🚪 退出</button>
+    <button id="btnCloudChangePwd">🔑 修改密码</button>
     <button id="btnCloudSave">⬆️ 保存到云端</button>
     <button id="btnCloudLoad">⬇️ 从云端拉取</button>
     <button id="btnCloudAdmin" style="display:none">👤 管理员</button>
@@ -2361,22 +2362,6 @@ border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;cursor:pointer}
         <button id="adminRefresh">刷新用户列表</button>
       </div>
 
-      <div class="am-row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <input id="adminSearch" type="text" placeholder="搜索邮箱/ID…" style="flex:1;min-width:160px;height:36px;border-radius:10px;border:1px solid #e5e7eb;padding:0 10px;font-size:14px" />
-        <select id="adminFilter" style="height:36px;border-radius:10px;border:1px solid #e5e7eb;padding:0 10px;font-size:14px">
-          <option value="all">全部</option>
-          <option value="enabled">仅允许登录</option>
-          <option value="disabled">仅禁用</option>
-        </select>
-        <button id="adminClearFilter" style="height:36px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;padding:0 12px">清空</button>
-      </div>
-
-      <div class="am-row" style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <button id="adminBulkEnable" style="flex:1;min-width:110px;height:36px;border-radius:10px;border:0;background:#059669;color:#fff">批量允许</button>
-        <button id="adminBulkDisable" style="flex:1;min-width:110px;height:36px;border-radius:10px;border:0;background:#dc2626;color:#fff">批量禁用</button>
-        <button id="adminBulkDelete" style="flex:1;min-width:110px;height:36px;border-radius:10px;border:1px solid #b91c1c;background:#fff;color:#b91c1c">批量删除</button>
-      </div>
-
       <div id="adminTools" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
         <div class="admin-action-row">
   <button id="adminCreateUserBtn" class="admin-btn admin-btn-create">新建账号</button>
@@ -2388,7 +2373,7 @@ border:1px solid #e5e7eb;background:#f9fafb;font-weight:700;cursor:pointer}
       <div style="overflow:auto;max-height:220px;margin-top:8px">
         <table style="width:100%;border-collapse:collapse">
           <thead>
-            <tr><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee;width:28px"><input id="adminSelAll" type="checkbox" /></th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">邮箱/ID</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">角色</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">登录</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">创建</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">更新</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">操作</th></tr>
+            <tr><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">邮箱</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">允许登录</th><th style="text-align:left;padding:6px 4px;border-bottom:1px solid #eee">创建时间</th></tr>
           </thead>
           <tbody id="adminTbody"></tbody>
         </table>
@@ -2857,8 +2842,11 @@ with check (
   function refreshAdminVisibility(){
     const btn = document.getElementById("btnCloudAdmin");
     const box = document.getElementById("adminBox");
+    const btnChange = document.getElementById("btnCloudChangePwd");
     if(btn) btn.style.display = isAdmin() ? "block" : "none";
     if(box && !isAdmin()) box.style.display = "none";
+    // 普通用户也可修改自己的密码（需登录）
+    if(btnChange) btnChange.style.display = isLoggedIn() ? "block" : "none";
   }
 
   function showAdminUI(){
@@ -2872,245 +2860,23 @@ with check (
   async function loadAdminList(){
     const tb = document.getElementById("adminTbody");
     if(!tb) return;
-
-    // 统一列数（与表头保持一致）
-    const COLS = 7;
-    tb.innerHTML = `<tr><td colspan="${COLS}" style="color:#555">加载中…</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="3" style="color:#555">加载中…</td></tr>`;
 
     const client = getClient();
-    if(!client){ tb.innerHTML = `<tr><td colspan="${COLS}" style="color:#e74c3c">Supabase 未初始化</td></tr>`; return; }
+    if(!client){ tb.innerHTML = `<tr><td colspan="3" style="color:#e74c3c">Supabase 未初始化</td></tr>`; return; }
 
     const { data, error } = await client.from(PROFILE_TABLE)
       .select("id,email,disabled,role,created_at,updated_at")
-      .order("created_at",{ascending:false}).limit(500);
+      .order("created_at",{ascending:false}).limit(200);
 
     if(error){
-      tb.innerHTML = `<tr><td colspan="${COLS}" style="color:#e74c3c">读取失败：${escapeHtml(error.message||error)}</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="3" style="color:#e74c3c">读取失败：${escapeHtml(error.message||error)}</td></tr>`;
       return;
     }
-
-    window.__adminListCache = Array.isArray(data) ? data : [];
-
-    const searchEl = document.getElementById("adminSearch");
-    const filterEl = document.getElementById("adminFilter");
-
-    function fmt(ts){
-      if(!ts) return "";
-      try{ return String(ts).replace("T"," ").slice(0,19); }catch(e){ return String(ts); }
+    if(!data || !data.length){
+      tb.innerHTML = `<tr><td colspan="3" style="color:#555">暂无用户（或未初始化表/策略）</td></tr>`;
+      return;
     }
-
-    function getFilter(){
-      const q = (searchEl?.value || "").trim().toLowerCase();
-      const f = (filterEl?.value || "all");
-      return { q, f };
-    }
-
-    function render(){
-      const { q, f } = getFilter();
-      let rows = window.__adminListCache.slice();
-
-      if(q){
-        rows = rows.filter(r=>{
-          const email = (r.email || "").toLowerCase();
-          const id = (r.id || "").toLowerCase();
-          return email.includes(q) || id.includes(q);
-        });
-      }
-      if(f === "enabled") rows = rows.filter(r=> r.disabled !== true);
-      if(f === "disabled") rows = rows.filter(r=> r.disabled === true);
-
-      if(!rows.length){
-        tb.innerHTML = `<tr><td colspan="${COLS}" style="color:#555">暂无匹配用户</td></tr>`;
-        return;
-      }
-
-      tb.innerHTML = rows.map(r=>{
-        const email = r.email || r.id;
-        const enabled = r.disabled !== true;
-        const created = fmt(r.created_at);
-        const updated = fmt(r.updated_at);
-        const role = (r.role || "user");
-
-        return `<tr data-uid="${escapeHtml(r.id)}" data-email="${escapeHtml(email)}">
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6">
-            <input class="adminSel" type="checkbox" data-uid="${escapeHtml(r.id)}" data-email="${escapeHtml(email)}" />
-          </td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6">
-            <div style="font-weight:700">${escapeHtml(email)}</div>
-            <div style="font-size:11px;color:#6b7280">${escapeHtml(r.id)}</div>
-          </td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6">
-            <select class="adminRole" data-uid="${escapeHtml(r.id)}" style="height:30px;border-radius:10px;border:1px solid #e5e7eb;padding:0 8px">
-              <option value="user" ${role==="user"?"selected":""}>user</option>
-              <option value="admin" ${role==="admin"?"selected":""}>admin</option>
-            </select>
-          </td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6">
-            <a class="toggleLogin" data-uid="${escapeHtml(r.id)}" data-enabled="${enabled ? "1":"0"}" href="javascript:void(0)">${enabled ? "✅ 允许":"⛔ 禁用"}</a>
-          </td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6;white-space:nowrap">${escapeHtml(created)}</td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6;white-space:nowrap">${escapeHtml(updated)}</td>
-          <td style="padding:6px 4px;border-bottom:1px solid #f3f4f6;white-space:nowrap">
-            <button class="adminRowReset" data-email="${escapeHtml(email)}" style="height:30px;border-radius:10px;border:0;background:#b91c1c;color:#fff;padding:0 10px;margin-right:6px">重置</button>
-            <button class="adminRowDelete" data-email="${escapeHtml(email)}" style="height:30px;border-radius:10px;border:1px solid #b91c1c;background:#fff;color:#b91c1c;padding:0 10px">删除</button>
-          </td>
-        </tr>`;
-      }).join("");
-
-      // 全选
-      const selAll = document.getElementById("adminSelAll");
-      if(selAll){
-        selAll.onchange = ()=>{
-          const checked = selAll.checked;
-          tb.querySelectorAll("input.adminSel").forEach(ch=>{ ch.checked = checked; });
-        };
-      }
-
-      // 允许/禁用
-      tb.querySelectorAll("a.toggleLogin").forEach(a=>{
-        a.onclick = async ()=>{
-          const uid = a.getAttribute("data-uid");
-          const cur = a.getAttribute("data-enabled")==="1";
-          const nextEnabled = !cur;
-          const { error: upE } = await client.from(PROFILE_TABLE).update({ disabled: !nextEnabled }).eq("id", uid);
-          if(upE){ alert("更新失败：" + (upE.message||upE)); return; }
-          // 本地缓存同步
-          window.__adminListCache = window.__adminListCache.map(r=> r.id===uid ? ({...r, disabled: !nextEnabled}) : r);
-          render();
-        };
-      });
-
-      // 角色修改
-      tb.querySelectorAll("select.adminRole").forEach(sel=>{
-        sel.onchange = async ()=>{
-          const uid = sel.getAttribute("data-uid");
-          const role = sel.value;
-          const { error: upE } = await client.from(PROFILE_TABLE).update({ role }).eq("id", uid);
-          if(upE){ alert("更新角色失败：" + (upE.message||upE)); loadAdminList(); return; }
-          window.__adminListCache = window.__adminListCache.map(r=> r.id===uid ? ({...r, role}) : r);
-        };
-      });
-
-      // 单行重置密码（走 Edge Function）
-      tb.querySelectorAll("button.adminRowReset").forEach(btn=>{
-        btn.onclick = async ()=>{
-          try{
-            const email = (btn.getAttribute("data-email")||"").trim();
-            if(!email) return;
-            let pw = (prompt("为该用户设置新密码（留空自动生成强密码）：\n" + email) || "").trim();
-            if(!pw) pw = _genStrongPw(12);
-            if(pw.length < 8){ alert("密码至少8位"); return; }
-            await __callEdgeBodyToken("reset-password", {
-              admin_email: getCurrentEmail(),
-              target_email: email,
-              new_password: pw
-            });
-            alert("重置成功！\n邮箱：" + email + "\n新密码：" + pw);
-          }catch(e){ alert("重置失败：" + (e?.message||e)); }
-        };
-      });
-
-      // 单行删除账号（走 Edge Function）
-      tb.querySelectorAll("button.adminRowDelete").forEach(btn=>{
-        btn.onclick = async ()=>{
-          try{
-            const email = (btn.getAttribute("data-email")||"").trim();
-            if(!email) return;
-            if(!confirm("确定删除账号：" + email + " ?\n删除后不可恢复")) return;
-
-            try {
-              await __callEdgeBodyToken("admin-delete-user", { admin_email: getCurrentEmail(), target_email: email, email });
-            } catch(e1) {
-              await __callEdgeBodyToken("delete-user", { admin_email: getCurrentEmail(), target_email: email, email });
-            }
-
-            alert("删除成功：" + email);
-            loadAdminList();
-          }catch(e){ alert("删除失败：" + (e?.message||e)); }
-        };
-      });
-    }
-
-    // 搜索/筛选绑定（仅前端过滤，不额外请求）
-    if(searchEl && !searchEl.__bound){
-      searchEl.__bound = true;
-      searchEl.oninput = ()=>render();
-    }
-    if(filterEl && !filterEl.__bound){
-      filterEl.__bound = true;
-      filterEl.onchange = ()=>render();
-    }
-    const btnClear = document.getElementById("adminClearFilter");
-    if(btnClear && !btnClear.__bound){
-      btnClear.__bound = true;
-      btnClear.onclick = ()=>{
-        if(searchEl) searchEl.value = "";
-        if(filterEl) filterEl.value = "all";
-        render();
-      };
-    }
-
-    // 批量按钮（批量允许/禁用走 profiles 表；批量删除走 Edge Function）
-    const getSelected = ()=>{
-      const checked = Array.from(document.querySelectorAll("#adminTbody input.adminSel:checked"));
-      return checked.map(ch=>({ uid: ch.getAttribute("data-uid"), email: ch.getAttribute("data-email") }));
-    };
-
-    const btnBulkEnable = document.getElementById("adminBulkEnable");
-    if(btnBulkEnable && !btnBulkEnable.__bound){
-      btnBulkEnable.__bound = true;
-      btnBulkEnable.onclick = async ()=>{
-        const sel = getSelected();
-        if(!sel.length){ alert("请先勾选用户"); return; }
-        const ids = sel.map(x=>x.uid).filter(Boolean);
-        const { error: upE } = await client.from(PROFILE_TABLE).update({ disabled: false }).in("id", ids);
-        if(upE){ alert("批量允许失败：" + (upE.message||upE)); return; }
-        loadAdminList();
-      };
-    }
-
-    const btnBulkDisable = document.getElementById("adminBulkDisable");
-    if(btnBulkDisable && !btnBulkDisable.__bound){
-      btnBulkDisable.__bound = true;
-      btnBulkDisable.onclick = async ()=>{
-        const sel = getSelected();
-        if(!sel.length){ alert("请先勾选用户"); return; }
-        const ids = sel.map(x=>x.uid).filter(Boolean);
-        const { error: upE } = await client.from(PROFILE_TABLE).update({ disabled: true }).in("id", ids);
-        if(upE){ alert("批量禁用失败：" + (upE.message||upE)); return; }
-        loadAdminList();
-      };
-    }
-
-    const btnBulkDelete = document.getElementById("adminBulkDelete");
-    if(btnBulkDelete && !btnBulkDelete.__bound){
-      btnBulkDelete.__bound = true;
-      btnBulkDelete.onclick = async ()=>{
-        const sel = getSelected();
-        if(!sel.length){ alert("请先勾选用户"); return; }
-        if(!confirm("确定批量删除选中的 " + sel.length + " 个账号？\n删除后不可恢复")) return;
-
-        for(const u of sel){
-          const email = (u.email||"").trim();
-          if(!email) continue;
-          try{
-            try {
-              await __callEdgeBodyToken("admin-delete-user", { admin_email: getCurrentEmail(), target_email: email, email });
-            } catch(e1) {
-              await __callEdgeBodyToken("delete-user", { admin_email: getCurrentEmail(), target_email: email, email });
-            }
-          }catch(e){
-            alert("删除失败：" + email + "\n" + (e?.message||e));
-            return;
-          }
-        }
-        alert("批量删除完成");
-        loadAdminList();
-      };
-    }
-
-    render();
-  }
 
     tb.innerHTML = data.map(r=>{
       const email = r.email || r.id;
@@ -3209,16 +2975,54 @@ async function doLogin(email, pw){
     refreshAdminVisibility();
     alert("已退出");
   }
+  async function doChangePassword(){
+    if(!isLoggedIn()){
+      if(window.cloudAlert) await window.cloudAlert('请先登录','需要登录');
+      else alert('请先登录');
+      return;
+    }
+    const pw1 = (prompt('请输入新密码（至少8位）：') || '').trim();
+    if(!pw1) return;
+    if(pw1.length < 8){
+      alert('密码至少 8 位');
+      return;
+    }
+    const pw2 = (prompt('请再次输入新密码：') || '').trim();
+    if(!pw2) return;
+    if(pw1 !== pw2){
+      alert('两次密码不一致，请重试');
+      return;
+    }
+
+    const client = getClient();
+    if(!client){
+      alert('Supabase 未初始化');
+      return;
+    }
+
+    try{
+      const { error } = await client.auth.updateUser({ password: pw1 });
+      if(error) throw error;
+      if(window.showAppNotice) window.showAppNotice('修改成功','下次登录请使用新密码');
+      else if(window.cloudAlert) await window.cloudAlert('密码已修改','成功');
+      else alert('密码已修改');
+    }catch(e){
+      alert('修改失败：' + (e?.message || e));
+    }
+  }
+
 
   function bind(){
     const btnLogin = document.getElementById("btnCloudLogin");
     const btnLogout = document.getElementById("btnCloudLogout");
+    const btnChangePwd = document.getElementById("btnCloudChangePwd");
     const btnSave = document.getElementById("btnCloudSave");
     const btnLoad = document.getElementById("btnCloudLoad");
     const btnAdmin = document.getElementById("btnCloudAdmin");
 
     if(btnLogin) btnLogin.onclick = ()=>toggleLoginBox(true);
     if(btnLogout) btnLogout.onclick = doLogout;
+    if(btnChangePwd) btnChangePwd.onclick = doChangePassword;
     if(btnSave) btnSave.onclick = ()=>window.saveSnapshotToCloud && window.saveSnapshotToCloud();
     if(btnLoad) btnLoad.onclick = ()=>window.loadSnapshotFromCloud && window.loadSnapshotFromCloud();
 
