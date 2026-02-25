@@ -2573,7 +2573,7 @@ function toast(msg){
     try{ if(typeof updateTotalProfit==='function') updateTotalProfit(); }catch(e){}
   }
 
-  window.saveSnapshotToCloud = async function saveSnapshotToCloud(){
+  window.saveSnapshotToCloud = async async function saveSnapshotToCloud(){
     if(!window.__isLoggedIn){
     if(window.cloudAlert) await window.cloudAlert('请先登录','需要登录'); else alert('请先登录');
     return;
@@ -2594,8 +2594,8 @@ function toast(msg){
       .from('app_state_user')
       .upsert(payload, { onConflict: 'id' });
 
-    if(error){ alert('保存失败：' + error.message); return; }
-    alert('已保存到云端');
+    if(error){ if(window.cloudAlert) await window.cloudAlert('保存失败：' + error.message,'保存失败'); else alert('保存失败：' + error.message); return; }
+    if(window.cloudAlert) await window.cloudAlert('已保存到云端','保存成功'); else alert('已保存到云端');
   };
 
   window.loadSnapshotFromCloud = async function loadSnapshotFromCloud(){
@@ -2626,7 +2626,7 @@ function toast(msg){
     setOrders(data.data);
     if(window.showAppNotice) window.showAppNotice('已从云端拉取','本地数据已更新');
     else if(window.cloudAlert) await window.cloudAlert('已从云端拉取','成功');
-    else alert('已从云端拉取');
+    else if(window.cloudAlert) await window.cloudAlert('已从云端拉取','完成'); else alert('已从云端拉取');
   };
 })();
 </script>
@@ -3406,6 +3406,78 @@ const cancel = document.getElementById('loginCancel');
 })();
 </script>
 
+
+
+<script>
+/* === 统一弹窗：云端/轻提示（替代浏览器 alert/confirm，仅用于本项目的“云端/图片修改”等信息弹窗） === */
+(function(){
+  function init(){
+    const bd = document.getElementById('cloudModalBackdrop');
+    const box = document.getElementById('cloudModal');
+    const titleEl = document.getElementById('cloudModalTitle');
+    const msgEl = document.getElementById('cloudModalMsg');
+    const btnOk = document.getElementById('cloudModalOk');
+    const btnCancel = document.getElementById('cloudModalCancel');
+
+    if(!bd || !box || !titleEl || !msgEl || !btnOk || !btnCancel){
+      return; // modal dom 不存在则不注入（保持旧行为）
+    }
+
+    function show({title='提示', message='', okText='确定', cancelText='取消', showCancel=false}){
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      btnOk.textContent = okText || '确定';
+      btnCancel.textContent = cancelText || '取消';
+      btnCancel.style.display = showCancel ? '' : 'none';
+      bd.style.display = 'flex';
+
+      let _resolve;
+
+      const close = (val)=>{
+        bd.style.display = 'none';
+        bd.removeEventListener('click', onBackdrop);
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+        document.removeEventListener('keydown', onKey);
+        if(_resolve) _resolve(val);
+      };
+
+      function onBackdrop(e){
+        if(e.target === bd) close(false);
+      }
+      function onKey(e){
+        if(e.key === 'Escape') close(false);
+        if(e.key === 'Enter') close(true);
+      }
+
+      const p = new Promise((resolve)=>{
+        _resolve = resolve;
+        btnOk.onclick = ()=>close(true);
+        btnCancel.onclick = ()=>close(false);
+        bd.addEventListener('click', onBackdrop);
+        document.addEventListener('keydown', onKey);
+      });
+
+      return p;
+    }
+
+    window.cloudAlert = async function cloudAlert(message, title='提示', okText='确定'){
+      await show({title, message, okText, showCancel:false});
+      return true;
+    };
+
+    window.cloudConfirm = async function cloudConfirm(message, title='确认', okText='确定', cancelText='取消'){
+      return await show({title, message, okText, cancelText, showCancel:true});
+    };
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  }else{
+    init();
+  }
+})();
+</script>
 
 <div id="appNotice"><div class="main"></div><div class="sub"></div></div>
 <div id="cloudModalBackdrop" style="display:none">
