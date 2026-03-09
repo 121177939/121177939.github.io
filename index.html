@@ -1,0 +1,2967 @@
+<!--
+======================== 项目记录 / 交接说明 ========================
+项目：撸货进销存管理试用版（当前以 HTML 试用版为主）
+更新日期：2026-03-09
+当前状态：已定版，后续在此基础上继续小改，不要重做整体风格
+
+一、当前共识（非常重要）
+1. 首页继续保持最初那套风格：
+   - 蓝绿渐变顶部
+   - 九宫格功能入口
+   - 不要重做首页视觉
+2. 当前开发以“HTML试用版”作为唯一主文件：
+   - 只同步 HTML
+   - 不要每次都同步安卓项目
+   - 安卓项目等用户明确说“定版同步安卓”后再处理
+3. 后续开发必须遵守：
+   - 只能局部改
+   - 不要整体替换视觉风格
+   - 不要乱改首页、九宫格和其他已确认页面
+4. 用户对“乱改整体风格”非常敏感：
+   - 后续只能在指定模块改
+   - 优先小改、微调、局部修复
+5. 本轮已确认“定版”：
+   - 当前文件可作为后续继续开发与交接的正式基线文件
+
+二、当前首页状态
+1. 首页保留原始方案：
+   - 蓝绿渐变顶部
+   - 九宫格入口
+   - 最近订单列表
+2. 首页顶部标题当前为：
+   - 撸货 · 进销存管理
+3. 首页顶部统计当前为：
+   - 总销售额
+   - 总利润
+   - 收益率
+4. 原来的“库存数量”已经取消，改成“收益率”
+5. 收益率计算规则：
+   - 本金 = 下单金额 + 返款 - 运费
+   - 收益率 = 总利润 ÷ 总本金 × 100%
+6. 首页不要再大改版式，只允许后续做小型数据展示优化
+7. 首页右下角“+”浮动按钮已取消：
+   - 不要再加回
+   - 录入入口统一走首页九宫格和底部导航
+
+三、当前底部导航结构（已定版）
+当前底部导航已调整为以下逻辑：
+1. 首页
+2. 录入
+3. 未售出
+4. 报表
+5. 垫付中心
+
+说明：
+- 原底部“货品”已改成“录入”
+- 录入图标当前为：🧾
+- 原“账号板块”已改成“垫付中心”
+- 原“销售板块”逻辑已改造成“未售出”相关流程，不再按旧销售单逻辑走
+
+四、录入订单页（已定版）
+1. 录入订单页只负责录入，不再在本页下方显示订单表格
+2. 表单字段当前为：
+   - 日期
+   - 下单人
+   - 产品
+   - 下单金额
+   - 返款
+   - 运费
+   - 售出金额
+   - 利润
+   - 物流单号
+   - 备注
+3. 保存按钮当前为两个：
+   - 现货保存
+   - 垫付保存
+4. 保存逻辑：
+   - 现货保存：
+     - 如果“售出金额”为空或 0 → 订单进入“未售出”
+     - 如果“售出金额”大于 0 → 订单直接进入“报表”
+   - 垫付保存：
+     - 订单直接进入“垫付中心”
+5. 当前录入订单页不要再加订单表格回显，用户已经明确取消
+6. 本轮新增：
+   - 备注栏已加 📷 扫码按钮
+   - 可调用摄像头连续扫码
+   - 连续扫码结果自动追加到备注栏
+   - 当前追加格式为：12345,123456,123457
+7. 备注栏样式本轮已优化：
+   - 改为更长、更美观的整行显示
+   - 📷 按钮保留在备注输入框右侧
+
+五、未售出逻辑（已定版）
+1. 未售出订单定义：
+   - 售出金额为空
+   - 或售出金额 = 0
+2. 这些订单：
+   - 不进入报表
+   - 不参与首页和报表统计
+   - 统一进入“未售出”板块
+3. 在未售出板块里：
+   - 可填写售出金额
+   - 目前仍是手动填写后再查看报表
+   - 本次定版没有做“自动跳转报表”
+4. 这条逻辑后续必须保持，不要改回旧逻辑
+5. 本轮新增：
+   - 备注栏后面已增加 📷 按钮
+   - 支持连续扫码并自动追加到备注栏
+
+六、报表页（已定版）
+1. 报表页顶部统计模块已经全部取消
+   - 不再显示订单数量
+   - 不再显示总销售额
+   - 不再显示总利润
+2. 报表页顶部当前改成两个按钮：
+   - 导入
+   - 导出
+3. 报表页只显示“已售出订单”
+   - 即售出金额 > 0 的订单
+4. 报表页当前表格规则：
+   - 可直接在输入框里修改
+   - 取消编辑按钮
+   - 仅保留删除按钮
+5. 之前修复过一个 bug：
+   - 报表里数据不能修改
+   - 现已修复，后续不要再改坏
+6. 之前修复过另一个 bug：
+   - 订单过多时只显示前十几条，后面拉不下来
+   - 现已修复，可正常纵向滚动查看全部订单
+7. 当前表格已再次压缩优化为：
+   - 更紧凑
+   - 更适合手机
+   - 输入框更短
+   - 字号更小
+8. 当前表格规则补充：
+   - 日期列不要固定
+   - 横向滑动时整张表一起滑动
+   - 不要再把第一列做成吸附固定
+9. 后续如果继续调表格：
+   - 只能微调输入框宽度
+   - 不能破坏当前可下拉、可编辑、紧凑显示的状态
+10. 本轮新增：
+   - 备注栏后面已增加 📷 按钮
+   - 支持连续扫码并自动追加到备注栏
+
+七、导入 / 导出（已定版）
+1. 报表页已增加：
+   - 导入按钮
+   - 导出按钮
+2. 导入格式已经按用户提供的 Excel 表结构对齐
+3. 当前识别字段包括：
+   - 日期
+   - 下单人
+   - 产品
+   - 下单金额
+   - 返款
+   - 运费
+   - 售出金额
+   - 利润
+   - 物流单号
+   - 备注
+4. 后续继续开发时：
+   - 优先兼容这个 Excel 结构
+   - 不要随便改字段名
+
+八、垫付中心（已定版）
+1. 原“账号板块”已改为“垫付中心”
+2. 垫付保存的订单全部进入垫付中心
+3. 垫付中心每条订单当前有两个按钮：
+   - 发货
+   - 退款
+4. 业务逻辑：
+   - 发货：
+     - 订单转入“未售出”
+   - 退款：
+     - 直接删除该订单
+5. 垫付中心底部导航已补回：
+   - 后续不要再漏掉底部导航栏
+6. 这条流转逻辑已定版，后续不要变更为别的流程
+7. 本轮修复：
+   - 垫付中心、未售出、报表的搜索栏输入时不再每输一个字符就关闭输入法
+   - 已改为兼容中文输入法的搜索交互
+
+九、当前完整订单流转（非常重要）
+当前订单流转规则如下：
+
+1. 录入订单
+   - 点击“现货保存”
+     - 若售出金额为空或 0 → 进入“未售出”
+     - 若售出金额 > 0 → 进入“报表”
+   - 点击“垫付保存”
+     - 进入“垫付中心”
+
+2. 垫付中心
+   - 点击“发货” → 转入“未售出”
+   - 点击“退款” → 删除订单
+
+3. 未售出
+   - 填写售出金额后 → 手动在报表查看
+
+4. 报表
+   - 只显示已售出订单
+   - 可直接修改数据
+   - 可删除
+
+十、返回按钮（已定版）
+1. 各主要板块已增加返回按钮
+2. 当前样式为：
+   - 左上角“← 返回”
+   - 点击返回首页
+3. 已加返回按钮的页面包括：
+   - 录入订单
+   - 未售出
+   - 报表
+   - 垫付中心
+   - 货品
+   - 我的
+   - 新增商品
+   - 供应商
+4. 后续不要删除这些返回按钮
+
+十一、表格相关开发规则（必须遵守）
+1. 用户非常在意表格观感，当前偏好明确为：
+   - 紧凑
+   - 手机能看
+   - 输入框不要太长
+   - 列与列之间不要贴合在一起
+   - 日期列不要固定
+2. 之前已经踩过的坑：
+   - 产品列过长
+   - 下单人和产品贴在一起
+   - 输入框最小宽度导致列宽失效
+   - 表格区域被限制高度导致后面订单看不到
+   - 第一列固定导致滑动体验不对
+3. 这些问题都已经修复，后续不要回退
+4. 表格优化原则：
+   - 只做小改
+   - 不重做结构
+   - 不再把输入框拉成长条
+   - 不要再加回编辑按钮模式
+   - 保持“直接输入框修改”的方案
+   - 保持“整表一起横向滑动”的方案
+
+十二、首页九宫格当前说明（已定版）
+1. 首页九宫格不要重做
+2. 当前以下入口已改成演示占位：
+   - 供应商
+   - 进货
+3. 这两个入口当前显示为：
+   - 演示版可按需拓展
+4. 点击后弹出提示：
+   - 演示版可按需拓展
+5. 后续如要恢复真实功能，必须由用户明确指定再开发
+
+十三、扫码备注功能说明（本轮新增）
+1. 当前已在以下位置加入 📷 按钮：
+   - 录入订单页备注栏
+   - 未售出表格备注栏
+   - 报表表格备注栏
+2. 当前扫码行为：
+   - 调起摄像头
+   - 支持连续扫码
+   - 自动把新识别结果追加到备注字段
+   - 使用英文逗号连接
+3. 示例：
+   - 第一次扫：12345
+   - 第二次扫：12345,123456
+   - 第三次扫：12345,123456,123457
+4. 短时间重复识别同一编码已做简单防抖，避免抖动重复追加
+5. 该功能依赖手机浏览器 / WebView 的摄像头权限与扫码能力
+6. 当前垫付中心未加备注扫码按钮，后续如需加，再由用户明确指定
+
+十四、搜索栏修复说明（本轮新增）
+1. 已修复板块：
+   - 未售出
+   - 报表
+   - 垫付中心
+2. 修复内容：
+   - 之前每输入一个字符都会触发整页重绘
+   - 会导致中文输入法被打断、自动关闭
+3. 当前处理方式：
+   - 已改为兼容输入法合成状态
+   - 增加轻微延迟刷新
+   - 输入体验更稳定
+
+十五、安卓项目同步规则
+1. 当前阶段只交付 HTML 试用版
+2. 安卓项目不要持续跟着同步
+3. 只有以下情况才同步安卓项目：
+   - 用户明确说“定版同步安卓”
+   - 用户重新上传安卓项目
+   - 用户要求把最终 HTML 版本整合进安卓项目
+4. 在此之前，所有开发继续基于当前 HTML 试用版
+
+十六、后续开发优先级（给新对话看）
+下一阶段如果继续开发，优先顺序如下：
+
+第一优先：
+- 修小 bug
+- 修表格排版
+- 修导入导出细节
+- 修订单流转细节
+
+第二优先：
+- 优化报表体验
+- 优化未售出和垫付中心操作流
+- 优化移动端显示
+
+第三优先：
+- 在用户明确同意后，再考虑同步安卓项目
+
+十七、给未来助手的硬性提醒
+1. 不要再重做首页
+2. 不要再重做九宫格
+3. 不要再把录入订单页下面加回订单表格
+4. 不要随意改已定版的订单流转逻辑
+5. 不要把报表改回“编辑按钮模式”
+6. 不要把紧凑输入框又改成长输入框
+7. 不要破坏报表可滚动、可修改、可导入导出的现状
+8. 不要把日期列再改成固定吸附
+9. 不要把首页右下角“+”按钮再加回来
+10. 本项目当前已经“定版”，以后只能局部微调，不做推倒重来
+11. 本轮已完成扫码备注与搜索栏输入法修复，后续不要误删
+12. 后续继续开发时，请以本文件作为正式基线版本
+
+======================== /项目记录 / 交接说明 ========================
+
+
+======================== 当前待修复问题（2026‑03‑09 新增） ========================
+本节用于新对话继续修复问题，请不要删除。
+
+当前版本主要功能正常，但存在以下 BUG，需要在后续对话中继续修复：
+
+1. 录入成功弹窗未显示
+   - 新录入订单后，没有弹出“录入成功”提示弹窗
+   - 功能逻辑正常，但成功提示未触发
+
+2. 未售出页面删除按钮不可用
+   - 点击“删除”没有任何反应
+   - 可能原因：
+     - deleteOrder 事件未绑定
+     - 或 confirmModal 阻断执行
+
+3. 垫付中心按钮失效
+   - “发货”按钮点击无反应
+   - “退款”按钮点击无反应
+   - 可能原因：
+     - deliverAdvanceOrder
+     - refundAdvanceOrder
+     函数绑定或弹窗逻辑冲突
+
+4. 报表页面删除按钮不可用
+   - 点击删除没有执行
+   - 与未售出删除问题可能是同一个原因
+
+5. 首页红点功能
+   - 已修复，但后续修改需要注意不要破坏：
+     - 未售出红点：unsoldOrders().length
+     - 垫付中心红点：advanceOrders().length
+
+6. 需要保持的 UI 改动
+   当前版本已加入以下 UI 功能，不要误删：
+   - 页面切换淡入动画
+   - 成功提示弹窗
+   - 确认操作居中弹窗
+   - 首页小红点提示
+   - 首页统计数字动画
+
+修复优先级建议：
+1️⃣ 修复删除按钮逻辑
+2️⃣ 修复发货 / 退款按钮
+3️⃣ 修复录入成功弹窗触发
+4️⃣ 确认报表删除按钮
+
+注意：
+只能局部修复，不要整体重写 UI 或结构。
+
+-->
+
+<!doctype html>
+
+<!--
+======================== 项目记录 / 交接说明 ========================
+项目：进销存管理试用版（当前以 HTML 试用版为主）
+写入时间：2026-03-09
+
+一、当前共识（非常重要）
+1. 首页要保持“原来那套风格”：
+   - 蓝绿渐变顶部
+   - 九宫格功能入口
+   - 整体接近用户最开始发的首页截图
+2. 录入订单页：
+   - 保留双列录入表单
+   - 订单列表支持编辑 / 删除
+   - 只允许修改“表格参数 / 表格样式”
+   - 不允许因为改表格而联动修改首页、九宫格、其他页面整体风格
+3. 当前版本已经执行过一次“回滚”：
+   - 已回滚到“用户上传 index.html 之前”的版本思路
+   - 现在只把表格参数应用在订单页，不再把整个系统页面风格一起改掉
+
+二、本轮之前实际改过的内容（按时间整理）
+1. 最初搭了一个可运行的单机版：
+   - 首页
+   - 货品
+   - 销售
+   - 明细
+   - 我的
+   - 本地存储
+2. 后来把“客户”板块改成“录入订单”
+3. 订单字段改成：
+   - 日期
+   - 下单人
+   - 产品
+   - 下单金额
+   - 返款
+   - 运费
+   - 售出金额
+   - 利润
+   - 物流单号
+   - 备注
+4. 做过这些版本尝试：
+   - 卡片式订单展示
+   - 列表式订单展示
+   - 表格清单展示
+   - 可编辑 / 可删除订单
+5. 用户后续明确要求：
+   - 不是改整个项目风格
+   - 只是“抄录入订单里面的表格参数”
+   - 其他页面不准乱改
+6. 因为中间曾经错误套用了另一份 HTML 的整体风格，后来已明确回滚。
+7. 做过旧字段兼容：
+   - buyer / customer
+   - rebate / refund
+   - freight / shipping
+   - saleAmount / sellAmount
+   - trackingNo / trackingNumber
+   - remark / notes
+   目的：避免旧数据打开后出现 undefined
+
+三、当前版本状态
+1. 首页：
+   - 使用原来那套蓝绿渐变 + 九宫格方案
+   - 不应继续大改
+2. 订单页：
+   - 上方是双列录入表单
+   - 下方是订单表格
+   - 支持编辑
+   - 支持删除
+   - 利润自动重算
+3. 当前“只同步试用版 HTML”作为主要开发文件
+
+四、后续开发规则（必须遵守）
+1. 后续开发阶段：
+   - 只需要给用户“试用版 HTML”
+   - 不需要每次都发安卓项目
+2. 安卓项目处理规则：
+   - 先不要持续同步改安卓项目
+   - 等用户明确说“完成了 / 定版了 / 现在同步安卓项目”
+   - 或者用户把安卓项目重新发给新对话
+   - 再帮用户把最终版本同步进安卓项目
+3. 未来新对话如果继续开发：
+   - 优先基于这个 HTML 试用版继续改
+   - 不要重新发明另一套首页
+   - 不要再整体替换视觉风格
+   - 只按用户指定的位置做局部修改
+
+五、下一步建议（给新对话看）
+最优先应该做的是：
+1. 继续微调“录入订单”页表格参数：
+   - 列宽
+   - 行高
+   - 输入框大小
+   - 表头高度
+   - 字号
+   - 间距
+   - 圆角
+2. 不动首页主结构
+3. 不动九宫格整体布局
+4. 如果用户再发参考图：
+   - 只对照修改订单表格页
+   - 除非用户明确要求，否则不要改其他页面
+
+六、给未来助手的硬性提醒
+1. 用户已经明确说过“你乱改的”
+2. 因此后续任何改动都要：
+   - 小改
+   - 局部改
+   - 先保持已有页面结构
+3. 当前阶段交付物优先级：
+   - 第一优先：HTML试用版
+   - 第二优先：安卓项目（只有在用户要求最终同步时再做）
+
+======================== /项目记录 / 交接说明 ========================
+
+
+======================== 当前待修复问题（2026‑03‑09 新增） ========================
+本节用于新对话继续修复问题，请不要删除。
+
+当前版本主要功能正常，但存在以下 BUG，需要在后续对话中继续修复：
+
+1. 录入成功弹窗未显示
+   - 新录入订单后，没有弹出“录入成功”提示弹窗
+   - 功能逻辑正常，但成功提示未触发
+
+2. 未售出页面删除按钮不可用
+   - 点击“删除”没有任何反应
+   - 可能原因：
+     - deleteOrder 事件未绑定
+     - 或 confirmModal 阻断执行
+
+3. 垫付中心按钮失效
+   - “发货”按钮点击无反应
+   - “退款”按钮点击无反应
+   - 可能原因：
+     - deliverAdvanceOrder
+     - refundAdvanceOrder
+     函数绑定或弹窗逻辑冲突
+
+4. 报表页面删除按钮不可用
+   - 点击删除没有执行
+   - 与未售出删除问题可能是同一个原因
+
+5. 首页红点功能
+   - 已修复，但后续修改需要注意不要破坏：
+     - 未售出红点：unsoldOrders().length
+     - 垫付中心红点：advanceOrders().length
+
+6. 需要保持的 UI 改动
+   当前版本已加入以下 UI 功能，不要误删：
+   - 页面切换淡入动画
+   - 成功提示弹窗
+   - 确认操作居中弹窗
+   - 首页小红点提示
+   - 首页统计数字动画
+
+修复优先级建议：
+1️⃣ 修复删除按钮逻辑
+2️⃣ 修复发货 / 退款按钮
+3️⃣ 修复录入成功弹窗触发
+4️⃣ 确认报表删除按钮
+
+注意：
+只能局部修复，不要整体重写 UI 或结构。
+
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>撸货</title>
+  <style>
+    :root{
+      --bg:#f4f5f7;
+      --card:#ffffff;
+      --muted:#8b8f97;
+      --blue1:#33b4f5;
+      --blue2:#14d1c4;
+      --text:#1f2430;
+      --line:#eceef2;
+      --head:#253247;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    body{
+      margin:0;
+      background:var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+      color:var(--text);
+    }
+    .phone{
+      min-height:100vh;
+      padding-bottom:84px;
+      background:var(--bg);
+    }
+    .hero{
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(135deg,#2ea7f4 0%, #26c8d9 55%, #14d1c4 100%);
+      color:#fff;
+      padding:18px 18px 22px;
+      border-bottom-left-radius:28px;
+      border-bottom-right-radius:28px;
+      box-shadow:0 12px 28px rgba(24,164,205,.22);
+    }
+    .hero::before{
+      content:'';
+      position:absolute;
+      inset:auto -40px 78px auto;
+      width:180px;
+      height:180px;
+      border-radius:50%;
+      background:rgba(255,255,255,.10);
+      filter:blur(2px);
+    }
+    .hero::after{
+      content:'';
+      position:absolute;
+      left:-52px;
+      top:78px;
+      width:140px;
+      height:140px;
+      border-radius:50%;
+      background:rgba(255,255,255,.08);
+    }
+    .hero > *{
+      position:relative;
+      z-index:1;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:14px;
+      opacity:.98;
+      margin-bottom:18px;
+    }
+    .title{
+      font-size:15px;
+      opacity:.92;
+      margin-bottom:8px;
+    }
+    .big{
+      font-size:54px;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:-1px;
+      margin:0 0 18px;
+      text-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+    .statrow{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+    }
+    .stat{
+      background:rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:18px;
+      padding:14px 8px 12px;
+      text-align:center;
+      backdrop-filter:blur(8px);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    }
+    .stat .label{
+      font-size:12px;
+      opacity:.9;
+      display:block;
+      margin-bottom:6px;
+    }
+    .stat .value{
+      font-size:17px;
+      font-weight:800;
+      display:block;
+      letter-spacing:-.2px;
+    }
+    .notice{
+      margin:12px 14px 0;
+      background:var(--card);
+      border-radius:12px;
+      padding:14px 14px;
+      color:#60646d;
+      box-shadow:0 2px 10px rgba(0,0,0,.04);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .grid{
+      margin:12px 14px 0;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+    .item{
+      position:relative;
+      overflow:hidden;
+      background:var(--card);
+      border-radius:16px;
+      padding:18px 8px 16px;
+      text-align:center;
+      box-shadow:0 2px 10px rgba(0,0,0,.04);
+      border:1px solid #f1f2f4;
+      cursor:pointer;
+      user-select:none;
+    }
+    .item::after{
+      content:'';
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg,rgba(51,180,245,.08),rgba(20,209,196,.12));
+      opacity:0;
+      transition:opacity .18s ease;
+      pointer-events:none;
+    }
+    .item.pressed{
+      transform:translateY(-4px) scale(.985);
+      box-shadow:0 10px 24px rgba(0,0,0,.10);
+    }
+    .item.pressed::after{
+      opacity:1;
+    }
+    .item.pressed .icon{
+      transform:scale(.96);
+    }
+    .home-badge{
+      position:absolute;
+      top:8px;
+      right:8px;
+      min-width:20px;
+      height:20px;
+      padding:0 6px;
+      border-radius:999px;
+      background:#ff4d4f;
+      color:#fff;
+      font-size:11px;
+      font-weight:700;
+      line-height:20px;
+      text-align:center;
+      box-shadow:0 4px 12px rgba(255,77,79,.28);
+    }
+    .icon{
+      width:52px;height:52px;margin:0 auto 10px;border-radius:18px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:24px;color:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.08);
+    }
+    .i1{background:linear-gradient(180deg,#38bdf8,#0ea5e9)}
+    .i2{background:linear-gradient(180deg,#22c55e,#16a34a)}
+    .i3{background:linear-gradient(180deg,#f59e0b,#ea580c)}
+    .i4{background:linear-gradient(180deg,#a855f7,#7c3aed)}
+    .i5{background:linear-gradient(180deg,#14b8a6,#0d9488)}
+    .i6{background:linear-gradient(180deg,#ef4444,#dc2626)}
+    .i7{background:linear-gradient(180deg,#ec4899,#db2777)}
+    .i8{background:linear-gradient(180deg,#6366f1,#4f46e5)}
+    .i9{background:linear-gradient(180deg,#64748b,#475569)}
+    .stat .value.animating{
+      
+      transition:transform .25s ease, opacity .25s ease;
+    }
+    .item .text{font-size:14px; color:#333; margin-bottom:4px;}
+    .item .sub{font-size:11px; color:#9aa0a6;}
+
+    .sheet{
+      margin:14px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 2px 10px rgba(0,0,0,.04);
+      overflow:hidden;
+    }
+    .sheet-hd{
+      padding:14px 16px;
+      font-weight:700;
+      border-bottom:1px solid var(--line);
+      display:flex;justify-content:space-between;align-items:center;
+    }
+    .row{
+      display:flex;justify-content:space-between;align-items:center;
+      padding:14px 16px;border-bottom:1px solid var(--line);
+      font-size:14px;
+    }
+    .row:last-child{border-bottom:none}
+    .row .right{font-weight:700}
+    .back-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:none;
+      background:transparent;
+      color:#1daee7;
+      font-size:14px;
+      font-weight:600;
+      padding:0;
+      cursor:pointer;
+    }
+    .back-btn .arrow{font-size:18px; line-height:1;}
+    .sheet-title-wrap{display:flex;align-items:center;gap:10px;min-width:0;}
+    .sheet-title-wrap span:last-child{white-space:nowrap;}
+
+    .plus{
+      position:fixed;right:18px;bottom:98px;
+      width:56px;height:56px;border-radius:50%;
+      border:none;background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      color:#fff;font-size:30px;line-height:1;
+      box-shadow:0 10px 24px rgba(20,209,196,.34);
+    }
+    .tabbar{
+      position:fixed;left:0;right:0;bottom:0;background:#fff;
+      border-top:1px solid var(--line);
+      display:grid;grid-template-columns:repeat(5,1fr);
+      padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+      z-index:20;
+    }
+    .tab{
+      text-align:center;font-size:11px;color:#8b8f97;
+    }
+    .tab .emoji{display:block;font-size:20px;margin-bottom:3px}
+    .tab.active{color:#1daee7;font-weight:700}
+    button,input,select,textarea{font:inherit}
+    .form{padding:14px;}
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+    }
+    .field{margin-bottom:0}
+    .field.full{grid-column:1 / -1}
+    .field label{display:block;font-size:13px;color:#666;margin-bottom:6px}
+    .field input,.field select,.field textarea{
+      width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;
+    }
+    .field textarea{min-height:72px;resize:vertical}
+    .field-inline{display:flex;gap:8px;align-items:center}
+    .field-inline input{flex:1}
+    .mini-btn{border:none;border-radius:10px;padding:0 12px;height:44px;background:#eef6ff;color:#177ddc;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+    .draft-tip{padding:0 14px 12px;color:#8b8f97;font-size:12px}
+    .btn{
+      width:100%;border:none;border-radius:14px;padding:14px 16px;color:#fff;font-weight:700;
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      margin-top:14px;
+    }
+    .btn-row{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .btn-row .btn{
+      margin-top:0;
+    }
+    .btn-alt{
+      background:linear-gradient(180deg,#8b5cf6,#7c3aed);
+    }
+    .small{font-size:12px;color:#8b8f97}
+    .empty{padding:30px 16px;text-align:center;color:#98a0aa}
+    .report-actions{
+      display:flex;
+      gap:10px;
+      padding:12px 14px 0;
+      background:#fff;
+    }
+    .action-btn{
+      flex:1;
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .action-btn.primary{
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      color:#fff;
+    }
+    .action-btn.secondary{
+      background:#eef6ff;
+      color:#177ddc;
+    }
+
+    /* 仅应用表格参数，不改别的页面 */
+    .order-panel{
+      margin:14px;
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(17,24,39,.08);
+      box-shadow:0 10px 30px rgba(17,24,39,.08);
+      overflow:hidden;
+    }
+    .order-toolbar{
+      padding:12px 14px;
+      display:flex;
+      gap:10px;
+      border-bottom:1px solid #eef1f4;
+      background:#fff;
+      align-items:center;
+    }
+    .order-toolbar input{
+      flex:1;
+      border:1px solid #e4e8ee;
+      border-radius:12px;
+      padding:11px 14px;
+      background:#fafbfc;
+      font-size:14px;
+    }
+    .order-table-wrap{
+      overflow-x:auto;
+      overflow-y:visible;
+      -webkit-overflow-scrolling:touch;
+      background:#fff;
+      max-height:none;
+      padding-bottom:2px;
+    }
+    .order-table{
+      width:max-content;
+      min-width:100%;
+      table-layout:auto;
+      border-collapse:separate;
+      border-spacing:0;
+      background:#fff;
+    }
+    .order-table thead{
+      background:linear-gradient(135deg,#1f2937 0%,#374151 100%);
+    }
+    .order-table thead th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      color:#fff;
+      font-size:9px;
+      font-weight:700;
+      text-align:left;
+      padding:8px 5px;
+      height:36px;
+      white-space:nowrap;
+      border-bottom:1px solid #1b2434;
+    }
+    .order-table thead th:first-child{border-top-left-radius:16px}
+    .order-table thead th:last-child{border-top-right-radius:16px}
+    .order-table tbody td{
+      padding:2px 4px;
+      border-bottom:1px solid rgba(17,24,39,.06);
+      vertical-align:middle;
+      background:#fff;
+      white-space:nowrap;
+      font-size:9px;
+      height:34px;
+    }
+    .order-table tbody tr:nth-child(even) td{
+      background:#f9f9f9;
+    }
+
+    .table-input{
+      width:auto;
+      min-width:0;
+      max-width:100%;
+      box-sizing:border-box;
+      border:1px solid rgba(17,24,39,.12);
+      background:rgba(255,255,255,.95);
+      border-radius:8px;
+      padding:2px 4px;
+      height:24px;
+      font-size:9px;
+      color:#1f2430;
+      outline:none;
+      display:inline-block;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .table-input:focus{
+      border-color:rgba(59,130,246,.45);
+      box-shadow:0 0 0 3px rgba(59,130,246,.12);
+      background:#fff;
+    }
+    .table-input.small{width:54px}
+    .table-input.mid{width:72px}
+    .table-input.long{width:80px}
+    
+    .report-table td:nth-child(2) .table-input{width:62px}
+    .report-table td:nth-child(3) .table-input{width:78px}
+    .report-table td:nth-child(4) .table-input,
+    .report-table td:nth-child(5) .table-input,
+    .report-table td:nth-child(6) .table-input,
+    .report-table td:nth-child(7) .table-input{width:68px}
+    .report-table td:nth-child(9) .table-input{width:80px}
+    .report-table td:nth-child(10) .table-input{width:92px}
+    .profit-box{
+      font-weight:700;
+      color:#0e9f8a;
+      font-size:12px;
+      display:inline-block;
+      min-width:64px;
+    }
+    .actions{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-start;
+    }
+    .icon-btn{
+      border:none;
+      border-radius:10px;
+      padding:5px 7px;
+      min-width:42px;
+      font-size:11px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .icon-btn.edit{background:#e8f4ff;color:#177ddc}
+    .icon-btn.delete{background:#fff0f0;color:#d43838}
+    .icon-btn.save{background:#e9fbf3;color:#14965b}
+    .icon-btn.cancel{background:#f3f4f6;color:#4b5563}
+    .badge{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      background:#eef2f7;
+      color:#445066;
+    }
+    .table-input[readonly]{
+      color:#20242d;
+      background:#f7f7f8;
+    }
+    .order-note{
+      padding:10px 14px 0;
+      font-size:12px;
+      color:#8b8f97;
+    }
+    .order-table-wrap::-webkit-scrollbar{
+      height:8px;
+      width:8px;
+    }
+    .order-table-wrap::-webkit-scrollbar-thumb{
+      background:#c9ced8;
+      border-radius:999px;
+    }
+
+
+.remark-cell{
+  display:flex;
+  gap:4px;
+  align-items:center;
+}
+.scan-icon-btn{
+  border:none;
+  border-radius:8px;
+  width:28px;
+  height:24px;
+  padding:0;
+  background:#eef6ff;
+  color:#177ddc;
+  font-size:14px;
+  line-height:24px;
+  text-align:center;
+  cursor:pointer;
+  flex:0 0 28px;
+}
+
+.remark-form-row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.remark-form-row input{
+  height:44px;
+  font-size:14px;
+}
+
+.remark-form-row input{
+  flex:1;
+  min-width:0;
+}
+.remark-form-row .scan-icon-btn{
+  width:44px;
+  height:44px;
+  border-radius:12px;
+  font-size:18px;
+  line-height:44px;
+  flex:0 0 44px;
+}
+.scan-icon-btn:active{
+  transform:scale(.96);
+}
+.scan-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.88);
+  display:flex;
+  flex-direction:column;
+  z-index:9999;
+}
+.scan-overlay video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  flex:1;
+  background:#000;
+}
+.scan-overlay-top{
+  position:absolute;
+  top:14px;
+  left:14px;
+  right:14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:2;
+  color:#fff;
+  font-size:14px;
+  gap:12px;
+}
+.scan-overlay-top .scan-close{
+  border:none;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  border-radius:12px;
+  padding:8px 12px;
+  font-size:14px;
+  cursor:pointer;
+}
+.scan-overlay-tip{
+  position:absolute;
+  left:50%;
+  bottom:28px;
+  transform:translateX(-50%);
+  z-index:2;
+  color:#fff;
+  background:rgba(0,0,0,.35);
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:13px;
+  white-space:nowrap;
+  max-width:calc(100% - 24px);
+  text-align:center;
+}
+
+
+    .page{
+      opacity:0;
+      animation:pageFade .45s ease forwards;
+      will-change:opacity;
+    }
+    @keyframes pageFade{
+      to{
+        opacity:1;
+      }
+    }
+
+
+    .btn,
+    .icon-btn,
+    .scan-icon-btn,
+    .mini-btn,
+    .action-btn,
+    .tab,
+    .item{
+      transition:transform .22s ease, box-shadow .22s ease, background-color .22s ease, opacity .22s ease;
+    }
+    .btn:active,
+    .icon-btn:active,
+    .scan-icon-btn:active,
+    .mini-btn:active,
+    .action-btn:active{
+      transform:scale(.96);
+    }
+    .item:active{
+      transform:translateY(-4px) scale(.985);
+      box-shadow:0 10px 24px rgba(0,0,0,.10);
+    }
+    .tab:active{
+      transform:translateY(-2px);
+    }
+    .order-table tbody tr{
+      transition:background-color .22s ease, box-shadow .22s ease;
+    }
+    .order-table tbody tr:focus-within td{
+      background:#eef6ff !important;
+    }
+    .order-table tbody tr:focus-within{
+      box-shadow:inset 0 0 0 1px rgba(23,125,220,.12);
+    }
+    .toast{
+      position:fixed;
+      left:50%;
+      top:18px;
+      transform:translateX(-50%) translateY(-12px);
+      min-width:168px;
+      max-width:calc(100vw - 32px);
+      background:rgba(31,36,48,.94);
+      color:#fff;
+      padding:12px 16px;
+      border-radius:14px;
+      font-size:14px;
+      text-align:center;
+      box-shadow:0 10px 26px rgba(0,0,0,.18);
+      z-index:99999;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .26s ease, transform .26s ease;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
+    }
+
+
+    .nice-modal-mask,
+    .confirm-mask{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.28);
+      backdrop-filter:blur(4px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:100000;
+      opacity:0;
+      animation:modalFadeIn .22s ease forwards;
+    }
+    .nice-modal,
+    .confirm-box{
+      width:min(320px, calc(100vw - 32px));
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 18px 48px rgba(15,23,42,.18);
+      padding:22px 18px 18px;
+      text-align:center;
+      transform:translateY(10px) scale(.96);
+      animation:modalCardIn .24s cubic-bezier(.22,.61,.36,1) forwards;
+    }
+    .nice-modal-icon{
+      width:58px;
+      height:58px;
+      margin:0 auto 12px;
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:28px;
+      color:#fff;
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      box-shadow:0 10px 24px rgba(20,209,196,.28);
+    }
+    .nice-modal-title,
+    .confirm-title{
+      font-size:18px;
+      font-weight:800;
+      color:#1f2430;
+      margin-bottom:6px;
+      line-height:1.5;
+    }
+    .nice-modal-desc{
+      font-size:13px;
+      color:#7b8492;
+      line-height:1.6;
+      margin-bottom:16px;
+    }
+    .nice-modal-btn{
+      width:100%;
+      border:none;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:15px;
+      font-weight:700;
+      color:#fff;
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      cursor:pointer;
+      box-shadow:0 10px 24px rgba(20,209,196,.22);
+    }
+    .confirm-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:16px;
+    }
+    .confirm-btn{
+      border:none;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .confirm-cancel{
+      background:#eef1f5;
+      color:#4b5563;
+    }
+    .confirm-ok{
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(20,209,196,.22);
+    }
+    @keyframes modalFadeIn{
+      to{opacity:1;}
+    }
+    @keyframes modalCardIn{
+      to{
+        transform:translateY(0) scale(1);
+      }
+    }
+
+
+    .auth-chip{
+      border:none;
+      background:rgba(255,255,255,.18);
+      color:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:700;
+      backdrop-filter:blur(8px);
+      cursor:pointer;
+      max-width:140px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .auth-chip.admin{
+      background:rgba(255,215,0,.20);
+    }
+    .login-layer{
+      position:fixed;
+      inset:0;
+      z-index:120000;
+      background:linear-gradient(135deg,#2ea7f4 0%, #26c8d9 55%, #14d1c4 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .login-layer::before{
+      content:'';
+      position:absolute;
+      inset:auto -40px 120px auto;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:rgba(255,255,255,.10);
+    }
+    .login-layer::after{
+      content:'';
+      position:absolute;
+      left:-60px;
+      top:90px;
+      width:180px;
+      height:180px;
+      border-radius:50%;
+      background:rgba(255,255,255,.08);
+    }
+    .login-shell{
+      position:relative;
+      z-index:1;
+      width:min(360px,calc(100vw - 36px));
+    }
+    .login-brand{
+      color:#fff;
+      text-align:center;
+      margin-bottom:16px;
+    }
+    .login-brand .small{
+      color:rgba(255,255,255,.88);
+      font-size:14px;
+    }
+    .login-brand .name{
+      font-size:34px;
+      font-weight:800;
+      line-height:1.1;
+      margin:0 0 8px;
+      text-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+    .login-card{
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 18px 48px rgba(15,23,42,.18);
+      padding:22px 18px 18px;
+    }
+    .login-card-title{
+      font-size:24px;
+      font-weight:800;
+      color:#1f2430;
+      text-align:center;
+      margin-bottom:14px;
+    }
+    .login-input{
+      width:100%;
+      padding:14px 15px;
+      border-radius:14px;
+      border:1px solid #e6ebf1;
+      background:#f8fbff;
+      font-size:15px;
+      margin-bottom:12px;
+      outline:none;
+    }
+    .login-input:focus{
+      border-color:rgba(51,180,245,.55);
+      box-shadow:0 0 0 3px rgba(51,180,245,.14);
+      background:#fff;
+    }
+    .login-btn{
+      width:100%;
+      border:none;
+      border-radius:14px;
+      padding:14px 16px;
+      color:#fff;
+      font-weight:800;
+      font-size:16px;
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      box-shadow:0 10px 24px rgba(20,209,196,.22);
+      cursor:pointer;
+      margin-top:4px;
+    }
+    .login-tip{
+      margin-top:12px;
+      text-align:center;
+      font-size:12px;
+      color:#8b8f97;
+      line-height:1.6;
+    }
+    .login-msg{
+      min-height:18px;
+      text-align:center;
+      color:#d43838;
+      font-size:12px;
+      margin-top:8px;
+    }
+
+    @media (max-width: 640px){
+      .grid{grid-template-columns:repeat(3,1fr)}
+      .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .hero .big{font-size:38px}
+    }
+
+    .admin-panel{
+      margin:14px;
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(17,24,39,.08);
+      box-shadow:0 10px 30px rgba(17,24,39,.08);
+      overflow:hidden;
+    }
+    .admin-actions{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:10px;
+      padding:14px;
+    }
+    .admin-btn{
+      border:none;
+      border-radius:12px;
+      padding:12px 10px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .admin-btn.create{background:rgba(34,197,94,.14);color:#065f46;}
+    .admin-btn.reset{background:#eef6ff;color:#177ddc;}
+    .admin-btn.delete{background:#fff0f0;color:#d43838;}
+    .admin-list-wrap{padding:0 14px 14px;overflow-x:auto;}
+    .admin-table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px;}
+    .admin-table th,.admin-table td{padding:10px 8px;border-bottom:1px solid #eef1f4;text-align:left;white-space:nowrap;}
+    .admin-table th{font-size:12px;color:#6b7280;background:#fafbfc;}
+    .admin-link{color:#177ddc;font-weight:700;cursor:pointer;text-decoration:none;}
+
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script>
+const store = {
+  load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback}
+  },
+  save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+};
+
+const state = {
+  products: store.load('jxc_products', [
+    {name:'华为手表', stock:20, cost:1500, price:2150},
+    {name:'赫莲娜小白瓶', stock:12, cost:900, price:1170},
+    {name:'娇诗韵三件套', stock:8, cost:1200, price:1587}
+  ]),
+  sales: store.load('jxc_sales', []),
+  suppliers: store.load('jxc_suppliers', [{name:'默认供应商', phone:'13800000000'}]),
+  orders: store.load('jxc_orders', [
+    {id:id(), status:'normal', date:'03-08', buyer:'象兄', product:'华为手表', orderAmount:2150, rebate:0, freight:0, saleAmount:2150, profit:0, trackingNo:'', remark:''},
+    {id:id(), status:'normal', date:'03-08', buyer:'标', product:'赫莲娜小白瓶', orderAmount:1170, rebate:50, freight:0, saleAmount:1170, profit:-50, trackingNo:'', remark:''},
+    {id:id(), status:'normal', date:'03-07', buyer:'晶1', product:'vivos50', orderAmount:2469, rebate:0, freight:0, saleAmount:2469, profit:0, trackingNo:'', remark:''}
+  ]),
+  tab: 'home',
+  orderSearch: '',
+  orderDraft: store.load('jxc_order_draft', {})
+};
+
+function id(){
+  return 'id_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+}
+state.orders = state.orders.map(o => ({
+  id: o.id || id(),
+  status: o.status === 'advance' ? 'advance' : 'normal',
+  date: o.date || new Date().toISOString().slice(5,10),
+  buyer: o.buyer ?? o.customer ?? '',
+  product: o.product ?? '',
+  orderAmount: Number(o.orderAmount ?? 0),
+  rebate: Number(o.rebate ?? o.refund ?? 0),
+  freight: Number(o.freight ?? o.shipping ?? 0),
+  saleAmount: Number(o.saleAmount ?? o.sellAmount ?? 0),
+  profit: Number(o.profit ?? 0),
+  trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
+  remark: o.remark ?? o.notes ?? ''
+}));
+
+function persist(){
+  store.save('jxc_products', state.products);
+  store.save('jxc_sales', state.sales);
+  store.save('jxc_suppliers', state.suppliers);
+  store.save('jxc_orders', state.orders);
+}
+
+function sortByDateDesc(list){
+  return [...list].sort((a,b)=> String(b.date).localeCompare(String(a.date)));
+}
+function advanceOrders(){
+  return sortByDateDesc(state.orders.filter(o => o.status === 'advance'));
+}
+function soldOrders(){
+  return sortByDateDesc(state.orders.filter(o => o.status !== 'advance' && Number(o.saleAmount || 0) > 0));
+}
+function unsoldOrders(){
+  return sortByDateDesc(state.orders.filter(o => o.status !== 'advance' && Number(o.saleAmount || 0) <= 0));
+}
+function todaySales(){
+  const today = new Date().toISOString().slice(5,10);
+  return soldOrders().filter(s=>String(s.date).includes(today)).reduce((a,b)=>a+Number(b.saleAmount||0),0);
+}
+function monthSales(){
+  return soldOrders().reduce((a,b)=>a+Number(b.saleAmount||0),0);
+}
+function monthProfit(){
+  return soldOrders().reduce((a,b)=>a+Number(b.profit||0),0);
+}
+function totalPrincipal(){
+  return soldOrders().reduce((a,b)=>{
+    return a + Number(b.orderAmount||0) + Number(b.rebate||0) - Number(b.freight||0);
+  },0);
+}
+function profitRate(){
+  const principal = totalPrincipal();
+  if(principal <= 0) return '0.00';
+  return (monthProfit() / principal * 100).toFixed(2);
+}
+function money(n){ return Number(n||0).toFixed(2); }
+function setTab(tab){
+  state.tab = tab;
+  render();
+  if(tab === 'admin' && authState.isAdmin){
+    setTimeout(loadAdminList, 60);
+  }
+}
+
+function showToast(message){
+  let toast = document.getElementById('globalToast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'globalToast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message || '';
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(function(){
+    toast.classList.remove('show');
+  }, 1800);
+}
+
+
+
+function showNiceModal(title, desc, icon){
+  const old = document.getElementById('niceModalMask');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+
+  const mask = document.createElement('div');
+  mask.id = 'niceModalMask';
+  mask.className = 'nice-modal-mask';
+  mask.innerHTML = `
+    <div class="nice-modal">
+      <div class="nice-modal-icon">${icon || '✓'}</div>
+      <div class="nice-modal-title">${title || '操作成功'}</div>
+      <div class="nice-modal-desc">${desc || '本次操作已完成'}</div>
+      <button class="nice-modal-btn" type="button">知道了</button>
+    </div>
+  `;
+  document.body.appendChild(mask);
+
+  const close = function(){
+    if(mask && mask.parentNode) mask.parentNode.removeChild(mask);
+  };
+  mask.addEventListener('click', function(e){
+    if(e.target === mask) close();
+  });
+  const btn = mask.querySelector('.nice-modal-btn');
+  if(btn) btn.onclick = close;
+
+  clearTimeout(showNiceModal._timer);
+  showNiceModal._timer = setTimeout(close, 1500);
+}
+
+function showConfirmModal(msg, onOk){
+  const old = document.getElementById('confirmModalMask');
+  if(old && old.parentNode) old.parentNode.removeChild(old);
+
+  const mask = document.createElement('div');
+  mask.id = 'confirmModalMask';
+  mask.className = 'confirm-mask';
+  mask.innerHTML = `
+    <div class="confirm-box">
+      <div class="confirm-title">${msg}</div>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-cancel" type="button">取消</button>
+        <button class="confirm-btn confirm-ok" type="button">确定</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+
+  const close = function(){
+    if(mask && mask.parentNode) mask.parentNode.removeChild(mask);
+  };
+  mask.addEventListener('click', function(e){
+    if(e.target === mask) close();
+  });
+  const cancelBtn = mask.querySelector('.confirm-cancel');
+  const okBtn = mask.querySelector('.confirm-ok');
+  if(cancelBtn) cancelBtn.onclick = close;
+  if(okBtn) okBtn.onclick = function(){
+    close();
+    if(typeof onOk === 'function') onOk();
+  };
+}
+
+
+function addProduct(form){
+  const fd = new FormData(form);
+  state.products.push({
+    name: fd.get('name'),
+    stock: Number(fd.get('stock')||0),
+    cost: Number(fd.get('cost')||0),
+    price: Number(fd.get('price')||0)
+  });
+  persist(); showToast('已添加商品'); setTab('goods');
+}
+
+function normalizeDate(v){
+  if(!v) return new Date().toISOString().slice(5,10);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v.slice(5);
+  return v;
+}
+
+function calcProfit(orderAmount, rebate, freight, saleAmount){
+  const sale = Number(saleAmount||0);
+  if(sale <= 0) return 0;
+  return sale - Number(orderAmount||0) - Number(rebate||0) - Number(freight||0);
+}
+
+
+function orderDraftDefaults(){
+  return {
+    date: new Date().toISOString().slice(0,10),
+    buyer:'',
+    product:'',
+    orderAmount:'',
+    rebate:'0',
+    freight:'0',
+    saleAmount:'',
+    trackingNo:'',
+    remark:''
+  };
+}
+
+function saveOrderDraftFromForm(form){
+  if(!form) return;
+  const fields = ['date','buyer','product','orderAmount','rebate','freight','saleAmount','trackingNo','remark'];
+  const draft = {};
+  fields.forEach(name => {
+    const el = form.querySelector(`[name="${name}"]`);
+    draft[name] = el ? el.value : '';
+  });
+  state.orderDraft = Object.assign(orderDraftDefaults(), draft);
+  store.save('jxc_order_draft', state.orderDraft);
+}
+
+function clearOrderDraft(){
+  state.orderDraft = orderDraftDefaults();
+  store.save('jxc_order_draft', state.orderDraft);
+}
+
+function hydrateOrderForm(form){
+  if(!form) return;
+  const draft = Object.assign(orderDraftDefaults(), state.orderDraft || {});
+  Object.keys(draft).forEach(name => {
+    const el = form.querySelector(`[name="${name}"]`);
+    if(el) el.value = draft[name];
+  });
+  const preview = form.querySelector('#profitPreview');
+  if(preview){
+    const p = calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount).toFixed(2);
+    preview.value = '¥' + p;
+  }
+}
+
+function useProductTemplate(form){
+  if(!form) return;
+  const productName = form.querySelector('[name="product"]')?.value?.trim();
+  if(!productName) return;
+  const product = state.products.find(p => p.name === productName);
+  if(!product) return;
+  const saleInput = form.querySelector('[name="saleAmount"]');
+  if(saleInput && !saleInput.value) saleInput.value = Number(product.price || 0);
+  saveOrderDraftFromForm(form);
+  const preview = form.querySelector('#profitPreview');
+  if(preview){
+    const order = form.querySelector('[name="orderAmount"]');
+    const rebate = form.querySelector('[name="rebate"]');
+    const freight = form.querySelector('[name="freight"]');
+    const sale = form.querySelector('[name="saleAmount"]');
+    preview.value = '¥' + calcProfit(order?.value, rebate?.value, freight?.value, sale?.value).toFixed(2);
+  }
+}
+
+function addOrder(form, mode='normal'){
+  const fd = new FormData(form);
+  const orderAmount = Number(fd.get('orderAmount')||0);
+  const rebate = Number(fd.get('rebate')||0);
+  const freight = Number(fd.get('freight')||0);
+  const saleAmount = Number(fd.get('saleAmount')||0);
+  const profit = calcProfit(orderAmount, rebate, freight, saleAmount);
+  state.orders.unshift({
+    id: id(),
+    status: mode === 'advance' ? 'advance' : 'normal',
+    date: normalizeDate(fd.get('date')),
+    buyer: fd.get('buyer'),
+    product: fd.get('product'),
+    orderAmount,
+    rebate,
+    freight,
+    saleAmount: mode === 'advance' ? 0 : saleAmount,
+    profit: mode === 'advance' ? 0 : profit,
+    trackingNo: fd.get('trackingNo'),
+    remark: fd.get('remark')
+  });
+  persist();
+  clearOrderDraft();
+  form.reset();
+  const dateInput = form.querySelector('[name="date"]');
+  if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+  const rebateInput = form.querySelector('[name="rebate"]');
+  const freightInput = form.querySelector('[name="freight"]');
+  if(rebateInput) rebateInput.value = '0';
+  if(freightInput) freightInput.value = '0';
+  const preview = form.querySelector('#profitPreview');
+  if(preview) preview.value = '¥0.00';
+  render();
+  showNiceModal(
+    mode === 'advance' ? '垫付录入成功' : '录入成功',
+    mode === 'advance' ? '订单已经进入垫付中心' : '订单已经成功保存',
+    '✓'
+  );
+}
+
+function filteredOrders(sourceList){
+  const q = state.orderSearch.trim().toLowerCase();
+  let list = Array.isArray(sourceList) ? sourceList : state.orders;
+  if(q){
+    list = list.filter(o =>
+      [o.date,o.buyer,o.product,o.trackingNo,o.remark].join(' ').toLowerCase().includes(q)
+    );
+  }
+  return list;
+}
+
+function updateOrderField(orderId, field, value){
+  const order = state.orders.find(o => o.id === orderId);
+  if(!order) return;
+  if(['orderAmount','rebate','freight','saleAmount'].includes(field)){
+    order[field] = value === '' ? 0 : Number(value || 0);
+    order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount);
+  }else{
+    order[field] = value;
+  }
+  persist();
+}
+
+function refreshRowAfterNumericEdit(inputEl, orderId, field, value){
+  updateOrderField(orderId, field, value);
+  const row = inputEl && inputEl.closest ? inputEl.closest('tr') : null;
+  if(row){
+    const profitBox = row.querySelector('.profit-box');
+    const order = state.orders.find(o => o.id === orderId);
+    if(profitBox && order) profitBox.textContent = '¥' + money(order.profit);
+  }
+}
+
+function finalizeOrderRow(orderId){
+  persist();
+  render();
+}
+function deliverAdvanceOrder(orderId){
+  const order = state.orders.find(o => o.id === orderId);
+  if(!order) return;
+  showConfirmModal('确定发货？', function(){
+    order.status = 'normal';
+    order.saleAmount = 0;
+    order.profit = 0;
+    persist();
+    render();
+    showNiceModal('发货成功', '订单已转入未售出', '✓');
+  });
+}
+function refundAdvanceOrder(orderId){
+  const idx = state.orders.findIndex(o => o.id === orderId);
+  if(idx === -1) return;
+  showConfirmModal('确定退款？', function(){
+    state.orders.splice(idx, 1);
+    persist();
+    render();
+    showNiceModal('退款成功', '垫付订单已退款并删除', '✓');
+  });
+}
+function deleteOrder(orderId){
+  const idx = state.orders.findIndex(o => o.id === orderId);
+  if(idx === -1) return;
+  showConfirmModal('确定删除这笔订单吗？', function(){
+    state.orders.splice(idx, 1);
+    persist();
+    render();
+    showNiceModal('删除成功', '这笔订单已经删除', '✓');
+  });
+}
+
+function menuCard(iconClass, emoji, text, sub, onClick, badgeCount=0){
+  const badge = Number(badgeCount || 0) > 0
+    ? `<span class="home-badge">${Number(badgeCount) > 99 ? '99+' : Number(badgeCount)}</span>`
+    : '';
+  const action = String(onClick || '').replaceAll('\\','\\\\').replaceAll("'","\\'");
+  return `<div class="item" onclick="tapMenuCard(this, '${action}')">
+    ${badge}
+    <div class="icon ${iconClass}">${emoji}</div>
+    <div class="text">${text}</div>
+    <div class="sub">${sub}</div>
+  </div>`;
+}
+
+function tapMenuCard(el, action){
+  if(!el) return;
+  el.classList.add('pressed');
+  try{
+    if(navigator.vibrate) navigator.vibrate(10);
+  }catch(e){}
+  setTimeout(function(){
+    try{
+      if(action) (new Function(action))();
+    }finally{
+      setTimeout(function(){
+        el.classList.remove('pressed');
+      }, 120);
+    }
+  }, 90);
+}
+
+
+function animateHomeStats(){
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.hero .stat .value, .hero .big').forEach(el => {
+      const raw = el.getAttribute('data-value');
+      if(raw === null) return;
+      const end = Number(raw || 0);
+      const isPercent = el.getAttribute('data-suffix') === '%';
+      const duration = 700;
+      const start = performance.now();
+      function frame(now){
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = end * eased;
+        el.classList.add('animating');
+        el.textContent = isPercent ? current.toFixed(2) + '%' : current.toFixed(2);
+        if(progress < 1){
+          requestAnimationFrame(frame);
+        }else{
+          el.textContent = isPercent ? end.toFixed(2) + '%' : end.toFixed(2);
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  });
+}
+
+function sectionHeader(title, subtitle=''){
+  return `<div class="sheet-hd">
+    <div class="sheet-title-wrap">
+      <button class="back-btn" onclick="setTab('home')">
+        <span class="arrow">←</span><span>返回</span>
+      </button>
+      <span>${title}</span>
+    </div>
+    <span class="small">${subtitle}</span>
+  </div>`;
+}
+
+
+function accountEntryHtml(){
+  if(!authState.ready || !authState.user){
+    return `<button class="auth-chip" type="button" onclick="openLoginLayer()">登录</button>`;
+  }
+  const label = authState.isAdmin ? '管理员' : ((authState.user.email || '已登录').split('@')[0] || '已登录');
+  return `<button class="auth-chip ${authState.isAdmin ? 'admin' : ''}" type="button" onclick="handleAccountTap()">${escapeHtml(label)}</button>`;
+}
+
+function handleAccountTap(){
+  if(!authState.user){
+    openLoginLayer();
+    return;
+  }
+  showConfirmModal(authState.isAdmin ? '当前为管理员账号，是否退出登录？' : '是否退出当前账号？', function(){
+    logoutSystem();
+  });
+}
+
+function homeView(){
+  return `
+  <div class="phone">
+    <div class="hero">
+      <div class="topbar"><div>撸货 · 进销存管理</div>${accountEntryHtml()}</div>
+      <div class="title">今日销售额</div>
+      <div class="big" data-value="${todaySales()}">${money(todaySales())}</div>
+      <div class="statrow">
+        <div class="stat"><span class="label">总销售额</span><span class="value" data-value="${monthSales()}">${money(monthSales())}</span></div>
+        <div class="stat"><span class="label">总利润</span><span class="value" data-value="${monthProfit()}">${money(monthProfit())}</span></div>
+        <div class="stat"><span class="label">收益率</span><span class="value" data-value="${profitRate()}" data-suffix="%">${profitRate()}%</span></div>
+      </div>
+    </div>
+
+    <div class="notice"><span>先赚人心后赚钱</span><span>›</span></div>
+
+    <div class="grid">
+      ${menuCard('i1','🧾','录入订单','订单录入',"setTab('orders')")}
+      ${menuCard('i2','💰','未售出','待填写售出金额',"setTab('sale')", unsoldOrders().length)}
+      ${menuCard('i3','💳','垫付中心','待发货 / 退款',"setTab('advance')", advanceOrders().length)}
+      ${menuCard('i4','🏭','供应商','待开发',"showToast('供应商待开发')")}
+      ${menuCard('i5','📦','进货','待开发',"showToast('进货待开发')")}
+      ${menuCard('i6','🧾','其他支出','费用记录',"alert('演示版可按需扩展')")}
+      ${menuCard('i7','⭐','VIP会员','待开发',"showToast('VIP会员待开发')")}
+      ${menuCard('i8','📊','报表','销售统计',"setTab('detail')")}
+      ${authState.isAdmin ? menuCard('i9','🛠️','管理员','账号管理',"setTab('admin')") : ''}
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-hd"><span>最近已售出</span><span class="small">${soldOrders().length} 笔</span></div>
+      ${soldOrders().length ? soldOrders().slice(0,3).map(s => `<div class="row"><span>${s.product} / ${s.buyer}</span><span class="right">¥${money(s.saleAmount)}</span></div>`).join('') : '<div class="empty">暂无已售出订单</div>'}
+    </div>
+
+    
+    ${tabbar('home')}
+  </div>`;
+}
+
+function goodsView(){
+  return `<div class="phone">
+    <div class="sheet" style="margin-top:14px">
+      ${sectionHeader('货品库存','新增')}
+      ${state.products.length ? state.products.map(p=>`
+        <div class="row">
+          <div><div>${p.name}</div><div class="small">成本 ¥${money(p.cost)} / 售价 ¥${money(p.price)}</div></div>
+          <div class="right">库存 ${p.stock}</div>
+        </div>`).join('') : '<div class="empty">暂无商品</div>'}
+    </div>
+    ${tabbar('goods')}
+  </div>`;
+}
+
+function saleView(){
+  const list = filteredOrders(unsoldOrders());
+  return `<div class="phone">
+    <div class="order-panel" style="margin-top:14px">
+      ${sectionHeader('未售出','填写售出金额后自动进入报表')}
+      <div class="order-toolbar">
+        <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
+        <span class="small">${list.length} 条</span>
+      </div>
+      <div class="order-note">未填写售出金额的订单在这里管理，填写后会自动移到报表</div>
+      <div class="order-table-wrap">
+        ${list.length ? `
+        <table class="order-table report-table">
+          <thead>
+            <tr>
+              <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
+              <th>下单人</th>
+              <th>产品</th>
+              <th>下单金额</th>
+              <th>返款</th>
+              <th>运费</th>
+              <th>售出金额</th>
+              <th>利润</th>
+              <th>物流单号</th>
+              <th>备注</th>
+              <th>删除</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(renderOrderRow).join('')}
+          </tbody>
+        </table>` : '<div class="empty">暂无未售出订单</div>'}
+      </div>
+    </div>
+    ${tabbar('sale')}
+  </div>`;
+}
+
+function addSale(form){
+  const fd = new FormData(form);
+  const name = fd.get('product');
+  const qty = Number(fd.get('qty')||0);
+  const product = state.products.find(p=>p.name===name);
+  if(!product) return alert('请选择商品');
+  if(qty<=0) return alert('数量必须大于0');
+  if(product.stock < qty) return alert('库存不足');
+  product.stock -= qty;
+  const total = qty * product.price;
+  const costTotal = qty * product.cost;
+  state.sales.unshift({
+    product:name, qty, total, costTotal,
+    date:new Date().toISOString().slice(0,10)
+  });
+  persist(); showToast('销售已保存'); setTab('detail');
+}
+
+function advanceView(){
+  const list = filteredOrders(advanceOrders());
+  return `<div class="phone">
+    <div class="order-panel" style="margin-top:14px">
+      ${sectionHeader('垫付中心','发货后转回未售出，退款则删除')}
+      <div class="order-toolbar">
+        <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
+        <span class="small">${list.length} 条</span>
+      </div>
+      <div class="order-note">垫付保存的订单会放在这里，点击发货后进入未售出，点击退款则删除</div>
+      <div class="order-table-wrap">
+        ${list.length ? `
+        <table class="order-table report-table">
+          <thead>
+            <tr>
+              <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
+              <th>下单人</th>
+              <th>产品</th>
+              <th>下单金额</th>
+              <th>返款</th>
+              <th>运费</th>
+              <th>物流单号</th>
+              <th>备注</th>
+              <th>处理</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(renderAdvanceRow).join('')}
+          </tbody>
+        </table>` : '<div class="empty">暂无垫付订单</div>'}
+      </div>
+    </div>
+    ${tabbar('advance')}
+  </div>`;
+}
+
+function detailView(){
+  const list = filteredOrders(soldOrders());
+  return `<div class="phone">
+    <div class="order-panel" style="margin-top:14px">
+      <div class="sheet-hd" style="border-bottom:none;padding-bottom:8px;">
+        <div class="sheet-title-wrap">
+          <button class="back-btn" onclick="setTab('home')">
+            <span class="arrow">←</span><span>返回</span>
+          </button>
+          <span>报表</span>
+        </div>
+        <span class="small">已售出订单</span>
+      </div>
+      <div class="report-actions">
+        <button class="action-btn secondary" onclick="triggerImportOrders()">导入</button>
+        <button class="action-btn primary" onclick="exportOrders()">导出</button>
+      </div>
+      <div class="order-toolbar">
+        <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
+        <span class="small">${list.length} 条</span>
+      </div>
+      <div class="order-note">这里只显示已售出的订单，未填写售出金额的订单会进入未售出板块</div>
+      <div class="order-table-wrap">
+        ${list.length ? `
+        <table class="order-table report-table">
+          <thead>
+            <tr>
+              <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
+              <th>下单人</th>
+              <th>产品</th>
+              <th>下单金额</th>
+              <th>返款</th>
+              <th>运费</th>
+              <th>售出金额</th>
+              <th>利润</th>
+              <th>物流单号</th>
+              <th>备注</th>
+              <th>删除</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(renderOrderRow).join('')}
+          </tbody>
+        </table>` : '<div class="empty">暂无订单</div>'}
+      </div>
+      <input id="importOrdersInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="handleImportOrders(event)" />
+    </div>
+    ${tabbar('detail')}
+  </div>`;
+}
+
+
+function adminView(){
+  if(!authState.isAdmin){
+    return `<div class="phone"><div class="sheet" style="margin-top:14px">${sectionHeader('管理员','仅管理员可见')}<div class="empty">当前账号无权限访问</div></div>${tabbar('home')}</div>`;
+  }
+  return `<div class="phone">
+    <div class="admin-panel" style="margin-top:14px">
+      ${sectionHeader('管理员','沿用旧系统管理员功能')}
+      <div class="order-note">可新建账号、重置密码、删除账号、查看账号列表，并禁用或恢复登录</div>
+      <div class="admin-actions">
+        <button class="admin-btn create" type="button" onclick="adminCreateUser()">新建账号</button>
+        <button class="admin-btn reset" type="button" onclick="adminResetPassword()">重置密码</button>
+        <button class="admin-btn delete" type="button" onclick="adminDeleteUser()">删除账号</button>
+      </div>
+      <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>账号列表</span><button class="back-btn" onclick="loadAdminList()">刷新</button></div>
+      <div class="admin-list-wrap">
+        <table class="admin-table">
+          <thead><tr><th>邮箱</th><th>登录状态</th><th>创建时间</th></tr></thead>
+          <tbody id="adminTbody"><tr><td colspan="3">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    ${tabbar('home')}
+  </div>`;
+}
+
+function myView(){
+  return `<div class="phone">
+    <div class="sheet" style="margin-top:14px">
+      ${sectionHeader('我的','演示版')}
+      <div class="row"><span>订单数量</span><span class="right">${state.orders.length}</span></div>
+      <div class="row"><span>供应商数量</span><span class="right">${state.suppliers.length}</span></div>
+      <div class="row"><span>商品数量</span><span class="right">${state.products.length}</span></div>
+      <div class="row"><span>销售单数</span><span class="right">${state.sales.length}</span></div>
+    </div>
+    ${tabbar('my')}
+  </div>`;
+}
+
+function addProductView(){
+  return `<div class="phone">
+    <div class="sheet" style="margin-top:14px">
+      ${sectionHeader('新增商品','返回')}
+      <form class="form" onsubmit="event.preventDefault();addProduct(this)">
+        <div class="form-grid">
+          <div class="field"><label>商品名称</label><input name="name" required placeholder="例如：连衣裙" /></div>
+          <div class="field"><label>库存数量</label><input name="stock" type="number" min="0" required placeholder="0" /></div>
+          <div class="field"><label>成本价</label><input name="cost" type="number" min="0" step="0.01" required placeholder="0.00" /></div>
+          <div class="field"><label>售价</label><input name="price" type="number" min="0" step="0.01" required placeholder="0.00" /></div>
+        </div>
+        <button class="btn" type="submit">保存商品</button>
+      </form>
+    </div>
+  </div>`;
+}
+
+function suppliersView(){
+  return `<div class="phone">
+    <div class="sheet" style="margin-top:14px">
+      ${sectionHeader('供应商','新增供应商')}
+      <form class="form" onsubmit="event.preventDefault();addSupplier(this)">
+        <div class="form-grid">
+          <div class="field"><label>供应商名称</label><input name="name" required placeholder="供应商名称" /></div>
+          <div class="field"><label>联系电话</label><input name="phone" placeholder="手机号" /></div>
+        </div>
+        <button class="btn" type="submit">保存供应商</button>
+      </form>
+      ${state.suppliers.map(s=>`<div class="row"><span>${s.name}</span><span class="small">${s.phone||'--'}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function addSupplier(form){
+  const fd = new FormData(form);
+  state.suppliers.push({name:fd.get('name'), phone:fd.get('phone')});
+  persist(); showToast('供应商已添加'); setTab('home');
+}
+
+function renderOrderRow(o){
+  return `<tr>
+    <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.saleAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','saleAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><span class="profit-box">¥${money(o.profit)}</span></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.trackingNo || '')}" oninput="updateOrderField('${o.id}','trackingNo',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><div class="remark-cell"><input class="table-input long" value="${escapeHtml(o.remark || '')}" oninput="updateOrderField('${o.id}','remark',this.value)" onchange="finalizeOrderRow('${o.id}')" /><button class="scan-icon-btn" type="button" onclick="startRemarkScan('${o.id}')" title="扫码">📷</button></div></td>
+    <td>
+      <div class="actions">
+        <button class="icon-btn delete" onclick="deleteOrder('${o.id}')">删除</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderAdvanceRow(o){
+  return `<tr>
+    <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.trackingNo || '')}" oninput="updateOrderField('${o.id}','trackingNo',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input long" value="${escapeHtml(o.remark || '')}" oninput="updateOrderField('${o.id}','remark',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td>
+      <div class="actions">
+        <button class="icon-btn save" onclick="deliverAdvanceOrder('${o.id}')">发货</button>
+        <button class="icon-btn delete" onclick="refundAdvanceOrder('${o.id}')">退款</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function ordersView(){
+  const draft = Object.assign(orderDraftDefaults(), state.orderDraft || {});
+  return `<div class="phone">
+    <div class="sheet" style="margin-top:14px">
+      ${sectionHeader('录入订单','未售出先录入这里')}
+      <form id="orderForm" class="form" onsubmit="event.preventDefault();addOrder(this)">
+        <div class="form-grid">
+          <div class="field"><label>日期</label><input name="date" type="date" value="${escapeHtml(draft.date || new Date().toISOString().slice(0,10))}" required /></div>
+          <div class="field"><label>下单人</label><input name="buyer" list="buyerHistoryList" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" /></div>
+          <div class="field full"><label>产品</label><div class="field-inline"><input name="product" list="productList" value="${escapeHtml(draft.product || '')}" required placeholder="输入或选择产品名称" /><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出售价</button></div></div>
+          <div class="field"><label>下单金额</label><input name="orderAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.orderAmount || '')}" required placeholder="0.00" /></div>
+          <div class="field"><label>返款</label><input name="rebate" type="number" min="0" step="0.01" value="${escapeHtml(draft.rebate || '0')}" /></div>
+          <div class="field"><label>运费</label><input name="freight" type="number" min="0" step="0.01" value="${escapeHtml(draft.freight || '0')}" /></div>
+          <div class="field"><label>售出金额</label><input name="saleAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.saleAmount || '')}" placeholder="未售出可先不填" /></div>
+          <div class="field"><label>利润</label><input id="profitPreview" type="text" value="¥${money(calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount))}" disabled /></div>
+          <div class="field"><label>物流单号</label><input name="trackingNo" value="${escapeHtml(draft.trackingNo || '')}" placeholder="输入物流单号" /></div>
+          <div class="field full"><label>备注</label><div class="remark-form-row"><input name="remark" value="${escapeHtml(draft.remark || '')}" placeholder="输入备注" /><button class="scan-icon-btn" type="button" onclick="startDraftRemarkScan(this.form)" title="扫码">📷</button></div></div>
+        </div>
+        <datalist id="productList">${state.products.map(p => `<option value="${escapeHtml(p.name)}"></option>`).join('')}</datalist>
+        <datalist id="buyerHistoryList">${Array.from(new Set(state.orders.map(o => String(o.buyer || '').trim()).filter(Boolean))).slice(0,50).map(name => `<option value="${escapeHtml(name)}"></option>`).join('')}</datalist>
+        <div class="btn-row">
+          <button class="btn" type="button" onclick="addOrder(this.form,'normal')">现货保存</button>
+          <button class="btn btn-alt" type="button" onclick="addOrder(this.form,'advance')">垫付保存</button>
+        </div>
+      </form>
+      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；点“带出售价”可自动带入商品售价</div>
+    </div>
+
+    <div class="sheet">
+      <div class="row"><span>查看位置</span><span class="small">现货保存按是否填写售出金额进入未售出或报表，垫付保存进入垫付中心</span></div>
+    </div>
+    ${tabbar('orders')}
+  </div>`;
+}
+
+
+function triggerImportOrders(){
+  const input = document.getElementById('importOrdersInput');
+  if(!input) return;
+  input.click();
+}
+
+function normalizeImportedKey(key){
+  return String(key || '').replace(/\s+/g,'').trim();
+}
+
+function mapImportedOrder(row){
+  const raw = {};
+  Object.keys(row || {}).forEach(key => {
+    raw[normalizeImportedKey(key)] = row[key];
+  });
+  const dateValue = raw['日期'] ?? raw['下单日期'] ?? raw['时间'] ?? '';
+  const orderAmount = Number(raw['下单金额'] ?? raw['进价'] ?? 0);
+  const rebate = Number(raw['返款'] ?? raw['退款'] ?? 0);
+  const freight = Number(raw['运费'] ?? raw['邮费'] ?? 0);
+  const saleAmount = Number(raw['售出金额'] ?? raw['卖价'] ?? 0);
+  const profitCell = raw['利润'];
+  const statusValue = String(raw['订单状态'] ?? raw['状态'] ?? '').trim();
+  return {
+    id: id(),
+    status: statusValue === 'advance' || statusValue === '垫付' || statusValue === '垫付中心' ? 'advance' : 'normal',
+    date: normalizeDate(dateValue),
+    buyer: String(raw['下单人'] ?? raw['客户'] ?? ''),
+    product: String(raw['产品'] ?? raw['商品'] ?? ''),
+    orderAmount,
+    rebate,
+    freight,
+    saleAmount,
+    profit: profitCell === undefined || profitCell === null || profitCell === '' ? calcProfit(orderAmount, rebate, freight, saleAmount) : Number(profitCell || 0),
+    trackingNo: String(raw['物流单号'] ?? raw['单号'] ?? ''),
+    remark: String(raw['备注'] ?? raw['说明'] ?? '')
+  };
+}
+
+function handleImportOrders(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    showToast('导入组件加载失败，请检查网络后重试');
+    event.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type:'array'});
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      const imported = rows
+        .map(mapImportedOrder)
+        .filter(item => item.date || item.buyer || item.product || item.orderAmount || item.saleAmount || item.remark || item.trackingNo);
+      if(!imported.length){
+        showToast('未识别到可导入的订单数据');
+        event.target.value = '';
+        return;
+      }
+      state.orders = imported;
+      persist();
+      state.tab = 'detail';
+      render();
+      showToast('已成功导入 ' + imported.length + ' 条订单');
+    }catch(err){
+      console.error(err);
+      showToast('导入失败，请确认文件格式正确');
+    }
+    event.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function exportOrders(){
+  if(typeof XLSX === 'undefined'){
+    showToast('导出组件加载失败，请检查网络后重试');
+    return;
+  }
+  const rows = state.orders.map(o => ({
+    '订单状态': o.status === 'advance' ? '垫付' : '普通',
+    '日期': o.date,
+    '下单人': o.buyer,
+    '产品': o.product,
+    '下单金额': Number(o.orderAmount || 0),
+    '返款': Number(o.rebate || 0),
+    '运费': Number(o.freight || 0),
+    '售出金额': Number(o.saleAmount || 0),
+    '利润': Number(o.profit || 0),
+    '物流单号': o.trackingNo || '',
+    '备注': o.remark || ''
+  }));
+  const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{
+    '订单状态':'','日期':'','下单人':'','产品':'','下单金额':'','返款':'','运费':'','售出金额':'','利润':'','物流单号':'','备注':''
+  }]);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, '订单利润数据');
+  XLSX.writeFile(workbook, '订单利润数据导出.xlsx');
+}
+
+
+let searchRenderTimer = null;
+let searchIsComposing = false;
+
+function setSearchComposing(flag){
+  searchIsComposing = !!flag;
+}
+
+function setOrderSearch(v, evt){
+  state.orderSearch = v;
+  if(searchIsComposing || (evt && evt.isComposing)) return;
+
+  if(searchRenderTimer) clearTimeout(searchRenderTimer);
+  const active = document.activeElement;
+  const shouldRestoreFocus = !!(active && active.classList && active.classList.contains('search-input'));
+
+  searchRenderTimer = setTimeout(function(){
+    render();
+    if(shouldRestoreFocus){
+      const input = document.querySelector('.search-input');
+      if(input){
+        input.focus();
+        const len = input.value.length;
+        try{ input.setSelectionRange(len, len); }catch(e){}
+      }
+    }
+  }, 180);
+}
+function sortOrdersByDateDesc(){
+  state.orders.sort((a,b)=> String(b.date).localeCompare(String(a.date)));
+  persist();
+  render();
+}
+function escapeHtml(v){
+  return String(v ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;');
+}
+
+function tabbar(active){
+  const tabs = [
+    ['home','🏠','首页'],
+    ['orders','🧾','录入'],
+    ['sale','💰','未售出'],
+    ['detail','📋','报表'],
+    ['advance','💳','垫付中心']
+  ];
+  return `<div class="tabbar">` + tabs.map(([key,emoji,text]) =>
+    `<div class="tab ${active===key?'active':''}" onclick="setTab('${key}')"><span class="emoji">${emoji}</span>${text}</div>`
+  ).join('') + `</div>`;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const view = {
+    home: homeView,
+    goods: goodsView,
+    sale: saleView,
+    detail: detailView,
+    advance: advanceView,
+    admin: adminView,
+    my: myView,
+    addProduct: addProductView,
+    suppliers: suppliersView,
+    orders: ordersView
+  }[state.tab] || homeView;
+  app.innerHTML = '<div class="page">' + view() + '</div>';
+  const orderForm = document.getElementById('orderForm');
+  if(orderForm) hydrateOrderForm(orderForm);
+  if(state.tab === 'home'){
+    animateHomeStats();
+  }
+}
+
+document.addEventListener('input', function(e){
+  const form = e.target && e.target.form;
+  if(!form) return;
+  const order = form.querySelector('[name="orderAmount"]');
+  const rebate = form.querySelector('[name="rebate"]');
+  const freight = form.querySelector('[name="freight"]');
+  const sale = form.querySelector('[name="saleAmount"]');
+  const preview = form.querySelector('#profitPreview');
+  if(order && rebate && freight && sale && preview){
+    const p = calcProfit(order.value, rebate.value, freight.value, sale.value).toFixed(2);
+    preview.value = '¥' + p;
+  }
+});
+
+window.setTab = setTab;
+window.addProduct = addProduct;
+window.addSale = addSale;
+window.addSupplier = addSupplier;
+window.addOrder = addOrder;
+window.updateOrderField = updateOrderField;
+window.refreshRowAfterNumericEdit = refreshRowAfterNumericEdit;
+window.finalizeOrderRow = finalizeOrderRow;
+window.deliverAdvanceOrder = deliverAdvanceOrder;
+window.refundAdvanceOrder = refundAdvanceOrder;
+window.deleteOrder = deleteOrder;
+window.setOrderSearch = setOrderSearch;
+window.setSearchComposing = setSearchComposing;
+window.sortOrdersByDateDesc = sortOrdersByDateDesc;
+window.triggerImportOrders = triggerImportOrders;
+window.handleImportOrders = handleImportOrders;
+window.exportOrders = exportOrders;
+window.useProductTemplate = useProductTemplate;
+window.tapMenuCard = tapMenuCard;
+
+document.addEventListener('input', function(e){
+  const form = e.target && e.target.form;
+  if(!form || form.id !== 'orderForm') return;
+  saveOrderDraftFromForm(form);
+});
+
+document.addEventListener('change', function(e){
+  const form = e.target && e.target.form;
+  if(!form || form.id !== 'orderForm') return;
+  saveOrderDraftFromForm(form);
+});
+
+
+let activeScanSession = null;
+
+function detectorFormats(){
+  return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+}
+
+async function startRemarkScan(orderId){
+  startGenericScan(function(code){
+    appendRemarkCode(orderId, code);
+  });
+}
+
+function closeRemarkScan(){
+  if(!activeScanSession) return;
+  const session = activeScanSession;
+  activeScanSession = null;
+  if(session.timer) clearInterval(session.timer);
+  if(session.stream){
+    session.stream.getTracks().forEach(track => track.stop());
+  }
+  if(session.overlay && session.overlay.parentNode){
+    session.overlay.parentNode.removeChild(session.overlay);
+  }
+}
+
+function appendRemarkCode(orderId, code){
+  const order = state.orders.find(o => o.id === orderId);
+  if(!order) return;
+  const current = String(order.remark || '').trim();
+  const items = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
+  items.push(String(code).trim());
+  order.remark = items.join(',');
+  persist();
+
+  const activeInput = document.activeElement;
+  render();
+
+  const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
+  const targetButton = targetButtons.find(btn => btn.getAttribute('onclick') === "startRemarkScan('" + orderId + "')");
+  const remarkInput = targetButton && targetButton.parentNode ? targetButton.parentNode.querySelector('input') : null;
+  if(remarkInput){
+    remarkInput.focus();
+    const len = remarkInput.value.length;
+    try{ remarkInput.setSelectionRange(len, len); }catch(e){}
+  }
+}
+
+
+function appendCodeToText(current, code){
+  const items = String(current || '').split(',').map(s => s.trim()).filter(Boolean);
+  items.push(String(code || '').trim());
+  return items.join(',');
+}
+
+function startDraftRemarkScan(form){
+  if(!form) return;
+  startGenericScan(function(code){
+    const input = form.querySelector('[name="remark"]');
+    if(!input) return;
+    input.value = appendCodeToText(input.value, code);
+    saveOrderDraftFromForm(form);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    input.focus();
+    const len = input.value.length;
+    try{ input.setSelectionRange(len, len); }catch(e){}
+  });
+}
+
+async function startGenericScan(onDetected){
+  if(activeScanSession){
+    showToast('请先关闭当前扫码窗口');
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showToast('当前设备不支持打开摄像头');
+    return;
+  }
+  if(typeof BarcodeDetector === 'undefined'){
+    showToast('当前浏览器暂不支持扫码，请用 Chrome 或系统 WebView 新版打开');
+    return;
+  }
+  try{
+    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+    const usableFormats = detectorFormats().filter(f => formats.includes(f));
+    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'scan-overlay';
+    overlay.innerHTML = `
+      <div class="scan-overlay-top">
+        <div>连续扫码中，识别后自动追加到备注</div>
+        <button class="scan-close" type="button">关闭</button>
+      </div>
+      <video playsinline autoplay muted></video>
+      <div class="scan-overlay-tip">把条形码或二维码对准镜头，多个编码会自动用逗号追加</div>
+    `;
+    document.body.appendChild(overlay);
+
+    const video = overlay.querySelector('video');
+    const closeBtn = overlay.querySelector('.scan-close');
+    video.srcObject = stream;
+    await video.play();
+
+    const session = {
+      detector,
+      stream,
+      overlay,
+      video,
+      timer:null,
+      lastCode:'',
+      lastAt:0,
+      onDetected:onDetected
+    };
+    activeScanSession = session;
+    closeBtn.onclick = closeRemarkScan;
+
+    session.timer = setInterval(async function(){
+      if(!activeScanSession || activeScanSession !== session) return;
+      if(video.readyState < 2) return;
+      try{
+        const results = await detector.detect(video);
+        if(!results || !results.length) return;
+        const raw = String(results[0].rawValue || '').trim();
+        if(!raw) return;
+        const now = Date.now();
+        if(raw === session.lastCode && now - session.lastAt < 1200) return;
+        session.lastCode = raw;
+        session.lastAt = now;
+        if(typeof session.onDetected === 'function'){
+          session.onDetected(raw);
+        }
+      }catch(err){
+        console.error(err);
+      }
+    }, 450);
+  }catch(err){
+    console.error(err);
+    showToast('打开扫码失败，请检查摄像头权限');
+    closeRemarkScan();
+  }
+}
+window.startRemarkScan = startRemarkScan;
+window.closeRemarkScan = closeRemarkScan;
+window.startDraftRemarkScan = startDraftRemarkScan;
+
+
+const authState = {
+  ready:false,
+  user:null,
+  isAdmin:false
+};
+
+const SUPABASE_URL = 'https://yqsjkdndasbdfmjwahwk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_8owDy_9hIN3uaBCzd6jncg_i8e68dL0';
+const ADMIN_EMAIL = '912872449@qq.com';
+const supa = (window.supabase && SUPABASE_URL && SUPABASE_KEY)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {persistSession: true, autoRefreshToken: false, detectSessionInUrl: false}})
+  : null;
+
+function mountLoginLayer(){
+  if(document.getElementById('loginLayer')) return;
+  const layer = document.createElement('div');
+  layer.id = 'loginLayer';
+  layer.className = 'login-layer';
+  layer.innerHTML = `
+    <div class="login-shell">
+      <div class="login-brand">
+        <div class="small">撸货 · 进销存管理</div>
+        <div class="name">欢迎登录</div>
+        <div class="small">账号体系沿用旧系统，登录后进入当前正式版</div>
+      </div>
+      <div class="login-card">
+        <div class="login-card-title">系统登录</div>
+        <input id="loginEmail" class="login-input" type="email" placeholder="账号 / Email" autocomplete="username" />
+        <input id="loginPassword" class="login-input" type="password" placeholder="密码" autocomplete="current-password" />
+        <button id="loginSubmitBtn" class="login-btn" type="button">登录</button>
+        <div id="loginMsg" class="login-msg"></div>
+        <div class="login-tip">账号体系沿用旧系统，登录后进入当前正式版</div>
+      </div>
+    </div>`;
+  document.body.appendChild(layer);
+  const submit = document.getElementById('loginSubmitBtn');
+  const pwd = document.getElementById('loginPassword');
+  if(submit) submit.onclick = loginSystem;
+  if(pwd) pwd.addEventListener('keydown', function(e){ if(e.key === 'Enter') loginSystem(); });
+}
+
+function openLoginLayer(){
+  mountLoginLayer();
+  const layer = document.getElementById('loginLayer');
+  if(layer) layer.style.display = 'flex';
+}
+
+function closeLoginLayer(){
+  const layer = document.getElementById('loginLayer');
+  if(layer) layer.style.display = 'none';
+}
+
+function setLoginMessage(msg){
+  const box = document.getElementById('loginMsg');
+  if(box) box.textContent = msg || '';
+}
+
+function applyUserScopedStorage(userId){
+  if(!userId) return;
+  localStorage.setItem('jxc_current_user', userId);
+}
+
+async function loginSystem(){
+  if(!supa){
+    showToast('登录组件初始化失败');
+    return;
+  }
+  const emailEl = document.getElementById('loginEmail');
+  const pwdEl = document.getElementById('loginPassword');
+  const submit = document.getElementById('loginSubmitBtn');
+  const email = (emailEl && emailEl.value || '').trim();
+  const password = (pwdEl && pwdEl.value || '').trim();
+  if(!email){ setLoginMessage('请输入账号'); return; }
+  if(!password){ setLoginMessage('请输入密码'); return; }
+  setLoginMessage('');
+  if(submit){ submit.disabled = true; submit.textContent = '登录中…'; }
+  try{
+    const res = await supa.auth.signInWithPassword({email, password});
+    if(res.error) throw res.error;
+    const user = res.data && res.data.user ? res.data.user : null;
+    authState.user = user;
+    authState.isAdmin = !!(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    authState.ready = true;
+    applyUserScopedStorage(user && user.id);
+    closeLoginLayer();
+    await importLegacyOrdersIfNeeded(false);
+    render();
+    if(authState.isAdmin) setTimeout(loadAdminList, 60);
+    showNiceModal(authState.isAdmin ? '管理员登录成功' : '登录成功', authState.isAdmin ? '已进入当前正式版系统' : '欢迎回来', '✓');
+  }catch(err){
+    setLoginMessage('登录失败：' + ((err && err.message) || err));
+  }finally{
+    if(submit){ submit.disabled = false; submit.textContent = '登录'; }
+  }
+}
+
+async function logoutSystem(){
+  try{ if(supa) await supa.auth.signOut(); }catch(err){}
+  authState.user = null;
+  authState.isAdmin = false;
+  authState.ready = true;
+  localStorage.removeItem('jxc_current_user');
+  openLoginLayer();
+  render();
+  showToast('已退出登录');
+}
+
+async function restoreLoginSession(){
+  mountLoginLayer();
+  if(!supa){
+    authState.ready = true;
+    openLoginLayer();
+    return;
+  }
+  try{
+    const res = await supa.auth.getSession();
+    const session = res.data && res.data.session ? res.data.session : null;
+    if(session && session.user){
+      authState.user = session.user;
+      authState.isAdmin = !!(session.user.email && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+      applyUserScopedStorage(session.user.id);
+      closeLoginLayer();
+      await importLegacyOrdersIfNeeded(false);
+    }else{
+      openLoginLayer();
+    }
+  }catch(err){
+    openLoginLayer();
+  }
+  authState.ready = true;
+  render();
+}
+
+window.openLoginLayer = openLoginLayer;
+window.loginSystem = loginSystem;
+window.logoutSystem = logoutSystem;
+
+window.handleAccountTap = handleAccountTap;
+
+function normalizeLegacyOrder(o){
+  return {
+    id: id(),
+    status: 'normal',
+    date: normalizeDate(o.date || o.createdAt || o.created_at || ''),
+    buyer: o.buyer ?? o.customer ?? '',
+    product: o.product ?? '',
+    orderAmount: Number(o.orderAmount ?? o.amount ?? 0),
+    rebate: Number(o.rebate ?? o.refund ?? 0),
+    freight: Number(o.freight ?? o.shipping ?? 0),
+    saleAmount: Number(o.saleAmount ?? o.sellAmount ?? 0),
+    profit: Number(o.profit ?? calcProfit(o.orderAmount ?? o.amount ?? 0, o.rebate ?? o.refund ?? 0, o.freight ?? o.shipping ?? 0, o.saleAmount ?? o.sellAmount ?? 0)),
+    trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
+    remark: o.remark ?? o.notes ?? ''
+  };
+}
+
+function mergeLegacyOrders(list){
+  const exists = new Set(state.orders.map(function(o){
+    return [String(o.date||''), String(o.buyer||''), String(o.product||''), Number(o.orderAmount||0), Number(o.saleAmount||0), String(o.trackingNo||''), String(o.remark||'')].join('|');
+  }));
+  let added = 0;
+  (list || []).forEach(function(src){
+    const o = normalizeLegacyOrder(src || {});
+    const sig = [String(o.date||''), String(o.buyer||''), String(o.product||''), Number(o.orderAmount||0), Number(o.saleAmount||0), String(o.trackingNo||''), String(o.remark||'')].join('|');
+    if(exists.has(sig)) return;
+    exists.add(sig);
+    state.orders.push(o);
+    added += 1;
+  });
+  if(added > 0){
+    persist();
+  }
+  return added;
+}
+
+async function importLegacyOrdersIfNeeded(force){
+  if(!supa || !authState.user) return 0;
+  const importKey = 'jxc_legacy_import_done_' + authState.user.id;
+  if(!force && localStorage.getItem(importKey) === '1') return 0;
+  try{
+    const { data, error } = await supa.from('app_state_user').select('data').eq('id', authState.user.id).maybeSingle();
+    if(error || !data || data.data == null){
+      localStorage.setItem(importKey, '1');
+      return 0;
+    }
+    const legacyRaw = Array.isArray(data.data) ? data.data : (Array.isArray(data.data.orders) ? data.data.orders : []);
+    const added = mergeLegacyOrders(legacyRaw);
+    localStorage.setItem(importKey, '1');
+    if(added > 0){
+      render();
+      showToast('已导入旧报表数据 ' + added + ' 条');
+    }
+    return added;
+  }catch(err){
+    console.error(err);
+    return 0;
+  }
+}
+
+function getCurrentEmail(){
+  return ((authState.user && authState.user.email) || '').toLowerCase();
+}
+
+async function getAccessToken(){
+  if(!supa) return null;
+  try{
+    const { data } = await supa.auth.getSession();
+    return (data && data.session && data.session.access_token) || null;
+  }catch(err){
+    return null;
+  }
+}
+
+async function callEdgeBodyToken(fnName, body){
+  const token = await getAccessToken();
+  if(!token) throw new Error('会话已失效，请重新登录');
+  const url = SUPABASE_URL.replace(/\/$/, '') + '/functions/v1/' + fnName + '?t=' + Date.now();
+  const payload = Object.assign({ access_token: token }, body || {});
+  const resp = await fetch(url, {
+    method:'POST',
+    mode:'cors',
+    cache:'no-store',
+    headers:{
+      'apikey': SUPABASE_KEY,
+      'Content-Type':'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+  let json = null;
+  try{ json = await resp.json(); }catch(err){}
+  if(!resp.ok){
+    const msg = (json && (json.error || json.message)) ? (json.error || json.message) : (resp.status + ' ' + resp.statusText);
+    throw new Error(msg);
+  }
+  if(json && json.error) throw new Error(json.error);
+  return json;
+}
+
+function genStrongPw(n){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*?';
+  let out = '';
+  for(let i=0;i<(n||12);i++) out += chars[Math.floor(Math.random()*chars.length)];
+  return out;
+}
+
+async function loadAdminList(){
+  if(!authState.isAdmin || !supa) return;
+  const tb = document.getElementById('adminTbody');
+  if(!tb) return;
+  tb.innerHTML = '<tr><td colspan="3">加载中…</td></tr>';
+  const { data, error } = await supa.from('user_profiles').select('id,email,disabled,role,created_at,updated_at').order('created_at',{ascending:false}).limit(200);
+  if(error){
+    tb.innerHTML = '<tr><td colspan="3">读取失败：' + escapeHtml(error.message || error) + '</td></tr>';
+    return;
+  }
+  if(!data || !data.length){
+    tb.innerHTML = '<tr><td colspan="3">暂无账号数据</td></tr>';
+    return;
+  }
+  tb.innerHTML = data.map(function(r){
+    const email = r.email || r.id;
+    const enabled = r.disabled !== true;
+    const t = r.created_at ? String(r.created_at).replace('T',' ').slice(0,19) : '';
+    return '<tr>' +
+      '<td>' + escapeHtml(email) + '</td>' +
+      '<td><a class="admin-link" data-uid="' + r.id + '" data-enabled="' + (enabled ? '1':'0') + '">' + (enabled ? '✅ 允许' : '⛔ 禁用') + '</a></td>' +
+      '<td>' + escapeHtml(t) + '</td>' +
+    '</tr>';
+  }).join('');
+  tb.querySelectorAll('a.admin-link').forEach(function(a){
+    a.onclick = async function(){
+      const uid = a.getAttribute('data-uid');
+      const cur = a.getAttribute('data-enabled') === '1';
+      const next = !cur;
+      const { error: upE } = await supa.from('user_profiles').update({ disabled: !next }).eq('id', uid);
+      if(upE){ showToast('更新失败：' + (upE.message || upE)); return; }
+      loadAdminList();
+    };
+  });
+}
+
+async function adminCreateUser(){
+  try{
+    const email = (prompt('请输入要新建的用户邮箱：') || '').trim();
+    if(!email) return;
+    let pw = (prompt('请输入初始密码（留空自动生成强密码）：') || '').trim();
+    if(!pw) pw = genStrongPw(12);
+    if(pw.length < 8){ showToast('密码至少8位'); return; }
+    await callEdgeBodyToken('admin-create-user', { admin_email: getCurrentEmail(), target_email: email, target_password: pw });
+    showNiceModal('创建成功', '邮箱：' + email + '\n初始密码：' + pw, '✓');
+    loadAdminList();
+  }catch(e){ showToast('创建失败：' + ((e && e.message) || e)); }
+}
+
+async function adminResetPassword(){
+  try{
+    const email = (prompt('请输入要重置密码的用户邮箱：') || '').trim();
+    if(!email) return;
+    let pw = (prompt('请输入新密码（留空自动生成强密码）：') || '').trim();
+    if(!pw) pw = genStrongPw(12);
+    if(pw.length < 8){ showToast('密码至少8位'); return; }
+    await callEdgeBodyToken('reset-password', { admin_email: getCurrentEmail(), target_email: email, new_password: pw });
+    showNiceModal('重置成功', '邮箱：' + email + '\n新密码：' + pw, '✓');
+  }catch(e){ showToast('重置失败：' + ((e && e.message) || e)); }
+}
+
+async function adminDeleteUser(){
+  try{
+    const email = (prompt('请输入要删除的账号邮箱：') || '').trim();
+    if(!email) return;
+    showConfirmModal('确定删除账号：' + email + ' ？', async function(){
+      try{
+        try {
+          await callEdgeBodyToken('admin-delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
+        } catch(e1) {
+          await callEdgeBodyToken('delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
+        }
+        showToast('删除成功：' + email);
+        loadAdminList();
+      }catch(e){ showToast('删除失败：' + ((e && e.message) || e)); }
+    });
+  }catch(e){ showToast('删除失败：' + ((e && e.message) || e)); }
+}
+
+window.loadAdminList = loadAdminList;
+window.adminCreateUser = adminCreateUser;
+window.adminResetPassword = adminResetPassword;
+window.adminDeleteUser = adminDeleteUser;
+
+restoreLoginSession();
+</script>
+</body>
+</html>
