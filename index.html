@@ -1404,6 +1404,36 @@
       margin-top:8px;
     }
 
+
+    .suggest-wrap{position:relative;}
+    .smart-suggest{
+      position:absolute;
+      left:0;
+      right:0;
+      top:calc(100% + 6px);
+      background:#fff;
+      border:1px solid #e6ebf1;
+      border-radius:14px;
+      box-shadow:0 12px 28px rgba(15,23,42,.12);
+      max-height:220px;
+      overflow:auto;
+      z-index:40;
+      display:none;
+    }
+    .smart-suggest.show{display:block;}
+    .smart-suggest button{
+      width:100%;
+      border:none;
+      background:#fff;
+      padding:12px 14px;
+      text-align:left;
+      font-size:14px;
+      color:#1f2430;
+      cursor:pointer;
+    }
+    .smart-suggest button + button{border-top:1px solid #eef1f4;}
+    .smart-suggest button:active{background:#f5fbff;}
+
     @media (max-width: 640px){
       .grid{grid-template-columns:repeat(3,1fr)}
       .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1694,26 +1724,54 @@ function hydrateOrderForm(form){
   }
 }
 
-function toggleSmartDatalist(input){
-  if(!input) return;
-  const listId = input.dataset ? input.dataset.listId : '';
-  if(!listId) return;
-  const value = String(input.value || '').trim();
-  if(value.length > 0){
-    input.setAttribute('list', listId);
-  }else{
-    input.removeAttribute('list');
-  }
+function escapeJsString(v){
+  return String(v || '').replaceAll('\\','\\\\').replaceAll("'","\\'");
 }
 
-function hideSmartDatalist(input){
+function getOrderSmartOptions(type){
+  if(type === 'buyer') return Array.from(new Set(state.orders.map(o => String(o.buyer || '').trim()).filter(Boolean))).slice(0,50);
+  if(type === 'product') return state.products.map(p => String(p.name || '').trim()).filter(Boolean).slice(0,50);
+  return [];
+}
+
+function updateOrderSmartSuggest(input, boxId, type){
+  const box = document.getElementById(boxId);
+  if(!input || !box) return;
+  const keyword = String(input.value || '').trim().toLowerCase();
+  box.dataset.inputName = input.name || '';
+  if(!keyword){
+    box.innerHTML = '';
+    box.classList.remove('show');
+    return;
+  }
+  const list = getOrderSmartOptions(type).filter(item => item.toLowerCase().includes(keyword)).slice(0,8);
+  if(!list.length){
+    box.innerHTML = '';
+    box.classList.remove('show');
+    return;
+  }
+  box.innerHTML = list.map(item => `<button type="button" onclick="selectOrderSmartSuggest('${boxId}','${escapeJsString(item)}')">${escapeHtml(item)}</button>`).join('');
+  box.classList.add('show');
+}
+
+function selectOrderSmartSuggest(boxId, value){
+  const box = document.getElementById(boxId);
+  if(!box) return;
+  const name = box.dataset.inputName || '';
+  const input = name ? document.querySelector(`#orderForm [name="${name}"]`) : null;
   if(!input) return;
+  input.value = value;
+  box.classList.remove('show');
+  input.dispatchEvent(new Event('input', {bubbles:true}));
+  input.focus();
+  try{ input.setSelectionRange(input.value.length, input.value.length); }catch(e){}
+}
+
+function hideOrderSmartSuggest(boxId){
   setTimeout(function(){
-    const value = String(input.value || '').trim();
-    if(!value){
-      input.removeAttribute('list');
-    }
-  }, 120);
+    const box = document.getElementById(boxId);
+    if(box) box.classList.remove('show');
+  }, 160);
 }
 
 function useProductTemplate(form){
@@ -2273,8 +2331,8 @@ function ordersView(){
       <form id="orderForm" class="form" onsubmit="event.preventDefault();addOrder(this)">
         <div class="form-grid">
           <div class="field"><label>日期</label><input name="date" type="date" value="${escapeHtml(draft.date || new Date().toISOString().slice(0,10))}" required /></div>
-          <div class="field"><label>下单人</label><input name="buyer" data-list-id="buyerHistoryList" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" onfocus="toggleSmartDatalist(this)" oninput="toggleSmartDatalist(this)" onblur="hideSmartDatalist(this)" /></div>
-          <div class="field full"><label>产品</label><div class="field-inline"><input name="product" data-list-id="productList" value="${escapeHtml(draft.product || '')}" required placeholder="输入或选择产品名称" onfocus="toggleSmartDatalist(this)" oninput="toggleSmartDatalist(this)" onblur="hideSmartDatalist(this)" /><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出售价</button></div></div>
+          <div class="field"><label>下单人</label><div class="suggest-wrap"><input name="buyer" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" autocomplete="off" onfocus="updateOrderSmartSuggest(this,'buyerSuggest','buyer')" oninput="updateOrderSmartSuggest(this,'buyerSuggest','buyer')" onblur="hideOrderSmartSuggest('buyerSuggest')" /><div id="buyerSuggest" class="smart-suggest"></div></div></div>
+          <div class="field full"><label>产品</label><div class="suggest-wrap"><div class="field-inline"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入或选择产品名称" autocomplete="off" onfocus="updateOrderSmartSuggest(this,'productSuggest','product')" oninput="updateOrderSmartSuggest(this,'productSuggest','product')" onblur="hideOrderSmartSuggest('productSuggest')" /><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出售价</button></div><div id="productSuggest" class="smart-suggest"></div></div></div>
           <div class="field"><label>下单金额</label><input name="orderAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.orderAmount || '')}" required placeholder="0.00" /></div>
           <div class="field"><label>返款</label><input name="rebate" type="number" min="0" step="0.01" value="${escapeHtml(draft.rebate || '0')}" /></div>
           <div class="field"><label>运费</label><input name="freight" type="number" min="0" step="0.01" value="${escapeHtml(draft.freight || '0')}" /></div>
@@ -2283,8 +2341,6 @@ function ordersView(){
           <div class="field"><label>物流单号</label><input name="trackingNo" value="${escapeHtml(draft.trackingNo || '')}" placeholder="输入物流单号" /></div>
           <div class="field full"><label>备注</label><div class="remark-form-row"><input name="remark" value="${escapeHtml(draft.remark || '')}" placeholder="输入备注" /><button class="scan-icon-btn" type="button" onclick="startDraftRemarkScan(this.form)" title="扫码">📷</button></div></div>
         </div>
-        <datalist id="productList">${state.products.map(p => `<option value="${escapeHtml(p.name)}"></option>`).join('')}</datalist>
-        <datalist id="buyerHistoryList">${Array.from(new Set(state.orders.map(o => String(o.buyer || '').trim()).filter(Boolean))).slice(0,50).map(name => `<option value="${escapeHtml(name)}"></option>`).join('')}</datalist>
         <div class="btn-row">
           <button class="btn" type="button" onclick="addOrder(this.form,'normal')">现货保存</button>
           <button class="btn btn-alt" type="button" onclick="addOrder(this.form,'advance')">垫付保存</button>
@@ -2513,8 +2569,9 @@ window.triggerImportOrders = triggerImportOrders;
 window.handleImportOrders = handleImportOrders;
 window.exportOrders = exportOrders;
 window.useProductTemplate = useProductTemplate;
-window.toggleSmartDatalist = toggleSmartDatalist;
-window.hideSmartDatalist = hideSmartDatalist;
+window.updateOrderSmartSuggest = updateOrderSmartSuggest;
+window.hideOrderSmartSuggest = hideOrderSmartSuggest;
+window.selectOrderSmartSuggest = selectOrderSmartSuggest;
 window.tapMenuCard = tapMenuCard;
 
 document.addEventListener('input', function(e){
