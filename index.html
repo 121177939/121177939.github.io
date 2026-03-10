@@ -2786,7 +2786,7 @@ async function saveCurrentAppStateToCloud(showMsg){
     if(showMsg) saveBackupSnapshot('manual-cloud-save', true);
     const rowId = getCloudRowId();
     const payload = makeCloudPayload();
-    const { error } = await supa.from('app_state_user').upsert({ id: rowId, user_id: rowId, data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+    const { error } = await supa.from('app_state_user').upsert({ id: rowId, data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if(error) throw error;
     if(showMsg) showToast('已保存到云端');
     return true;
