@@ -4217,6 +4217,7 @@ function applyScanResult(session, raw){
   }
   if(session.resultCode) session.resultCode.textContent = code;
   if(session.resultPanel) session.resultPanel.hidden = false;
+  try{ showToast('识别成功：' + code); }catch(e){}
 }
 
 async function startFallbackScan(onDetected){
@@ -4299,9 +4300,10 @@ async function startFallbackScan(onDetected){
 
   const html5Qr = new Html5Qrcode('scanReaderHost', {formatsToSupport:getHtml5QrcodeFormats()});
   session.html5Qr = html5Qr;
+  await try{ showToast('扫码已启动，请把码放到框内并停稳'); }catch(e){}
   await html5Qr.start(
-    {facingMode: 'environment'},
-    {fps:10, qrbox:function(w, h){ const size = Math.floor(Math.min(w, h) * 0.72); return {width:size, height:size}; }},
+    {facingMode: { ideal: 'environment' }},
+    {fps:15, qrbox:function(w, h){ const size = Math.floor(Math.min(w, h) * 0.82); return {width:size, height:size}; }},
     function(decodedText){
       if(!activeScanSession || activeScanSession !== session || session.paused) return;
       applyScanResult(session, decodedText);
@@ -4320,17 +4322,23 @@ async function startGenericScan(onDetected){
     showToast('当前设备不支持打开摄像头');
     return;
   }
+
+  // 优先走 html5-qrcode，部分安卓浏览器虽然存在 BarcodeDetector，
+  // 但实际识别不稳定，会出现“能打开摄像头但扫不出来”的情况。
+  try{
+    await startFallbackScan(onDetected);
+    return;
+  }catch(err){
+    console.warn('html5-qrcode fallback failed, try native BarcodeDetector', err);
+  }
+
   const canUseBarcodeDetector = typeof BarcodeDetector !== 'undefined';
   if(!canUseBarcodeDetector){
-    try{
-      await startFallbackScan(onDetected);
-    }catch(err){
-      console.error(err);
-      showToast('当前设备扫码能力不可用，请升级浏览器或系统 WebView');
-      closeRemarkScan();
-    }
+    showToast('当前设备扫码能力不可用，请升级浏览器或系统 WebView');
+    closeRemarkScan();
     return;
   }
+
   try{
     const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
     const usableFormats = detectorFormats().filter(f => formats.includes(f));
@@ -4353,7 +4361,7 @@ async function startGenericScan(onDetected){
     const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
     const torchBtn = overlay.querySelector('.scan-torch-btn');
     const photoBtn = overlay.querySelector('.scan-photo-btn');
-    const fileInput = overlay.querySelector('.scan-file-input');
+      const fileInput = overlay.querySelector('.scan-file-input');
     video.srcObject = stream;
     await video.play();
     const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
