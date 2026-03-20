@@ -3946,6 +3946,12 @@ function detectorFormats(){
 function isNativeScanAvailable(){
   return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
 }
+function isNativePhotoScanAvailable(){
+  return !!(window.AndroidBridge && typeof AndroidBridge.startNativePhotoScan === 'function');
+}
+function isNativeAlbumScanAvailable(){
+  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeAlbumScan === 'function');
+}
 
 window.__nativeScanDeliver = window.__nativeScanDeliver || function(result){
   try{
@@ -4269,6 +4275,72 @@ async function recognizeCodeFromImage(file){
   return '';
 }
 
+function showAppNativeScanChooser(onDetected){
+  const mask = document.createElement('div');
+  mask.className = 'confirm-mask';
+  mask.innerHTML = `
+    <div class="confirm-box" style="text-align:left;padding:20px 18px 18px;">
+      <div class="confirm-title" style="text-align:center;margin-bottom:8px;">APP内识别方式</div>
+      <div style="font-size:13px;color:#7b8492;line-height:1.7;text-align:center;margin-bottom:14px;">在APP里会优先使用原生扫码、原生拍照识别和原生相册识别，稳定性更高。</div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+        <button class="confirm-btn confirm-ok" type="button" data-action="scan">原生扫码</button>
+        <button class="confirm-btn confirm-ok" type="button" data-action="photo" style="background:linear-gradient(180deg,#0ea5e9,#0284c7);">原生拍照识别</button>
+        <button class="confirm-btn confirm-ok" type="button" data-action="album" style="background:linear-gradient(180deg,#8b5cf6,#7c3aed);">原生相册识别</button>
+        <button class="confirm-btn confirm-cancel" type="button" data-action="cancel">取消</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+
+  function closeMask(){
+    if(mask.parentNode) mask.parentNode.removeChild(mask);
+  }
+
+  function startNative(action){
+    let starter = null;
+    if(action === 'scan' && isNativeScanAvailable()) starter = function(){ return AndroidBridge.startNativeScan(); };
+    if(action === 'photo' && isNativePhotoScanAvailable()) starter = function(){ return AndroidBridge.startNativePhotoScan(); };
+    if(action === 'album' && isNativeAlbumScanAvailable()) starter = function(){ return AndroidBridge.startNativeAlbumScan(); };
+    if(!starter){
+      showToast('当前APP未提供该原生能力');
+      return;
+    }
+    activeScanSession = {mode:'native'};
+    window.__nativeScanPendingCallback = function(result){
+      const raw = String(result || '').trim();
+      activeScanSession = null;
+      window.__nativeScanPendingCallback = null;
+      if(raw && typeof onDetected === 'function') onDetected(raw);
+    };
+    closeMask();
+    try{
+      const ok = starter();
+      if(ok === false){
+        activeScanSession = null;
+        window.__nativeScanPendingCallback = null;
+        showToast('原生识别暂时无法打开');
+      }
+    }catch(err){
+      console.error(err);
+      activeScanSession = null;
+      window.__nativeScanPendingCallback = null;
+      showToast('原生识别暂时无法打开');
+    }
+  }
+
+  mask.addEventListener('click', function(e){
+    if(e.target === mask){ closeMask(); return; }
+    const btn = e.target.closest('button[data-action]');
+    if(!btn) return;
+    const action = btn.getAttribute('data-action');
+    if(action === 'cancel'){
+      closeMask();
+      return;
+    }
+    startNative(action);
+  });
+}
+
 function showBrowserScanChooser(onDetected){
   const mask = document.createElement('div');
   mask.className = 'confirm-mask';
@@ -4425,22 +4497,9 @@ function startGenericScan(onDetected){
     showToast('请先完成当前识别');
     return;
   }
-  if(isNativeScanAvailable()){
-    try{
-      activeScanSession = {mode:'native'};
-      window.__nativeScanPendingCallback = function(result){
-        const raw = String(result || '').trim();
-        activeScanSession = null;
-        window.__nativeScanPendingCallback = null;
-        if(raw && typeof onDetected === 'function') onDetected(raw);
-      };
-      const ok = AndroidBridge.startNativeScan();
-      if(ok !== false) return;
-    }catch(err){
-      console.error(err);
-    }
-    activeScanSession = null;
-    window.__nativeScanPendingCallback = null;
+  if(isNativeScanAvailable() || isNativePhotoScanAvailable() || isNativeAlbumScanAvailable()){
+    showAppNativeScanChooser(onDetected);
+    return;
   }
   showBrowserScanChooser(onDetected);
 }
