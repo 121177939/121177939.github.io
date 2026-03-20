@@ -4043,7 +4043,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'photo-scan-v2-test';
+const APP_VERSION = 'photo-scan-v3-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4743,6 +4743,7 @@ function setPhotoOnlyScanInputMode(fileInput){
 }
 
 
+
 async function startPhotoOnlyScan(onDetected){
   const input = document.createElement('input');
   input.type = 'file';
@@ -4751,12 +4752,40 @@ async function startPhotoOnlyScan(onDetected){
   input.style.position = 'fixed';
   input.style.left = '-9999px';
   input.style.top = '-9999px';
+  input.style.opacity = '0';
   document.body.appendChild(input);
 
+  let finished = false;
+
   function cleanup(){
+    finished = true;
+    try{ window.removeEventListener('focus', onWindowFocus, true); }catch(e){}
+    try{ document.removeEventListener('visibilitychange', onVisibilityChange, true); }catch(e){}
     try{ input.remove(); }catch(e){}
     if(activeScanSession && activeScanSession._tempInput === input){
       activeScanSession = null;
+    }
+  }
+
+  function onWindowFocus(){
+    setTimeout(function(){
+      if(finished) return;
+      const hasFile = !!(input.files && input.files[0]);
+      if(!hasFile){
+        cleanup();
+      }
+    }, 600);
+  }
+
+  function onVisibilityChange(){
+    if(document.visibilityState === 'visible'){
+      setTimeout(function(){
+        if(finished) return;
+        const hasFile = !!(input.files && input.files[0]);
+        if(!hasFile){
+          cleanup();
+        }
+      }, 600);
     }
   }
 
@@ -4765,6 +4794,9 @@ async function startPhotoOnlyScan(onDetected){
     onDetected:onDetected,
     _tempInput:input
   };
+
+  window.addEventListener('focus', onWindowFocus, true);
+  document.addEventListener('visibilitychange', onVisibilityChange, true);
 
   input.onchange = async function(){
     const file = input.files && input.files[0];
@@ -4802,7 +4834,7 @@ async function startPhotoOnlyScan(onDetected){
     }
   };
 
-  showToast('已切换为系统拍照/选图模式');
+  showToast('请从系统相机或相册中选择图片');
   setTimeout(function(){
     try{ input.click(); }catch(e){ cleanup(); }
   }, 80);
