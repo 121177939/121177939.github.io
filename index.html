@@ -1430,7 +1430,7 @@
     }
     .admin-actions{
       display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
+      grid-template-columns:repeat(2,minmax(0,1fr));
       gap:10px;
       padding:14px;
     }
@@ -4043,7 +4043,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'multi-code-v6-test';
+const APP_VERSION = 'photo-scan-v1-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4321,7 +4321,7 @@ function createScanOverlay(useFallback){
       <span class="corner br"></span>
       <span class="scan-line"></span>
     </div>
-    <div class="scan-overlay-tip">将条形码或二维码放入框内，尽量贴近并停稳1秒，识别后点确定再继续扫码</div>
+    <div class="scan-overlay-tip">拍照或从相册选择条码图片，识别后点继续可再次拍照</div>
     <div class="scan-bottom-actions">
       <button class="scan-bottom-action scan-torch-btn" type="button">
         <span class="icon">🔦</span>
@@ -4735,146 +4735,126 @@ async function startFallbackScan(onDetected){
   session.html5QrRunning = true;
 }
 
+
+function setPhotoOnlyScanInputMode(fileInput){
+  if(!fileInput) return;
+  fileInput.setAttribute('accept', 'image/*');
+  fileInput.setAttribute('capture', 'environment');
+}
+
+async function startPhotoOnlyScan(onDetected){
+  const overlay = createScanOverlay(true);
+  const closeBtn = overlay.querySelector('.scan-close');
+  const resultPanel = overlay.querySelector('.scan-result-panel');
+  const resultCode = overlay.querySelector('.scan-result-code');
+  const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
+  const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
+  const torchBtn = overlay.querySelector('.scan-torch-btn');
+  const photoBtn = overlay.querySelector('.scan-photo-btn');
+  const fileInput = overlay.querySelector('.scan-file-input');
+  const readerHost = overlay.querySelector('#scanReaderHost');
+  const tip = overlay.querySelector('.scan-overlay-tip');
+
+  if(readerHost){
+    readerHost.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;padding:0 24px;text-align:center;line-height:1.7">请拍照或从相册选择条码图片识别</div>';
+    readerHost.style.display = 'flex';
+    readerHost.style.alignItems = 'center';
+    readerHost.style.justifyContent = 'center';
+  }
+  if(tip) tip.textContent = '点“识别图片”后拍照或选图，可识别单个或多个条码';
+  if(torchBtn) torchBtn.style.display = 'none';
+
+  const session = {
+    detector:null,
+    stream:null,
+    overlay,
+    video:null,
+    timer:null,
+    lastCode:'',
+    lastAt:0,
+    paused:false,
+    onDetected:onDetected,
+    track:null,
+    torchSupported:false,
+    usingNativeTorch:false,
+    torchOn:false,
+    torchBtn,
+    photoBtn,
+    fileInput,
+    resultPanel,
+    resultCode,
+    html5Qr:null,
+    html5QrRunning:false
+  };
+  activeScanSession = session;
+
+  if(closeBtn) closeBtn.onclick = closeRemarkScan;
+  if(stopBtn) stopBtn.onclick = closeRemarkScan;
+  if(confirmBtn) confirmBtn.onclick = function(){
+    session.paused = false;
+    if(resultPanel) resultPanel.hidden = true;
+    if(fileInput) fileInput.click();
+  };
+
+  setPhotoOnlyScanInputMode(fileInput);
+
+  async function processSelectedFile(){
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if(!file) return;
+    try{
+      session.paused = true;
+      const values = await recognizeCodeFromImage(file, null);
+      const codes = normalizeRecognizedCodes(values);
+      if(!codes.length){
+        showToast('这张图片里没有识别到条码或二维码');
+        session.paused = false;
+        return;
+      }
+      if(codes.length > 1){
+        const picked = await showMultiCodePicker(codes);
+        if(!picked){
+          session.paused = false;
+          return;
+        }
+        applyScanResult(session, picked);
+        return;
+      }
+      applyScanResult(session, codes[0]);
+    }catch(err){
+      console.error(err);
+      showToast('图片识别失败，请换一张更清晰的照片');
+      session.paused = false;
+    }finally{
+      if(fileInput) fileInput.value = '';
+    }
+  }
+
+  if(photoBtn) photoBtn.onclick = function(){
+    if(fileInput) fileInput.click();
+  };
+  if(fileInput) fileInput.onchange = processSelectedFile;
+
+  showToast('已切换为拍照识别模式');
+  setTimeout(function(){
+    try{
+      if(fileInput) fileInput.click();
+    }catch(e){}
+  }, 120);
+}
+
+
+
 async function startGenericScan(onDetected){
   if(activeScanSession){
     showToast('请先关闭当前扫码窗口');
     return;
   }
-  if(isIOSDevice()){
-    try{
-      await startIOSImageScan(onDetected);
-    }catch(err){
-      console.error(err);
-      showToast('iOS 识别启动失败，请重试');
-      closeRemarkScan();
-    }
-    return;
-  }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    showToast('当前设备不支持打开摄像头');
-    return;
-  }
-  const canUseBarcodeDetector = typeof BarcodeDetector !== 'undefined';
-  if(!canUseBarcodeDetector){
-    try{
-      await startFallbackScan(onDetected);
-    }catch(err){
-      console.error(err);
-      showToast('当前设备扫码能力不可用，请改用识别图片');
-      closeRemarkScan();
-    }
-    return;
-  }
   try{
-    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-    const usableFormats = detectorFormats().filter(f => formats.includes(f));
-    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
-      audio:false
-    });
-
-    const overlay = createScanOverlay(false);
-    const video = overlay.querySelector('video');
-    const closeBtn = overlay.querySelector('.scan-close');
-    const resultPanel = overlay.querySelector('.scan-result-panel');
-    const resultCode = overlay.querySelector('.scan-result-code');
-    const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
-    const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
-    const torchBtn = overlay.querySelector('.scan-torch-btn');
-    const photoBtn = overlay.querySelector('.scan-photo-btn');
-    const fileInput = overlay.querySelector('.scan-file-input');
-    video.srcObject = stream;
-    await video.play();
-    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-    const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
-    const nativeTorchSupported = canUseNativeTorch();
-    const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
-
-    const session = {
-      detector,
-      stream,
-      overlay,
-      video,
-      timer:null,
-      lastCode:'',
-      lastAt:0,
-      paused:false,
-      onDetected:onDetected,
-      track,
-      torchSupported,
-      usingNativeTorch:nativeTorchSupported,
-      torchOn:false,
-      torchBtn,
-      photoBtn,
-      fileInput,
-      resultPanel,
-      resultCode,
-      html5Qr:null,
-      html5QrRunning:false
-    };
-    activeScanSession = session;
-    updateTorchButtonState(session);
-    closeBtn.onclick = closeRemarkScan;
-    if(stopBtn) stopBtn.onclick = closeRemarkScan;
-    if(confirmBtn) confirmBtn.onclick = function(){
-      session.paused = false;
-      if(resultPanel) resultPanel.hidden = true;
-    };
-    if(torchBtn) torchBtn.onclick = function(){
-      toggleScanTorch(session);
-    };
-    if(photoBtn) photoBtn.onclick = function(){
-      if(fileInput) fileInput.click();
-    };
-    if(fileInput) fileInput.onchange = async function(){
-      const file = fileInput.files && fileInput.files[0];
-      if(!file) return;
-      try{
-        session.paused = true;
-        const raw = await recognizeCodeFromImage(file, detector);
-        if(!raw){
-          showToast('没有识别到条码，请贴近重拍或换更大的码');
-          session.paused = false;
-          return;
-        }
-        applyScanResult(session, raw);
-      }catch(err){
-        console.error(err);
-        showToast('图片识别失败，请重拍条码，尽量占满画面');
-        session.paused = false;
-      }finally{
-        fileInput.value = '';
-      }
-    };
-
-    session.timer = setInterval(async function(){
-      if(!activeScanSession || activeScanSession !== session) return;
-      if(session.paused) return;
-      if(video.readyState < 2) return;
-      try{
-        const results = await detector.detect(video);
-        if(!results || !results.length) return;
-        const raw = String(results[0].rawValue || '').trim();
-        if(!raw) return;
-        applyScanResult(session, raw);
-      }catch(err){
-        console.error(err);
-      }
-    }, 450);
+    await startPhotoOnlyScan(onDetected);
   }catch(err){
     console.error(err);
-    try{
-      await startFallbackScan(onDetected);
-    }catch(fallbackErr){
-      console.error(fallbackErr);
-      showToast('打开扫码失败，请检查摄像头权限');
-      closeRemarkScan();
-    }
+    showToast('拍照识别启动失败，请重试');
+    closeRemarkScan();
   }
 }
 window.startRemarkScan = startRemarkScan;
