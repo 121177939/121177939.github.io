@@ -4043,7 +4043,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'photo-scan-v3-test';
+const APP_VERSION = 'photo-scan-v4-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4744,15 +4744,19 @@ function setPhotoOnlyScanInputMode(fileInput){
 
 
 
+
 async function startPhotoOnlyScan(onDetected){
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
   input.setAttribute('capture', 'environment');
   input.style.position = 'fixed';
-  input.style.left = '-9999px';
-  input.style.top = '-9999px';
-  input.style.opacity = '0';
+  input.style.left = '0';
+  input.style.top = '0';
+  input.style.width = '1px';
+  input.style.height = '1px';
+  input.style.opacity = '0.001';
+  input.style.zIndex = '-1';
   document.body.appendChild(input);
 
   let finished = false;
@@ -4774,7 +4778,7 @@ async function startPhotoOnlyScan(onDetected){
       if(!hasFile){
         cleanup();
       }
-    }, 600);
+    }, 500);
   }
 
   function onVisibilityChange(){
@@ -4785,7 +4789,7 @@ async function startPhotoOnlyScan(onDetected){
         if(!hasFile){
           cleanup();
         }
-      }, 600);
+      }, 500);
     }
   }
 
@@ -4834,11 +4838,15 @@ async function startPhotoOnlyScan(onDetected){
     }
   };
 
-  showToast('请从系统相机或相册中选择图片');
-  setTimeout(function(){
-    try{ input.click(); }catch(e){ cleanup(); }
-  }, 80);
+  // 关键修复：这里必须同步触发，不能再 setTimeout，否则很多浏览器会拦截
+  try{
+    input.click();
+  }catch(e){
+    cleanup();
+    showToast('当前浏览器拦截了系统选图，请重试');
+  }
 }
+
 
 
 
