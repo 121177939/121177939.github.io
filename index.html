@@ -968,8 +968,9 @@
 
 .multi-code-overlay{
   position:fixed;
+  pointer-events:auto;
   inset:0;
-  z-index:3000;
+  z-index:20001;
   background:rgba(7,14,24,.38);
   display:flex;
   align-items:center;
@@ -977,6 +978,8 @@
   padding:18px;
 }
 .multi-code-dialog{
+  position:relative;
+  z-index:20002;
   width:min(92vw,420px);
   max-height:82vh;
   overflow:auto;
@@ -4040,7 +4043,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'multi-code-v5-test';
+const APP_VERSION = 'multi-code-v6-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
