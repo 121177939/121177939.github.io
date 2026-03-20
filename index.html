@@ -1,662 +1,12 @@
-<!--
-======================== 最新补充项目记录 / 定版收口版（2026-03-20） ========================
-本次更新性质：定版收口，不改核心业务流转，重点完成界面收口、默认配置清理与交接记录补全。
-
-一、本轮最终确认完成
-1. 首页右上角“管理员 / APP下载”已改为同一行横排显示。
-2. 已压缩右上角按钮内边距与间距，避免把首页蓝色头部高度继续撑高。
-3. 当前首页头部视觉以“横排按钮 + 不明显增高”为最新定版基线，后续不要再改回上下堆叠。
-4. 新建账号弹窗已明确默认密码口径：
-   - 密码留空时默认使用 `12345678`
-5. 新建账号重复邮箱报错已汉化：
-   - `A user with this email address has already been registered`
-   - 现统一显示为：`该邮箱已被注册`
-6. 默认商品、默认供应商已清空：
-   - 新环境不再自动内置测试商品
-   - 新环境不再自动内置默认供应商
-7. 数据安全状态面板当前定版口径：
-   - 默认关闭
-   - 需要时手动打开
-   - “商品 / 供应商”统计行已删除，不再显示无关信息
-8. 当前文件已作为本轮正式定版 HTML，可直接继续用于后续同步安卓壳。
-
-二、当前正式基线补充说明
-1. 本项目当前主线已从通用进销存进一步收口为“撸货专用管理系统”。
-2. 后续继续开发时，优先围绕以下主线能力做增强：
-   - 普通订单
-   - 未售出
-   - 垫付中心
-   - 以旧换新
-   - 报表
-   - 登录 / 管理员 / 云同步
-3. 非核心的“商品 / 供应商”展示，不再作为当前正式版的必保留模块。
-
-三、当前首页 UI 定版提醒
-1. 不要重做首页。
-2. 不要改九宫格主结构。
-3. 右上角账号按钮区保持横排：
-   - 管理员
-   - APP下载
-4. 若后续只做微调，只允许调整：
-   - 按钮尺寸
-   - 间距
-   - 字号
-   不要再把头部高度明显拉高。
-
-四、给未来助手的续开发提醒
-1. 新对话继续开发时，必须以当前这份“定版收口版”HTML为唯一正式基线。
-2. 后续若同步安卓工程，优先同步：
-   - assets/index.html
-3. 后续修改必须继续遵守：
-   - 小改
-   - 局部改
-   - 不推翻已定版结构
-4. 若再改管理员页，优先保持：
-   - 新建账号默认密码 `12345678`
-   - 报错中文化
-   - 数据安全状态默认关闭
-5. 若再改首页，优先保持：
-   - 右上角横排按钮
-   - 当前蓝绿渐变头部
-   - 当前利润统计卡布局
-
-五、本次定版结论
-1. 当前文件已完成本轮定版。
-2. 后续进入“在此基线上继续小步迭代”阶段。
-3. 不再回退到旧实验版，也不要再切回未收口版本。
-======================== /最新补充项目记录 / 定版收口版 ========================
--->
-
-<!--
-======================== 最新补充项目记录 / 自动登录也记当天登录版（2026-03-19） ========================
-本次更新性质：登录统计口径补强，不改订单业务。
-
-一、本轮新增
-1. 登录统计从“仅手动输入密码登录才记”补强为：
-   - 手动登录成功：记当天登录
-   - 已保持登录状态、第二天直接打开系统进入首页：也记当天登录
-2. 当前口径调整为：
-   - 当天首次进入系统即记一次
-   - 同一天重复打开系统，不重复新增当天人数
-3. 管理员页近 7 天登录统计继续按“每天有多少账号实际进入过系统”汇总。
-
-二、实现基线
-1. 新增“当天首次进入系统自动补记”逻辑。
-2. 仅在检测到当前账号今天还没有登录记录时才写入。
-3. 自动补记后会同步保存到当前账号云端数据，避免只记本地不记云端。
-
-三、影响说明
-1. 不影响：
-   - 普通订单
-   - 以旧换新
-   - 报表
-   - 管理员账号管理
-   - 云端拉取结构
-2. 影响的是登录统计口径：
-   - 现在更接近“当天实际使用过系统的账号数”
-   - 不再局限于“当天手动输密码登录的账号数”
-
-四、续开发提醒
-1. 后续如果再改登录统计，不要回退到“只有点击登录按钮才记”的旧口径。
-2. 若以后要区分“手动登录次数”和“自动进入次数”，应在现有统计对象里新增字段，不要直接覆盖当前 successCount 逻辑。
-======================== /自动登录也记当天登录版 ========================
--->
-
-<!--
-======================== 最新补充项目记录 / 本地免报错与登录统计口径版（2026-03-19） ========================
-本次更新性质：稳定性修复 + 记录并回，不改核心业务流程。
-
-一、本轮最新处理
-1. 已处理本地 file:// / content:// 打开时，页面切后台再切回前台触发 `sendBeacon` 报错的问题。
-2. 当前结论：
-   - 本地打开 HTML 时，Cloudflare / beacon 类访问统计脚本可能在页面隐藏或恢复时调用 `navigator.sendBeacon()`。
-   - `sendBeacon` 仅支持 HTTP(S)，因此在本地协议下会报错。
-3. 当前主线按“本地免报错”作为优先基线处理：
-   - 不让本地协议触发这类统计上报错误。
-   - 不影响订单、登录、云端保存/拉取、报表、管理员功能。
-
-二、登录统计当前口径
-1. 当前统计口径是“成功登录人数”，不是“仅打开登录页人数”。
-2. 今日登录人数、近 7 天平均登录人数、近 7 天每日明细，均应以成功登录后的记录为准。
-3. 若后续要统计“打开登录页人数 / 访问人数”，需要单独增加页面访问埋点或独立日志表，不能与成功登录统计混为一套。
-
-三、云端与换新当前基线
-1. 以旧换新数据当前主线要求与普通订单一样纳入云端保存和云端拉取。
-2. 后续凡是改动云端数据结构，必须继续同时检查：
-   - orders
-   - tradeinOrders
-   - products
-   - suppliers
-   - users / 当前账号相关配置
-3. 继续开发时，不能只改保存不改拉取，也不能只改拉取不改保存。
-
-四、页面展示当前基线
-1. 管理员旧业务统计卡片已不再作为必保留模块。
-2. 登录统计卡片允许默认隐藏“最近 7 天明细”，只保留核心数字概览。
-3. 报表顶部月份 / 总订单 / 普通订单 / 换新订单区域已经做小一版，后续只允许微调尺寸，不要再放大回旧版。
-
-五、续开发提醒
-1. 新对话继续开发时，以当前这份 HTML 为正式基线。
-2. 如再出现报错，优先判断是：
-   - 本地协议兼容问题
-   - 缺失函数 / 名称写错
-   - 云端读写字段未双向同步
-3. 每次删代码或禁用脚本，必须同时写明：
-   - 删了什么
-   - 影响什么
-   - 不影响什么
-======================== /最新补充项目记录 / 本地免报错与登录统计口径版 ========================
--->
-
-<!--
-======================== 最新补充项目记录 / 主线并回报表彻底修复版（2026-03-19） ========================
-本次更新性质：主线并回修复，不改业务规则，重点解决报表长期报错并补齐管理员面板交互。
-
-一、本轮主线并回内容
-1. 报表页已改为真正分页：普通订单、换新订单都按每页 50 笔显示。
-2. 报表页新增顶部 + 底部翻页按钮，减少必须滑到底部再翻页的问题。
-3. 报表页继续保留按月筛选，月份切换、搜索、普通/换新切换时都会自动回到第 1 页。
-4. 报表彻底修复 `fullList is not defined`：
-   - fullList = 普通订单完整结果
-   - fullTradein = 换新订单完整结果
-   - list = 普通订单当前页
-   - tradein = 换新订单当前页
-   后续继续开发不要再把完整数据和当前页数据混用。
-5. 首页统计继续按完整结果统计，不受报表分页影响。
-6. 管理员账号列表继续保持“默认隐藏，需要时再打开”的基线，并保留账号搜索能力。
-
-二、当前主线防卡基线
-1. 首页最近已售出只显示最近 3 条。
-2. 报表默认按月查看，并改成每页 50 笔。
-3. 未售出、垫付、换新列表继续按窗口显示，避免一次渲染过多行。
-4. 统计卡片与报表明细分离：分页只影响报表显示，不影响首页总利润、总销售额、当月利润。
-
-三、后续续开发提醒
-1. 新对话继续开发时，必须以当前这份主线 HTML 为唯一正式基线。
-2. 若继续改报表，只能在现有分页 / 月份筛选 / 完整统计分离结构上小改，不要回退到旧的 fullList 直接渲染写法。
-3. 安卓工程 assets/index.html 需要与本文件同步。
-======================== /最新补充项目记录 / 主线并回报表彻底修复版 ========================
--->
-
-
-<!--
-======================== 最新补充项目记录 / 批量操作与标签提示优化（2026-03-15） ========================
-本轮改动：操作效率优化，不涉及页面结构调整。
-
-新增功能
-1. 未售出页新增：
-   - 批量快递
-   - 批量售出金额
-2. 批量操作按钮顺序统一为：
-   批量快递 → 批量售出 → 全选列表 → 已选列表
-3. 批量售出金额：
-   - 只对勾选订单生效
-   - 自动写入售出金额
-   - 自动计算利润
-   - 自动进入报表
-4. 批量填写快递单号：
-   - 支持一次填写多个单号
-   - 按勾选顺序分配
-
-交互优化
-1. 勾选订单不再触发表格整体重渲染，避免“闪屏”。
-2. 全选列表同样避免整页刷新。
-
-标签提示规则
-1. 点击选择框：
-   - 只提示物流单号
-   - 没有单号则不显示提示
-2. 点击其他输入框：
-   - 显示 “下单人 · 产品”
-
-成本自动带出规则
-1. 录入订单时：
-   - 自动带出当前产品历史订单中的“最大下单金额”作为成本参考。
-2. 不再自动带出商品售价。
-
-开发提醒
-1. 所有新增功能必须基于当前 HTML 基线继续修改。
-2. 安卓 assets/index.html 与本文件保持同步。
-3. 不要回退到早期测试版本。
-======================== /批量操作与标签提示优化 ========================
--->
-
-<!--
-======================== 最新补充项目记录 / 账号体系与提示文案更新（2026-03-16） ========================
-项目：撸货进销存管理系统（HTML 正式基线 + Android WebView 壳）
-本次更新性质：局部优化，不涉及首页重做、不涉及订单流转改动。
-
-一、本轮新增与确认完成
-1. 已新增普通用户“修改密码”功能，入口放在“更多”板块内。
-2. 已保留管理员账号管理能力：新建账号、重置密码、删除/禁用相关操作继续可用。
-3. 账号相关弹窗已统一为当前项目的白色圆角弹窗风格，不再使用 prompt / alert / confirm 这类原始浏览器交互。
-4. Supabase 常见英文错误提示已做中文化处理。
-
-二、本轮账号相关交互基线
-1. 普通用户：
-   - 在“更多”中修改自己的登录密码。
-   - 新密码至少 6 位。
-   - 新密码不能与旧密码相同。
-2. 管理员：
-   - 继续通过管理员面板管理账号。
-   - 新建账号、重置密码、删除账号等操作继续沿用当前结构，不要随意改成别的入口。
-3. 账号相关操作提示：
-   - 优先显示中文提示。
-   - 不要再直接把 Supabase 英文原文暴露给用户。
-
-三、本轮已确认汉化的提示方向
-1. 登录失败类提示改中文。
-2. 修改密码失败类提示改中文。
-3. 新建账号 / 重置密码 / 删除账号等失败提示改中文。
-4. 如果后续还出现新的英文报错，优先补充映射表，不要回退成英文原文。
-
-四、给未来助手的补充提醒
-1. 后续若继续改账号体系，必须基于这个正式版 HTML 继续改。
-2. 不要再改错底稿；第一份正式基线文件才是主文件。
-3. 第二份文件仅用于参考或提取账号逻辑，不是当前正式发布基线。
-4. 后续继续优化时，优先保持“统一弹窗风格 + 中文提示 + 小改局部改”的原则。
-
-======================== /最新补充项目记录 / 账号体系与提示文案更新 ========================
--->
-
-<!--
-======================== 最新项目记录 / 精简交接说明（2026-03-15 定版续开发版） ========================
-项目：撸货进销存管理系统（HTML 正式基线 + Android WebView 壳）
-当前状态：稳定版，当前版本无需修复 bug；后续继续“局部优化”阶段。
-
-一、当前唯一正式基线
-1. 本文件就是唯一正式 HTML 基线文件。
-2. 安卓工程内 assets/index.html 必须与本文件保持一致。
-3. 后续新对话继续项目时，必须先读取本记录，再决定是否同步安卓工程。
-4. 后续开发默认继续基于这个文件，不要切回中间试验版。
-
-二、技术路线（已确定，不再讨论回退）
-1. 继续走“自己的安卓工程 + WebView 混合式 App”路线。
-2. 不再走外部浏览器方案。
-3. 安卓工程只作为壳层承载，业务主体仍以本 HTML 为准。
-4. 后续默认优先改 HTML，不先重写安卓原生页面。
-
-三、当前已确认完成
-1. App 可正常打开与登录。
-2. 摄像头 / 扫码权限已打通。
-3. 文件导入已打通。
-4. 安卓桥接导出逻辑已接入 HTML。
-5. 基础返回、页面切换、主要业务流转已可用。
-6. 软件名称：不砍不盾。
-7. 图标方向：橙色左下方案，图标内不要出现文字。
-
-四、当前页面与结构基线（后续不要乱改）
-1. 首页保持：蓝绿渐变顶部 + 九宫格入口 + 最近已售出列表。
-2. 首页顶部统计：总销售额、总利润、收益率。
-3. 首页右下角“+”浮动按钮已取消，不要再加回。
-4. 九宫格不要重做；当前保留入口：录入订单、未售出、垫付中心、报表；其余待开发入口保留占位。
-5. 底部导航固定为：首页 / 录入 / 未售出 / 报表 / 垫付中心。
-6. 录入订单页只负责录入，不要在本页下方加回订单表格。
-7. 报表页保持“直接输入框修改 + 删除按钮”，不要改回编辑按钮模式。
-8. 表格保持紧凑、适合手机、整表横向滑动，日期列不要固定。
-9. 各主要板块保留左上角“← 返回”按钮，不要删除。
-
-五、当前业务规则（已定版）
-1. 现货保存：
-   - 售出金额为空或 0 → 进入未售出。
-   - 售出金额大于 0 → 直接进入报表。
-2. 垫付保存：直接进入垫付中心。
-3. 垫付中心：
-   - 发货 → 转入未售出。
-   - 退款 → 直接删除订单。
-4. 未售出：只放未售出订单，不参与首页和报表统计。
-5. 报表：只显示已售出订单，支持直接修改和删除。
-6. 收益率计算规则：本金 = 下单金额 + 返款 - 运费；收益率 = 总利润 ÷ 总本金 × 100%。
-
-六、当前已保留的重要能力（不要误删）
-1. 登录与云同步继续沿用 Supabase。
-2. 普通账号与管理员账号都可登录。
-3. 管理员入口只对管理员显示；普通账号显示“更多”。
-4. 备注扫码功能已保留，支持连续扫码自动追加。
-5. 首页红点逻辑保留：
-   - 未售出红点：unsoldOrders().length
-   - 垫付中心红点：advanceOrders().length
-6. 页面切换淡入动画、成功提示弹窗、确认操作弹窗、首页统计数字动画均已保留。
-7. 导出逻辑：
-   - 安卓环境优先走 AndroidBridge.saveBase64File(...)
-   - 非安卓环境走浏览器导出回退逻辑
-   - 若后续个别机型导出异常，优先修导出桥接，不要推翻工程结构。
-
-七、当前版本稳定性说明（重要）
-本轮已确认以下问题正常，不再列为待修复 bug：
-1. 录入成功弹窗
-2. 未售出删除按钮
-3. 垫付中心发货按钮
-4. 垫付中心退款按钮
-5. 报表删除按钮
-
-结论：
-- 当前版本属于“稳定版（无需修复 bug）”。
-- 后续开发重点不再是补 bug，而是做局部优化。
-
-八、本轮已确认定版的表格体验（给未来助手重点看）
-1. 不要再做固定列；固定“下单人 / 产品”会显得怪，不采用。
-2. 继续保留“整表横向滑动”方案，不要改回卡片式，不要拆表。
-3. 当前最终采用的识别方案是：
-   - 点击哪个输入框
-   - 身份提示就出现在这个输入框正上方
-   - 提示内容为“下单人 · 产品”
-4. 这个提示是局部浮在当前输入框上方，不是整行提示，不是右侧重复标签，也不是顶部悬浮条。
-5. 不要再回到以下已淘汰方案：
-   - 固定列
-   - 右侧每行重复显示身份
-   - 顶部常驻悬浮提示条
-   - 整行上方插入身份提示行
-6. 后续如果继续优化表格，只能沿着以下方向微调：
-   - 提示标签样式更精致
-   - 标签字数更短
-   - 只在物流单号 / 备注等右侧输入框触发
-   - 手机端横向滑动更顺手
-7. 当前用户已明确认可“点击哪个输入框，提示就出现在那个框上面”这套方案，视为当前表格定版基线。
-
-九、后续开发优先级
-1. 第一优先：优化细节体验。
-2. 第二优先：优化表格排版。
-3. 第三优先：优化导入导出与移动端体验。
-4. 第四优先：在用户明确要求后，再同步安卓工程、图标、自适应图标、启动页、签名等发布项。
-
-十、给未来助手的硬性提醒
-1. 不要重做首页。
-2. 不要重做九宫格。
-3. 不要改已定版订单流转。
-4. 不要把录入页下面的订单表格加回来。
-5. 不要把报表改回旧编辑模式。
-6. 不要把紧凑表格改成长条输入框。
-7. 不要再把项目说成依赖外部浏览器。
-8. 不要再尝试“大改表格方案”；后续所有修改必须：小改、局部改、不推倒重来。
-9. 用户偏好：直接给可落地文件，少讲空话，一步到位。
-10. 新对话继续开发时，先读本记录，再基于本文件继续改，不要从头重新想方案。
-
-======================== /最新项目记录 / 精简交接说明 ========================
--->
+﻿
 
 <!doctype html>
 
-<!--
-======================== 项目记录 / 交接说明（最新定版） ========================
-项目：进销存管理试用版（HTML 试用版）
-当前定版文件：index_以旧换新版_定版交接版.html
-用途：给新对话继续开发时直接读取，避免重新来回确认。
-
-一、本轮已确认定版内容
-1. 已开通“以旧换新”板块，首页可进入。
-2. “供应商”方向已改为“以旧换新”。
-3. 以旧换新为独立录入板块，数据单独存储。
-4. 以旧换新不进入首页统计。
-5. 报表页已支持普通订单 / 换新订单切换查看。
-6. 报表页按钮位置：放在“全选列表”旁边。
-7. 报表页按钮文案：
-   - 普通报表页：换新订单
-   - 换新报表页：普通订单
-8. 报表顶部统计当前只显示三个数量：
-   - 总订单
-   - 普通订单
-   - 换新订单
-
-二、以旧换新当前录入字段（已定版）
-录入顺序如下：
-1. 下单人
-2. 新机价格
-3. 旧机价格
-4. 回收返现
-5. 返款
-6. 售出价格
-7. 快递单号
-8. 备注
-9. 备注后附带扫码按钮 📷
-10. 日期录入框已隐藏，不给用户手填
-
-说明：
-- 保存时自动写入当天日期
-- 日期仍会进入数据，用于报表显示和排序
-
-三、以旧换新当前利润公式（已定版）
-实际总成本 = 新机价格 - 回收返现 + 旧机价格 + 返款
-利润 = 售出价格 - 实际总成本
-
-也可写成：
-利润 = 售出价格 - (新机价格 - 回收返现 + 旧机价格 + 返款)
-
-注意：
-- “返款”是减利润项，按成本处理，不是收益项
-- 不要再改回 “-返款” 的旧错误逻辑
-
-四、以旧换新备注扫码功能（已定版）
-1. 备注后的 📷 不是拍照，不是上传图片。
-2. 备注后的 📷 与“录入订单”板块里的 📷 一致。
-3. 当前逻辑为扫码功能。
-4. 扫码结果自动追加到备注中。
-5. 支持连续扫码追加。
-6. 后续不要再把这个按钮改成拍照上传。
-
-五、以旧换新报表结构（当前定版）
-1. 报表页默认显示普通订单报表。
-2. 点击“换新订单”按钮：
-   - 隐藏普通报表
-   - 显示换新报表
-3. 点击“普通订单”按钮：
-   - 返回普通报表
-4. 换新报表为独立板块，不与普通订单强行合并成一张混合表。
-5. 当前用户已明确认可“切换查看”方案，后续不要再改回双表同时展示或统一混排。
-
-六、当前稳定性结论
-1. 已修复白屏问题。
-2. 已修复 addSupplier 未定义导致的启动报错。
-3. 已修复 addTradeinOrder 未定义导致的换新页报错。
-4. 当前版本属于可继续迭代开发的稳定基线。
-5. 后续开发应基于本文件继续，不要回退到更早版本。
-
-七、普通订单主系统基线（继续沿用，不要乱改）
-1. 首页保持：蓝绿渐变顶部 + 九宫格入口 + 最近已售出列表。
-2. 首页顶部统计：总销售额、总利润、收益率。
-3. 九宫格入口保留当前结构，不要重做首页。
-4. 录入订单页只负责录入，不要把订单表格加回录入页下方。
-5. 报表页保持“直接输入框修改 + 删除按钮”模式，不要改回编辑弹窗模式。
-6. 表格继续保持紧凑、手机优先、整表横向滑动。
-7. 各主要板块保留左上角“← 返回”按钮。
-8. 普通订单备注扫码功能继续保留。
-9. 登录、管理员、云同步、导入导出继续沿用当前逻辑。
-
-八、后续开发建议优先级
-1. 第一优先：继续优化以旧换新体验
-   - 例如：导出字段更细、报表筛选、批量操作
-2. 第二优先：优化报表查看体验
-   - 例如：日期筛选、切换按钮样式微调、统计补充
-3. 第三优先：优化移动端录入体验
-   - 例如：输入联想、自动聚焦、扫码后定位
-4. 第四优先：再考虑安卓壳、图标、签名、安装包
-
-九、给新对话的硬性提醒
-1. 先读本记录，再继续开发。
-2. 不要重做首页。
-3. 不要推翻现有普通订单流转。
-4. 不要把以旧换新改成拍照上传方案。
-5. 不要把返款逻辑改错。
-6. 不要把换新报表改成和普通订单混排。
-7. 后续修改必须小步改、局部改、直接出文件。
-8. 用户偏好：直接改文件，少空话，避免反复确认。
-
-十、本次交接结论
-当前文件已经可以作为“新对话继续开发”的正式基线文件。
-新对话接手时，直接基于本文件修改即可。
-======================== /项目记录 / 交接说明（最新定版） ========================
--->
-
-
-<!--
-======================== 项目记录 / 交接说明 ========================
-项目：进销存管理试用版（当前以 HTML 试用版为主）
-写入时间：2026-03-09
-
-一、当前共识（非常重要）
-1. 首页要保持“原来那套风格”：
-   - 蓝绿渐变顶部
-   - 九宫格功能入口
-   - 整体接近用户最开始发的首页截图
-2. 录入订单页：
-   - 保留双列录入表单
-   - 订单列表支持编辑 / 删除
-   - 只允许修改“表格参数 / 表格样式”
-   - 不允许因为改表格而联动修改首页、九宫格、其他页面整体风格
-3. 当前版本已经执行过一次“回滚”：
-   - 已回滚到“用户上传 index.html 之前”的版本思路
-   - 现在只把表格参数应用在订单页，不再把整个系统页面风格一起改掉
-
-二、本轮之前实际改过的内容（按时间整理）
-1. 最初搭了一个可运行的单机版：
-   - 首页
-   - 货品
-   - 销售
-   - 明细
-   - 我的
-   - 本地存储
-2. 后来把“客户”板块改成“录入订单”
-3. 订单字段改成：
-   - 日期
-   - 下单人
-   - 产品
-   - 下单金额
-   - 返款
-   - 运费
-   - 售出金额
-   - 利润
-   - 物流单号
-   - 备注
-4. 做过这些版本尝试：
-   - 卡片式订单展示
-   - 列表式订单展示
-   - 表格清单展示
-   - 可编辑 / 可删除订单
-5. 用户后续明确要求：
-   - 不是改整个项目风格
-   - 只是“抄录入订单里面的表格参数”
-   - 其他页面不准乱改
-6. 因为中间曾经错误套用了另一份 HTML 的整体风格，后来已明确回滚。
-7. 做过旧字段兼容：
-   - buyer / customer
-   - rebate / refund
-   - freight / shipping
-   - saleAmount / sellAmount
-   - trackingNo / trackingNumber
-   - remark / notes
-   目的：避免旧数据打开后出现 undefined
-
-三、当前版本状态
-1. 首页：
-   - 使用原来那套蓝绿渐变 + 九宫格方案
-   - 不应继续大改
-2. 订单页：
-   - 上方是双列录入表单
-   - 下方是订单表格
-   - 支持编辑
-   - 支持删除
-   - 利润自动重算
-3. 当前“只同步试用版 HTML”作为主要开发文件
-
-四、后续开发规则（必须遵守）
-1. 后续开发阶段：
-   - 只需要给用户“试用版 HTML”
-   - 不需要每次都发安卓项目
-2. 安卓项目处理规则：
-   - 先不要持续同步改安卓项目
-   - 等用户明确说“完成了 / 定版了 / 现在同步安卓项目”
-   - 或者用户把安卓项目重新发给新对话
-   - 再帮用户把最终版本同步进安卓项目
-3. 未来新对话如果继续开发：
-   - 优先基于这个 HTML 试用版继续改
-   - 不要重新发明另一套首页
-   - 不要再整体替换视觉风格
-   - 只按用户指定的位置做局部修改
-
-五、下一步建议（给新对话看）
-最优先应该做的是：
-1. 继续微调“录入订单”页表格参数：
-   - 列宽
-   - 行高
-   - 输入框大小
-   - 表头高度
-   - 字号
-   - 间距
-   - 圆角
-2. 不动首页主结构
-3. 不动九宫格整体布局
-4. 如果用户再发参考图：
-   - 只对照修改订单表格页
-   - 除非用户明确要求，否则不要改其他页面
-
-六、给未来助手的硬性提醒
-1. 用户已经明确说过“你乱改的”
-2. 因此后续任何改动都要：
-   - 小改
-   - 局部改
-   - 先保持已有页面结构
-3. 当前阶段交付物优先级：
-   - 第一优先：HTML试用版
-   - 第二优先：安卓项目（只有在用户要求最终同步时再做）
-
-======================== /项目记录 / 交接说明 ========================
-
-
-======================== 当前待修复问题（2026‑03‑09 新增） ========================
-本节用于新对话继续修复问题，请不要删除。
-
-当前版本主要功能正常，但存在以下 BUG，需要在后续对话中继续修复：
-
-1. 录入成功弹窗未显示
-   - 新录入订单后，没有弹出“录入成功”提示弹窗
-   - 功能逻辑正常，但成功提示未触发
-
-2. 未售出页面删除按钮不可用
-   - 点击“删除”没有任何反应
-   - 可能原因：
-     - deleteOrder 事件未绑定
-     - 或 confirmModal 阻断执行
-
-3. 垫付中心按钮失效
-   - “发货”按钮点击无反应
-   - “退款”按钮点击无反应
-   - 可能原因：
-     - deliverAdvanceOrder
-     - refundAdvanceOrder
-     函数绑定或弹窗逻辑冲突
-
-4. 报表页面删除按钮不可用
-   - 点击删除没有执行
-   - 与未售出删除问题可能是同一个原因
-
-5. 首页红点功能
-   - 已修复，但后续修改需要注意不要破坏：
-     - 未售出红点：unsoldOrders().length
-     - 垫付中心红点：advanceOrders().length
-
-6. 需要保持的 UI 改动
-   当前版本已加入以下 UI 功能，不要误删：
-   - 页面切换淡入动画
-   - 成功提示弹窗
-   - 确认操作居中弹窗
-   - 首页小红点提示
-   - 首页统计数字动画
-
-修复优先级建议：
-1️⃣ 修复删除按钮逻辑
-2️⃣ 修复发货 / 退款按钮
-3️⃣ 修复录入成功弹窗触发
-4️⃣ 确认报表删除按钮
-
-注意：
-只能局部修复，不要整体重写 UI 或结构。
-
--->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>撸货</title>
+  <title>不砍不盾</title>
   <style>
     :root{
       --bg:#f4f5f7;
@@ -1333,7 +683,6 @@
       border-radius:999px;
     }
 
-
 .remark-cell{
   display:flex;
   gap:5px;
@@ -1600,8 +949,6 @@
   color:#fff;
 }
 
-
-
     .input-identity-tag{
       position:absolute;
       top:-18px;
@@ -1625,7 +972,6 @@
       animation:none;
       will-change:auto;
     }
-
 
     .btn,
     .icon-btn,
@@ -1682,7 +1028,6 @@
       opacity:1;
       transform:translateX(-50%) translateY(0);
     }
-
 
     .nice-modal-mask,
     .confirm-mask{
@@ -1779,7 +1124,6 @@
         transform:translateY(0) scale(1);
       }
     }
-
 
     .auth-chip{
       border:none;
@@ -1954,7 +1298,6 @@
       .scan-icon-btn{width:28px;height:26px;line-height:26px;flex-basis:28px}
     }
 
-
     @media (max-width: 640px){
       .topbar{
         margin-bottom:14px;
@@ -2100,50 +1443,8 @@
       box-shadow:0 10px 24px rgba(255,77,79,.22);
     }
 
-
   </style>
 <script>
-
-/*
-【项目续开发记录｜更新于 2026-03-19】
-当前定版文件：
-- 定版继续-自动登录也算登录-最新-已加APP下载按钮-v6修正daily表字段版.html
-
-本次已确认完成：
-1. 首页账号按钮下方已增加“APP下载”按钮
-   - 下载地址：https://www.123865.com/s/eJ1vjv-jzsX
-
-2. 登录统计改为“一个账号一天只统计一次”
-   - 新增表：public.login_daily_stats
-   - 统计主口径：按 user_id + date_key 去重
-   - 管理员统计优先读取 login_daily_stats
-   - 若新表不可用，页面仍保留旧逻辑回退能力
-
-3. 已修正 login_daily_stats 写入字段
-   - 正确字段：user_id / date_key / last_at / updated_at
-   - 之前失败原因：页面曾写入 last_login_at，现已改为 last_at
-
-4. 已确认当前版本可用
-   - 新账号登录后，login_daily_stats 能写入记录
-   - 管理员页可按“同账号同日只算1次”统计
-
-续开发时优先基于本文件继续，不要回退到旧版实验文件。
-若后续继续开发，请先保留以下能力不要删：
-- APP下载按钮
-- 自动登录也算登录
-- login_daily_stats 按日去重统计
-- 管理员登录统计刷新入口
-
-若以后再排查登录统计，请优先检查：
-A. public.login_daily_stats 是否有新记录
-B. 字段是否为 user_id/date_key/last_at/updated_at
-C. 管理员统计是否优先读取 login_daily_stats
-D. 旧版测试文件中出现过的报错函数：
-   - toggleAdminLoginStatsVisible
-   - ensureAdminLoginStats
-这些旧报错不要再带回当前定版
-*/
-
 
 (function(){
   try {
@@ -2174,6 +1475,12 @@ D. 旧版测试文件中出现过的报错函数：
   } catch (_) {}
 })();
 </script>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#14d1c4">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
 </head>
 <body>
 <div id="app"></div>
@@ -2522,7 +1829,6 @@ function showToast(message){
   }, 1800);
 }
 
-
 function translateSupabaseError(message){
   const raw = String(message || '').trim();
   if(!raw) return '操作失败，请稍后再试';
@@ -2556,8 +1862,6 @@ function translateSupabaseError(message){
   }
   return raw;
 }
-
-
 
 function showNiceModal(title, desc, icon){
   const old = document.getElementById('niceModalMask');
@@ -2622,7 +1926,6 @@ function showConfirmModal(msg, onOk){
   };
 }
 
-
 function addProduct(form){
   const fd = new FormData(form);
   state.products.push({
@@ -2651,7 +1954,6 @@ function calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, r
 function calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice){
   return Number(salePrice||0) - calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice);
 }
-
 
 function orderDraftDefaults(){
   return {
@@ -2927,7 +2229,6 @@ function filteredOrders(sourceList){
   return list;
 }
 
-
 function reportMonthOptionsHtml(){
   const current = String(state.reportMonth || 'all');
   const options = ['all'].concat(Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')));
@@ -3102,7 +2403,6 @@ function tapMenuCard(el, action){
   }, 90);
 }
 
-
 function animateHomeStats(){
   requestAnimationFrame(() => {
     document.querySelectorAll('.hero .stat .value, .hero .big').forEach(el => {
@@ -3145,7 +2445,6 @@ function sectionHeader(title, subtitle=''){
     <span class="small">${subtitle}</span>
   </div>`;
 }
-
 
 function accountEntryHtml(){
   const accountButton = (!authState.ready || !authState.user)
@@ -3480,8 +2779,6 @@ function detailView(){
   </div>`;
 }
 
-
-
 function getLocalDateKey(dateObj){
   const d = dateObj instanceof Date ? dateObj : new Date();
   const y = d.getFullYear();
@@ -3547,7 +2844,6 @@ function ensureTodayLoginRecorded(){
   return true;
 }
 
-
 function getTodayLoginStatMeta(){
   state.loginStats = normalizeLoginStats(state.loginStats);
   const key = getLocalDateKey();
@@ -3593,7 +2889,6 @@ function emptyAdminLoginStats(){
     updatedAt: 0
   };
 }
-
 
 async function refreshAdminLoginStats(showMsg){
   if(!authState.isAdmin || !supa) return emptyAdminLoginStats();
@@ -4200,7 +3495,6 @@ function ordersView(){
   </div>`;
 }
 
-
 function triggerImportOrders(){
   const input = document.getElementById('importOrdersInput');
   if(!input) return;
@@ -4342,7 +3636,6 @@ function exportOrders(){
     showToast('导出失败，请稍后重试');
   }
 }
-
 
 let searchRenderTimer = null;
 let searchIsComposing = false;
@@ -4502,7 +3795,6 @@ function bootApp(forceReload){
   }, 'bootApp');
 }
 
-
 document.addEventListener('input', function(e){
   const form = e.target && e.target.form;
   if(!form) return;
@@ -4516,7 +3808,6 @@ document.addEventListener('input', function(e){
     preview.value = '¥' + p;
   }
 });
-
 
 function shortenIdentityText(text){
   const value = String(text || '').trim();
@@ -4583,7 +3874,6 @@ document.addEventListener('focusout', function(e){
   }, 0);
 });
 
-
 function addSupplier(){
   showToast('供应商入口已改为以旧换新');
 }
@@ -4646,604 +3936,248 @@ document.addEventListener('keydown', function(e){
 });
 
 
-
 let activeScanSession = null;
-let zxingLoaderPromise = null;
+let html5QrcodeLoadPromise = null;
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
-async function ensureZXingLoaded(){
-  if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
-    return window.ZXingBrowser;
-  }
-  if(zxingLoaderPromise) return zxingLoaderPromise;
-  const cdnList = [
-    'https://cdn.bootcdn.net/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
-    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-    'https://fastly.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-    'https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js'
-  ];
-  zxingLoaderPromise = new Promise(async function(resolve, reject){
-    for(const src of cdnList){
-      try{
-        await new Promise(function(ok, fail){
-          const old = document.querySelector('script[data-zxing-loader="1"][src="' + src + '"]');
-          if(old){
-            if(window.ZXingBrowser) return ok();
-            old.addEventListener('load', ok, {once:true});
-            old.addEventListener('error', fail, {once:true});
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = src;
-          script.async = true;
-          script.dataset.zxingLoader = '1';
-          script.onload = ok;
-          script.onerror = fail;
-          document.head.appendChild(script);
-        });
-        if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
-          resolve(window.ZXingBrowser);
-          return;
-        }
-      }catch(err){}
-    }
-    reject(new Error('ZXing load failed'));
-  });
-  return zxingLoaderPromise;
+function isNativeScanAvailable(){
+  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
 }
 
-async function createNativeDetector(){
-  if(typeof BarcodeDetector === 'undefined') return null;
+window.__nativeScanDeliver = window.__nativeScanDeliver || function(result){
   try{
-    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-    const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
-    return new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-  }catch(err){
-    console.error(err);
-    return null;
-  }
-}
-
-function extractNativeScanCode(result){
-  if(result == null) return '';
-  if(typeof result === 'string') return result.trim();
-  if(typeof result === 'number') return String(result);
-  const keys = ['code','text','rawValue','result','value','content','data','qr','barcode'];
-  for(const key of keys){
-    if(result && result[key] != null){
-      return String(result[key]).trim();
+    const cb = window.__nativeScanPendingCallback;
+    window.__nativeScanPendingCallback = null;
+    if(activeScanSession && activeScanSession.mode === 'native'){
+      activeScanSession = null;
     }
-  }
-  return '';
-}
-
-function getNativeScanInvoker(){
-  try{
-    if(window.AndroidBridge){
-      const bridge = window.AndroidBridge;
-      const candidates = [
-        'scanQRCode','scanQrCode','scanQR','scanCode','startScan','startQrScan',
-        'startQRCodeScan','openScanner','openQrScanner','openQRCodeScanner'
-      ];
-      for(const name of candidates){
-        if(typeof bridge[name] === 'function'){
-          return {platform:'android', type:'bridge', name, invoke:function(){ return bridge[name](); }};
-        }
-      }
-    }
-  }catch(err){}
-  try{
-    if(window.webkit && window.webkit.messageHandlers){
-      const handlers = window.webkit.messageHandlers;
-      const names = ['qrScan','scanQRCode','scanCode','nativeScan','openScanner'];
-      for(const name of names){
-        if(handlers[name] && typeof handlers[name].postMessage === 'function'){
-          return {platform:'ios', type:'handler', name, invoke:function(){ return handlers[name].postMessage({action:'scan'}); }};
-        }
-      }
-    }
-  }catch(err){}
-  return null;
-}
-
-function hasNativeAppScanner(){
-  return !!getNativeScanInvoker();
-}
-
-async function tryStartNativeAppScan(session){
-  const invoker = getNativeScanInvoker();
-  if(!invoker) return false;
-  window.__pendingNativeScanSession = session;
-  if(session && session.statusText){
-    session.statusText.textContent = '正在调用APP原生扫码…';
-  }
-  try{
-    const direct = await invoker.invoke();
-    const code = extractNativeScanCode(direct);
-    if(code){
-      handleDetectedCode(session, code);
+    const raw = String(result || '').trim();
+    if(cb && raw){
+      cb(raw);
       return true;
     }
-    return true;
-  }catch(err){
-    console.error(err);
-    if(session && session.statusText){
-      session.statusText.textContent = 'APP原生扫码调用失败，已切换到浏览器兼容模式';
-    }
-    showToast('APP原生扫码调用失败，已切换浏览器兼容模式');
-    return false;
+  }catch(e){}
+  return false;
+};
+
+window.__nativeScanCancel = window.__nativeScanCancel || function(){
+  window.__nativeScanPendingCallback = null;
+  if(activeScanSession && activeScanSession.mode === 'native'){
+    activeScanSession = null;
   }
-}
-
-function deliverNativeScanResultToPage(result){
-  const session = window.__pendingNativeScanSession || activeScanSession;
-  if(!session) return false;
-  const code = extractNativeScanCode(result);
-  if(!code) return false;
-  handleDetectedCode(session, code);
-  if(session.statusText) session.statusText.textContent = '原生扫码识别成功';
   return true;
-}
-
-window.receiveNativeScanResult = deliverNativeScanResultToPage;
-window.onNativeScanResult = deliverNativeScanResultToPage;
-window.handleNativeScanResult = deliverNativeScanResultToPage;
-window.__receiveNativeScanResult = deliverNativeScanResultToPage;
-
-async function startRemarkScan(orderId){
-  startGenericScan(function(code){
-    appendRemarkCode(orderId, code);
-  });
-}
+};
 
 function closeRemarkScan(){
+  if(window.__nativeScanPendingCallback && (!activeScanSession || activeScanSession.mode !== 'native')){
+    window.__nativeScanPendingCallback = null;
+  }
   if(!activeScanSession) return;
   const session = activeScanSession;
   activeScanSession = null;
-  if(window.__pendingNativeScanSession === session) window.__pendingNativeScanSession = null;
   try{
-    if(session.scanTimer) clearInterval(session.scanTimer);
-    if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
-    if(session.reader && session.reader.reset) session.reader.reset();
-    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.forceTorchOff === 'function'){
-      AndroidBridge.forceTorchOff();
-    }else if(session.torchOn && session.track && session.track.applyConstraints){
-      session.track.applyConstraints({advanced:[{torch:false}]});
-    }
-  }catch(e){}
-  if(session.stream){
-    try{ session.stream.getTracks().forEach(function(track){ track.stop(); }); }catch(e){}
-  }
-  if(session.overlay && session.overlay.parentNode){
-    session.overlay.parentNode.removeChild(session.overlay);
-  }
-}
-
-function canUseNativeTorch(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.isTorchAvailable === 'function' && AndroidBridge.isTorchAvailable());
-}
-
-function updateTorchButtonState(session){
-  if(!session || !session.torchBtn) return;
-  session.torchBtn.disabled = !session.torchSupported;
-  session.torchBtn.classList.toggle('active', !!session.torchOn);
-  const label = session.torchBtn.querySelector('span:last-child');
-  if(label) label.textContent = session.torchSupported ? (session.torchOn ? '关闭手电筒' : '手电筒') : '设备不支持';
-}
-
-async function toggleScanTorch(session){
-  if(!session || !session.torchSupported) return;
-  try{
-    const nextState = !session.torchOn;
-    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.setTorchEnabled === 'function'){
-      const ok = AndroidBridge.setTorchEnabled(nextState);
-      session.torchOn = !!ok && nextState;
-      updateTorchButtonState(session);
-      if(!ok) showToast('当前设备暂不支持手电筒');
-      return;
-    }
-    if(!session.track || !session.track.applyConstraints){
-      showToast('当前设备暂不支持手电筒');
-      return;
-    }
-    session.torchOn = nextState;
-    await session.track.applyConstraints({advanced:[{torch: session.torchOn}]});
-    updateTorchButtonState(session);
-  }catch(err){
-    console.error(err);
-    session.torchOn = false;
-    updateTorchButtonState(session);
-    showToast('当前设备暂不支持手电筒');
-  }
-}
-
-async function fileToImage(file){
-  if(!file) return null;
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  await new Promise(function(resolve, reject){
-    img.onload = resolve;
-    img.onerror = reject;
-    img.src = url;
-  });
-  img.dataset.objectUrl = url;
-  return img;
-}
-
-function releaseImage(img){
-  try{
-    const url = img && img.dataset ? img.dataset.objectUrl : '';
-    if(url) URL.revokeObjectURL(url);
+    if(session.cleanup) session.cleanup();
   }catch(e){}
 }
 
-async function fileToScanCanvas(file){
-  if(!file) return null;
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d', {willReadFrequently:true});
-  if(!ctx) throw new Error('canvas not supported');
-
-  if(window.createImageBitmap){
-    try{
-      const bitmap = await createImageBitmap(file, {imageOrientation:'from-image'});
-      const maxSide = 1800;
-      const ratio = Math.min(1, maxSide / Math.max(bitmap.width || 1, bitmap.height || 1));
-      canvas.width = Math.max(1, Math.round((bitmap.width || 1) * ratio));
-      canvas.height = Math.max(1, Math.round((bitmap.height || 1) * ratio));
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      if(bitmap.close) bitmap.close();
-      return canvas;
-    }catch(err){}
-  }
-
-  const img = await fileToImage(file);
-  try{
-    const width = img.naturalWidth || img.width || 1;
-    const height = img.naturalHeight || img.height || 1;
-    const maxSide = 1800;
-    const ratio = Math.min(1, maxSide / Math.max(width, height));
-    canvas.width = Math.max(1, Math.round(width * ratio));
-    canvas.height = Math.max(1, Math.round(height * ratio));
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas;
-  }finally{
-    releaseImage(img);
-  }
-}
-
-async function decodeCanvasWithZXing(canvas){
-  if(!canvas) return '';
-  const ZXingLib = await ensureZXingLoaded();
-  const reader = new ZXingLib.BrowserMultiFormatReader();
-  let img = null;
-  try{
-    img = new Image();
-    await new Promise(function(resolve, reject){
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = canvas.toDataURL('image/jpeg', 0.92);
-    });
-    const result = await reader.decodeFromImageElement(img);
-    return result && result.text ? String(result.text).trim() : '';
-  }finally{
-    if(reader && reader.reset) reader.reset();
-  }
-}
-
-async function recognizeCodeFromImageFile(file, detector){
-  if(!file) return '';
-  const canvas = await fileToScanCanvas(file);
-  if(!canvas) return '';
-  if(detector){
-    try{
-      const nativeResults = await detector.detect(canvas);
-      if(nativeResults && nativeResults.length){
-        return String(nativeResults[0].rawValue || '').trim();
-      }
-    }catch(err){}
-  }
-  return await decodeCanvasWithZXing(canvas);
-}
-
-function getUserMediaCompat(constraints){
-  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
-    return navigator.mediaDevices.getUserMedia(constraints);
-  }
-  const legacy = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-  if(!legacy){
-    return Promise.reject(new Error('getUserMedia unavailable'));
-  }
+function loadExternalScript(url){
   return new Promise(function(resolve, reject){
-    legacy.call(navigator, constraints, resolve, reject);
-  });
-}
-
-async function beginLiveScan(session){
-  if(!session) return;
-  if(!((navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia)){
-    showToast('当前浏览器不支持浏览器扫码，请改用APP原生扫码或拍照识别');
-    return;
-  }
-  const status = session.statusText;
-  try{
-    if(status) status.textContent = '正在打开摄像头…';
-    if(session.reader && session.reader.reset) session.reader.reset();
-    if(session.stream){
-      try{ session.stream.getTracks().forEach(function(track){ track.stop(); }); }catch(e){}
-      session.stream = null;
-    }
-    const videoConstraints = {
-      facingMode:{ideal:'environment'},
-      width:{ideal:1920},
-      height:{ideal:1080}
-    };
-    const stream = await getUserMediaCompat({
-      video: videoConstraints,
-      audio:false
-    });
-    session.stream = stream;
-    session.video.srcObject = stream;
-    await session.video.play();
-    session.mode = 'live';
-    session.manualPanel.hidden = true;
-    session.video.hidden = false;
-    session.viewfinder.hidden = false;
-    session.liveBtn.classList.add('active');
-    session.track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-    const capabilities = session.track && session.track.getCapabilities ? session.track.getCapabilities() : null;
-    if(session.track && session.track.applyConstraints && capabilities){
-      const advanced = [];
-      if(capabilities.focusMode && Array.isArray(capabilities.focusMode)){
-        if(capabilities.focusMode.includes('continuous')) advanced.push({focusMode:'continuous'});
-        else if(capabilities.focusMode.includes('single-shot')) advanced.push({focusMode:'single-shot'});
-      }
-      if(capabilities.zoom && typeof capabilities.zoom.min === 'number'){
-        const baseZoom = Math.max(capabilities.zoom.min, 1);
-        advanced.push({zoom: Math.min(baseZoom, capabilities.zoom.max || baseZoom)});
-      }
-      if(advanced.length){
-        try{ await session.track.applyConstraints({advanced}); }catch(err){}
-      }
-    }
-    session.usingNativeTorch = canUseNativeTorch();
-    session.torchSupported = session.usingNativeTorch || !!(capabilities && capabilities.torch);
-    session.torchOn = false;
-    updateTorchButtonState(session);
-    if(status) status.textContent = '请将二维码放入框内，保持 10-20 厘米距离并稍等自动对焦';
-
-    if(session.detector){
-      if(session.scanTimer) clearInterval(session.scanTimer);
-      session.scanTimer = setInterval(async function(){
-        if(!activeScanSession || activeScanSession !== session) return;
-        if(session.paused || session.resultVisible) return;
-        if(session.video.readyState < 2) return;
-        try{
-          const results = await session.detector.detect(session.video);
-          if(!results || !results.length) return;
-          handleDetectedCode(session, String(results[0].rawValue || '').trim());
-        }catch(err){}
-      }, 380);
-      return;
-    }
-
-    const ZXingLib = await ensureZXingLoaded();
-    if(session.reader && session.reader.reset) session.reader.reset();
-    session.reader = new ZXingLib.BrowserMultiFormatReader();
-    session.zxingControls = await session.reader.decodeFromVideoDevice(null, session.video, function(result, err, controls){
-      if(controls) session.zxingControls = controls;
-      if(result && result.text){
-        handleDetectedCode(session, String(result.text || '').trim());
-      }
-    });
-  }catch(err){
-    console.error(err);
-    session.liveBtn.classList.remove('active');
-    if(status) status.textContent = '浏览器扫码打开失败，请改用APP原生扫码、拍照识别或相册识别';
-    const name = err && err.name ? err.name : '';
-    if(name === 'NotAllowedError'){
-      showToast('摄像头权限被拒绝，请改用拍照识别或到系统设置中开启摄像头权限');
-    }else if(name === 'NotFoundError'){
-      showToast('当前设备未检测到可用摄像头');
-    }else{
-      showToast('浏览器扫码打开失败，请改用拍照识别');
-    }
-  }
-}
-
-function handleDetectedCode(session, raw){
-  raw = String(raw || '').trim();
-  if(!raw || !session || session.resultVisible) return;
-  const now = Date.now();
-  if(raw === session.lastCode && now - session.lastAt < 1200) return;
-  session.lastCode = raw;
-  session.lastAt = now;
-  session.resultVisible = true;
-  session.paused = true;
-  if(typeof session.onDetected === 'function') session.onDetected(raw);
-  if(session.resultCode) session.resultCode.textContent = raw;
-  if(session.resultPanel) session.resultPanel.hidden = false;
-}
-
-function resumeScanSession(session){
-  if(!session) return;
-  session.resultVisible = false;
-  session.paused = false;
-  if(session.resultPanel) session.resultPanel.hidden = true;
-}
-
-function applyCodeByPrompt(session){
-  const code = window.prompt('请输入条码或二维码内容');
-  if(!code) return;
-  const cleaned = String(code || '').trim();
-  if(!cleaned) return;
-  handleDetectedCode(session, cleaned);
-}
-
-async function triggerImageScan(session, captureMode){
-  if(!session || !session.fileInput) return;
-  session.fileInput.value = '';
-  if(captureMode){
-    session.fileInput.setAttribute('capture', 'environment');
-  }else{
-    session.fileInput.removeAttribute('capture');
-  }
-  session.fileInput.click();
-}
-
-async function startGenericScan(onDetected){
-  if(activeScanSession){
-    showToast('请先关闭当前扫码窗口');
-    return;
-  }
-
-  const overlay = document.createElement('div');
-  overlay.className = 'scan-overlay';
-  overlay.innerHTML = `
-    <div class="scan-overlay-top">
-      <div class="scan-title">扫码</div>
-      <button class="scan-close" type="button">×</button>
-    </div>
-    <video playsinline autoplay muted hidden></video>
-    <div class="scan-viewfinder" aria-hidden="true" hidden>
-      <span class="corner tl"></span>
-      <span class="corner tr"></span>
-      <span class="corner bl"></span>
-      <span class="corner br"></span>
-      <span class="scan-line"></span>
-    </div>
-    <div class="scan-overlay-tip">APP内优先调用原生扫码；纯浏览器建议拍照识别或相册识别。</div>
-    <div class="scan-bottom-actions">
-      <button class="scan-bottom-action scan-camera-btn" type="button">
-        <span class="icon">📸</span>
-        <span>拍照识别</span>
-      </button>
-      <button class="scan-bottom-action scan-photo-btn" type="button">
-        <span class="icon">🖼️</span>
-        <span>相册识别</span>
-      </button>
-      <button class="scan-bottom-action scan-native-btn" type="button">
-        <span class="icon">📱</span>
-        <span>APP原生扫码</span>
-      </button>
-      <button class="scan-bottom-action scan-live-btn" type="button">
-        <span class="icon">📷</span>
-        <span>浏览器扫码</span>
-      </button>
-      <button class="scan-bottom-action scan-manual-btn" type="button">
-        <span class="icon">⌨️</span>
-        <span>手动输入</span>
-      </button>
-      <button class="scan-bottom-action scan-torch-btn" type="button">
-        <span class="icon">🔦</span>
-        <span>手电筒</span>
-      </button>
-      <input class="scan-file-input" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" />
-    </div>
-    <div class="scan-result-panel" hidden>
-      <div class="scan-result-title">识别成功</div>
-      <div class="scan-result-code"></div>
-      <div class="scan-result-actions">
-        <button class="scan-result-btn secondary" type="button">关闭</button>
-        <button class="scan-result-btn primary" type="button">确定，继续扫码</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  const session = {
-    overlay,
-    detector: await createNativeDetector(),
-    onDetected:onDetected,
-    video: overlay.querySelector('video'),
-    viewfinder: overlay.querySelector('.scan-viewfinder'),
-    statusText: overlay.querySelector('.scan-overlay-tip'),
-    closeBtn: overlay.querySelector('.scan-close'),
-    cameraBtn: overlay.querySelector('.scan-camera-btn'),
-    photoBtn: overlay.querySelector('.scan-photo-btn'),
-    nativeBtn: overlay.querySelector('.scan-native-btn'),
-    liveBtn: overlay.querySelector('.scan-live-btn'),
-    manualBtn: overlay.querySelector('.scan-manual-btn'),
-    torchBtn: overlay.querySelector('.scan-torch-btn'),
-    fileInput: overlay.querySelector('.scan-file-input'),
-    resultPanel: overlay.querySelector('.scan-result-panel'),
-    resultCode: overlay.querySelector('.scan-result-code'),
-    stopBtn: overlay.querySelector('.scan-result-btn.secondary'),
-    confirmBtn: overlay.querySelector('.scan-result-btn.primary'),
-    stream:null,
-    track:null,
-    torchSupported:false,
-    usingNativeTorch:false,
-    torchOn:false,
-    paused:false,
-    resultVisible:false,
-    lastCode:'',
-    lastAt:0,
-    scanTimer:null,
-    reader:null,
-    zxingControls:null,
-    nativeAvailable: hasNativeAppScanner()
-  };
-  session.manualPanel = {hidden:false};
-  activeScanSession = session;
-  updateTorchButtonState(session);
-
-  session.closeBtn.onclick = closeRemarkScan;
-  if(session.stopBtn) session.stopBtn.onclick = closeRemarkScan;
-  if(session.confirmBtn) session.confirmBtn.onclick = function(){ resumeScanSession(session); };
-  if(session.cameraBtn) session.cameraBtn.onclick = function(){ triggerImageScan(session, true); };
-  if(session.photoBtn) session.photoBtn.onclick = function(){ triggerImageScan(session, false); };
-  if(session.nativeBtn) session.nativeBtn.onclick = async function(){
-    const ok = await tryStartNativeAppScan(session);
-    if(!ok) beginLiveScan(session);
-  };
-  if(session.manualBtn) session.manualBtn.onclick = function(){ applyCodeByPrompt(session); };
-  if(session.liveBtn) session.liveBtn.onclick = function(){ beginLiveScan(session); };
-  if(session.torchBtn) session.torchBtn.onclick = function(){ toggleScanTorch(session); };
-  if(session.fileInput) session.fileInput.onchange = async function(){
-    const file = session.fileInput.files && session.fileInput.files[0];
-    if(!file) return;
-    try{
-      session.paused = true;
-      if(session.statusText) session.statusText.textContent = '正在识别图片，请稍候…';
-      const raw = await recognizeCodeFromImageFile(file, session.detector);
-      if(!raw){
-        showToast('没有识别到二维码，请把码放大、对准、补光后重试');
-        session.paused = false;
-        if(session.statusText) session.statusText.textContent = 'APP内优先调用原生扫码；纯浏览器建议拍照识别或相册识别。';
+    const existing = document.querySelector('script[data-src="' + url + '"]');
+    if(existing){
+      if(existing.dataset.loaded === '1'){
+        resolve();
         return;
       }
-      handleDetectedCode(session, raw);
-      if(session.statusText) session.statusText.textContent = '识别成功，可继续扫码';
+      existing.addEventListener('load', function(){ resolve(); }, {once:true});
+      existing.addEventListener('error', function(){ reject(new Error('load failed')); }, {once:true});
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.dataset.src = url;
+    script.onload = function(){ script.dataset.loaded = '1'; resolve(); };
+    script.onerror = function(){ reject(new Error('load failed')); };
+    document.head.appendChild(script);
+  });
+}
+
+function ensureHtml5QrcodeLoaded(){
+  if(window.Html5Qrcode) return Promise.resolve(window.Html5Qrcode);
+  if(html5QrcodeLoadPromise) return html5QrcodeLoadPromise;
+  const sources = [
+    'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+    'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+  ];
+  html5QrcodeLoadPromise = (async function(){
+    let lastError = null;
+    for(const src of sources){
+      try{
+        await loadExternalScript(src);
+        if(window.Html5Qrcode) return window.Html5Qrcode;
+      }catch(err){
+        lastError = err;
+      }
+    }
+    throw lastError || new Error('html5-qrcode not loaded');
+  })().catch(function(err){
+    html5QrcodeLoadPromise = null;
+    throw err;
+  });
+  return html5QrcodeLoadPromise;
+}
+
+async function recognizeCodeFromImage(file){
+  if(!file) return '';
+
+  if(typeof BarcodeDetector !== 'undefined'){
+    try{
+      const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+      const usableFormats = detectorFormats().filter(function(item){ return formats.includes(item); });
+      const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      try{
+        await new Promise(function(resolve, reject){
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = url;
+        });
+        const results = await detector.detect(img);
+        if(results && results.length){
+          const raw = String(results[0].rawValue || '').trim();
+          if(raw) return raw;
+        }
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }catch(err){
+      console.warn('BarcodeDetector image decode skipped', err);
+    }
+  }
+
+  const Html5Qrcode = await ensureHtml5QrcodeLoaded();
+  const mountId = 'html5QrTemp_' + Date.now();
+  const mount = document.createElement('div');
+  mount.id = mountId;
+  mount.style.position = 'fixed';
+  mount.style.left = '-9999px';
+  mount.style.top = '-9999px';
+  mount.style.width = '1px';
+  mount.style.height = '1px';
+  mount.style.overflow = 'hidden';
+  document.body.appendChild(mount);
+  let scanner = null;
+  try{
+    scanner = new Html5Qrcode(mountId, {verbose:false});
+    const raw = await scanner.scanFile(file, false);
+    return String(raw || '').trim();
+  } finally {
+    try{
+      if(scanner && scanner.clear) await scanner.clear();
+    }catch(e){}
+    if(mount.parentNode) mount.parentNode.removeChild(mount);
+  }
+}
+
+function showBrowserScanChooser(onDetected){
+  const mask = document.createElement('div');
+  mask.className = 'confirm-mask';
+  mask.innerHTML = `
+    <div class="confirm-box" style="text-align:left;padding:20px 18px 18px;">
+      <div class="confirm-title" style="text-align:center;margin-bottom:8px;">选择识别方式</div>
+      <div style="font-size:13px;color:#7b8492;line-height:1.7;text-align:center;margin-bottom:14px;">网页端默认使用拍照或相册识别。APP 内会自动调起原生扫码。</div>
+      <div data-role="status" style="font-size:13px;color:#177ddc;text-align:center;min-height:20px;margin-bottom:10px;"></div>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
+        <button class="confirm-btn confirm-ok" type="button" data-action="capture">拍照识别</button>
+        <button class="confirm-btn confirm-ok" type="button" data-action="album" style="background:linear-gradient(180deg,#8b5cf6,#7c3aed);">相册识别</button>
+        <button class="confirm-btn confirm-cancel" type="button" data-action="cancel">取消</button>
+      </div>
+      <input class="scan-file-input" type="file" accept="image/*" capture="environment" data-input="capture" />
+      <input class="scan-file-input" type="file" accept="image/*" data-input="album" />
+    </div>
+  `;
+  document.body.appendChild(mask);
+
+  const statusEl = mask.querySelector('[data-role="status"]');
+  const captureInput = mask.querySelector('[data-input="capture"]');
+  const albumInput = mask.querySelector('[data-input="album"]');
+  const actionButtons = Array.from(mask.querySelectorAll('button[data-action]'));
+
+  function setBusy(busy, message){
+    actionButtons.forEach(function(btn){
+      const action = btn.getAttribute('data-action');
+      btn.disabled = !!busy && action !== 'cancel';
+      btn.style.opacity = btn.disabled ? '.65' : '1';
+    });
+    if(statusEl) statusEl.textContent = message || '';
+  }
+
+  async function handleFile(file){
+    if(!file) return;
+    try{
+      setBusy(true, '正在识别，请稍候…');
+      const raw = await recognizeCodeFromImage(file);
+      if(!raw){
+        setBusy(false, '没有识别到二维码或条码，请换一张更清晰的图片');
+        showToast('没有识别到二维码或条码');
+        return;
+      }
+      closeRemarkScan();
+      if(typeof onDetected === 'function') onDetected(raw);
+      showToast('识别成功');
     }catch(err){
       console.error(err);
-      if(session.nativeAvailable){
-        showToast('图片识别失败，请优先使用APP原生扫码');
-      }else{
-        showToast('图片识别失败，请换一张清晰正拍的二维码图片');
-      }
-      session.paused = false;
-      if(session.statusText) session.statusText.textContent = '图片识别失败，请重新选择图片';
-    }finally{
-      session.fileInput.value = '';
+      setBusy(false, '识别失败，请换一张更清晰的图片再试');
+      showToast('图片识别失败，请换一张更清晰的图片');
     }
-  };
+  }
 
-  if(session.nativeBtn && !session.nativeAvailable){
-    session.nativeBtn.disabled = true;
-    session.nativeBtn.style.opacity = '0.55';
+  function cleanup(){
+    if(captureInput) captureInput.value = '';
+    if(albumInput) albumInput.value = '';
+    if(mask.parentNode) mask.parentNode.removeChild(mask);
   }
-  if(session.liveBtn && /iPhone|iPad|iPod/i.test(navigator.userAgent || '')){
-    session.liveBtn.classList.remove('active');
+
+  activeScanSession = {mode:'browser', cleanup:cleanup};
+
+  mask.addEventListener('click', function(e){
+    if(e.target === mask) closeRemarkScan();
+  });
+
+  actionButtons.forEach(function(btn){
+    btn.onclick = function(){
+      const action = btn.getAttribute('data-action');
+      if(action === 'cancel'){
+        closeRemarkScan();
+        return;
+      }
+      if(action === 'capture' && captureInput) captureInput.click();
+      if(action === 'album' && albumInput) albumInput.click();
+    };
+  });
+
+  if(captureInput){
+    captureInput.onchange = function(){
+      const file = captureInput.files && captureInput.files[0];
+      handleFile(file).finally(function(){ captureInput.value = ''; });
+    };
   }
-  if(session.nativeAvailable){
-    if(session.statusText) session.statusText.textContent = '检测到APP原生扫码能力，优先点击“APP原生扫码”';
-  }else{
-    if(session.statusText) session.statusText.textContent = '当前是纯浏览器兼容模式：优先拍照识别/相册识别；浏览器扫码成功率受机型和HTTPS影响。';
+  if(albumInput){
+    albumInput.onchange = function(){
+      const file = albumInput.files && albumInput.files[0];
+      handleFile(file).finally(function(){ albumInput.value = ''; });
+    };
   }
+}
+
+function startRemarkScan(orderId){
+  startGenericScan(function(code){
+    appendRemarkCode(orderId, code);
+  });
 }
 
 function appendRemarkCode(orderId, code){
@@ -5255,11 +4189,10 @@ function appendRemarkCode(orderId, code){
   order.remark = items.join(',');
   persist();
 
-  const activeInput = document.activeElement;
   render();
 
   const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
-  const targetButton = targetButtons.find(function(btn){ return btn.getAttribute('onclick') === "startRemarkScan('" + orderId + "')"; });
+  const targetButton = targetButtons.find(btn => btn.getAttribute('onclick') === "startRemarkScan('" + orderId + "')");
   const remarkInput = targetButton && targetButton.parentNode ? targetButton.parentNode.querySelector('input') : null;
   if(remarkInput){
     remarkInput.focus();
@@ -5268,9 +4201,8 @@ function appendRemarkCode(orderId, code){
   }
 }
 
-
 function appendCodeToText(current, code){
-  const items = String(current || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  const items = String(current || '').split(',').map(s => s.trim()).filter(Boolean);
   items.push(String(code || '').trim());
   return items.join(',');
 }
@@ -5302,11 +4234,34 @@ function startTradeinRemarkScan(form){
   });
 }
 
+function startGenericScan(onDetected){
+  if(activeScanSession){
+    showToast('请先完成当前识别');
+    return;
+  }
+  if(isNativeScanAvailable()){
+    try{
+      activeScanSession = {mode:'native'};
+      window.__nativeScanPendingCallback = function(result){
+        const raw = String(result || '').trim();
+        activeScanSession = null;
+        window.__nativeScanPendingCallback = null;
+        if(raw && typeof onDetected === 'function') onDetected(raw);
+      };
+      const ok = AndroidBridge.startNativeScan();
+      if(ok !== false) return;
+    }catch(err){
+      console.error(err);
+    }
+    activeScanSession = null;
+    window.__nativeScanPendingCallback = null;
+  }
+  showBrowserScanChooser(onDetected);
+}
 window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
-
 
 const authState = {
   ready:false,
@@ -5535,7 +4490,6 @@ function makeCloudPayload(){
 function backupStorageKey(){
   return authState.user ? ('jxc_backup_' + authState.user.id) : 'jxc_backup_guest';
 }
-
 
 function saveBackupSnapshot(reason, force){
   try{
@@ -5983,8 +4937,6 @@ function setAdminAccountSearch(value){
   store.save('jxc_admin_account_search', state.adminAccountSearch);
   renderAdminTable();
 }
-
-
 
 function closeAccountModal(){
   const mask = document.getElementById('accountModalMask');
