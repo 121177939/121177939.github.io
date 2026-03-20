@@ -4040,7 +4040,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'multi-code-v3-test';
+const APP_VERSION = 'multi-code-v4-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4485,9 +4485,20 @@ function applyScanResult(session, raw){
   if(!session) return;
   const normalized = normalizeRecognizedCodes([raw]);
   if(normalized.length > 1){
-    handleRecognizedValues(session, normalized);
+    showMultiCodePicker(normalized).then(function(picked){
+      if(!picked){
+        session.paused = false;
+        if(session.resultPanel) session.resultPanel.hidden = true;
+        if(session.html5Qr && session.html5Qr.resume){
+          try{ session.html5Qr.resume(); }catch(e){}
+        }
+        return;
+      }
+      applyScanResult(session, picked);
+    });
     return;
   }
+
   const code = String((normalized[0] || raw || '')).trim();
   if(!code) return;
   const now = Date.now();
@@ -4699,9 +4710,9 @@ async function startFallbackScan(onDetected){
   await html5Qr.start(
     {facingMode: { ideal: 'environment' }},
     {fps:15, qrbox:function(w, h){ const size = Math.floor(Math.min(w, h) * 0.82); return {width:size, height:size}; }},
-    async function(decodedText){
+    function(decodedText){
       if(!activeScanSession || activeScanSession !== session || session.paused) return;
-      await handleRecognizedValues(session, [decodedText]);
+      applyScanResult(session, decodedText);
     },
     function(){}
   );
