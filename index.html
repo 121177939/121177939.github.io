@@ -4110,14 +4110,52 @@ function getImageVariants(img){
   ];
 }
 
+function normalizeDetectedResults(results){
+  if(!results || !results.length) return [];
+  return results.map(function(item){
+    const rawValue = String(item && item.rawValue || '').trim();
+    const box = item && item.boundingBox ? item.boundingBox : null;
+    return {
+      rawValue: rawValue,
+      format: item && item.format ? String(item.format) : '',
+      boundingBox: box ? {
+        x: Number(box.x || 0),
+        y: Number(box.y || 0),
+        width: Number(box.width || 0),
+        height: Number(box.height || 0)
+      } : null
+    };
+  }).filter(function(item){ return item.rawValue; });
+}
+
+function uniqueCodeCandidates(items){
+  const seen = new Set();
+  return (items || []).filter(function(item){
+    const key = [item.rawValue, item.boundingBox && Math.round(item.boundingBox.x), item.boundingBox && Math.round(item.boundingBox.y)].join('|');
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function sortCodeCandidates(items){
+  return (items || []).slice().sort(function(a, b){
+    const ay = a.boundingBox ? a.boundingBox.y : 0;
+    const by = b.boundingBox ? b.boundingBox.y : 0;
+    if(Math.abs(ay - by) > 12) return ay - by;
+    const ax = a.boundingBox ? a.boundingBox.x : 0;
+    const bx = b.boundingBox ? b.boundingBox.x : 0;
+    return ax - bx;
+  });
+}
+
 async function detectWithBarcodeDetectorSource(source, detector){
-  if(!detector) return '';
+  if(!detector) return [];
   try{
     const results = await detector.detect(source);
-    if(!results || !results.length) return '';
-    return String(results[0].rawValue || '').trim();
+    return sortCodeCandidates(uniqueCodeCandidates(normalizeDetectedResults(results)));
   }catch(err){
-    return '';
+    return [];
   }
 }
 
@@ -4131,30 +4169,122 @@ async function detectWithJsQRCanvas(canvas){
   return result && result.data ? String(result.data).trim() : '';
 }
 
+function fileToDataURL(file){
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(){ resolve(String(reader.result || '')); };
+    reader.onerror = function(){ reject(new Error('读取图片失败')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function chooseCandidateFromImagePreview(imageUrl, imageSize, candidates){
+  return new Promise(function(resolve){
+    const modal = document.createElement('div');
+    modal.className = 'multi-code-modal';
+    const ordered = sortCodeCandidates(candidates);
+    let selectedIndex = 0;
+    modal.innerHTML = `
+      <div class="multi-code-panel">
+        <div class="multi-code-title">检测到多个条码，请选择要录入的那个</div>
+        <div class="multi-code-subtitle">已按从上到下排序。你要扫第二个码时，直接点图中的第 2 个框，或者点下面的“第 2 个条码”。</div>
+        <div class="multi-code-preview-wrap">
+          <img class="multi-code-preview" src="${imageUrl}" alt="条码预览" />
+        </div>
+        <div class="multi-code-list"></div>
+        <div class="multi-code-actions">
+          <button class="multi-code-btn cancel" type="button">取消</button>
+          <button class="multi-code-btn confirm" type="button">确定</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const wrap = modal.querySelector('.multi-code-preview-wrap');
+    const img = modal.querySelector('.multi-code-preview');
+    const list = modal.querySelector('.multi-code-list');
+    const cancelBtn = modal.querySelector('.multi-code-btn.cancel');
+    const confirmBtn = modal.querySelector('.multi-code-btn.confirm');
+    function close(val){ if(modal.parentNode) modal.parentNode.removeChild(modal); resolve(val); }
+    function truncate(v){ return v.length > 40 ? v.slice(0, 40) + '…' : v; }
+    function renderBoxes(){
+      Array.from(wrap.querySelectorAll('.multi-code-box')).forEach(function(el){ el.remove(); });
+      const rect = img.getBoundingClientRect();
+      const displayWidth = rect.width;
+      const displayHeight = rect.height;
+      ordered.forEach(function(item, idx){
+        if(!item.boundingBox) return;
+        const box = document.createElement('button');
+        box.type = 'button';
+        box.className = 'multi-code-box' + (idx === selectedIndex ? ' active' : '');
+        const scaleX = displayWidth / Math.max(1, imageSize.width || img.naturalWidth || displayWidth);
+        const scaleY = displayHeight / Math.max(1, imageSize.height || img.naturalHeight || displayHeight);
+        box.style.left = (item.boundingBox.x * scaleX) + 'px';
+        box.style.top = (item.boundingBox.y * scaleY) + 'px';
+        box.style.width = Math.max(36, item.boundingBox.width * scaleX) + 'px';
+        box.style.height = Math.max(28, item.boundingBox.height * scaleY) + 'px';
+        box.innerHTML = '<span>' + (idx + 1) + '</span>';
+        box.onclick = function(){ selectedIndex = idx; updateSelection(); };
+        wrap.appendChild(box);
+      });
+    }
+    function updateSelection(){
+      Array.from(list.children).forEach(function(el, idx){ el.classList.toggle('active', idx === selectedIndex); });
+      Array.from(wrap.querySelectorAll('.multi-code-box')).forEach(function(el, idx){ el.classList.toggle('active', idx === selectedIndex); });
+    }
+    ordered.forEach(function(item, idx){
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'multi-code-item' + (idx === selectedIndex ? ' active' : '');
+      row.innerHTML = '<div class="multi-code-item-title">第 ' + (idx + 1) + ' 个条码</div><div class="multi-code-item-value">' + escapeHtml(truncate(item.rawValue)) + '</div>';
+      row.onclick = function(){ selectedIndex = idx; updateSelection(); };
+      list.appendChild(row);
+    });
+    img.onload = function(){ renderBoxes(); updateSelection(); };
+    if(img.complete) setTimeout(function(){ renderBoxes(); updateSelection(); }, 0);
+    window.addEventListener('resize', renderBoxes, {passive:true});
+    cancelBtn.onclick = function(){ close(null); };
+    confirmBtn.onclick = function(){ close(ordered[selectedIndex] ? ordered[selectedIndex].rawValue : null); };
+    modal.addEventListener('click', function(e){ if(e.target === modal) close(null); });
+  });
+}
+
 async function recognizeCodeFromImage(file, detector){
-  if(!file) return '';
+  if(!file) return {code:'', candidates:[], imageUrl:'', imageSize:{width:0,height:0}};
   const loaded = await loadImageElementFromFile(file);
   const img = loaded.img;
+  const imageUrl = await fileToDataURL(file);
   try{
-    let code = await detectWithBarcodeDetectorSource(img, detector);
-    if(code) return code;
+    let candidates = await detectWithBarcodeDetectorSource(img, detector);
+    if(candidates.length > 1){
+      return {code:'', candidates:candidates, imageUrl:imageUrl, imageSize:{width:img.naturalWidth || img.width || 0, height:img.naturalHeight || img.height || 0}};
+    }
+    if(candidates.length === 1){
+      return {code:candidates[0].rawValue, candidates:candidates, imageUrl:imageUrl, imageSize:{width:img.naturalWidth || img.width || 0, height:img.naturalHeight || img.height || 0}};
+    }
     const variants = getImageVariants(img);
     for(const variant of variants){
       const canvas = createCanvasFromImageVariant(img, variant);
-      code = await detectWithBarcodeDetectorSource(canvas, detector);
-      if(code) return code;
+      candidates = await detectWithBarcodeDetectorSource(canvas, detector);
+      if(candidates.length > 1){
+        return {code:'', candidates:candidates, imageUrl:canvas.toDataURL('image/jpeg', 0.92), imageSize:{width:canvas.width, height:canvas.height}};
+      }
+      if(candidates.length === 1){
+        return {code:candidates[0].rawValue, candidates:candidates, imageUrl:canvas.toDataURL('image/jpeg', 0.92), imageSize:{width:canvas.width, height:canvas.height}};
+      }
     }
     for(const variant of variants){
       const canvas = createCanvasFromImageVariant(img, variant);
+      let code = '';
       try{
         code = await detectWithJsQRCanvas(canvas);
       }catch(err){
         console.error(err);
         code = '';
       }
-      if(code) return code;
+      if(code){
+        return {code:code, candidates:[{rawValue:code,boundingBox:null,format:'qr_code'}], imageUrl:canvas.toDataURL('image/jpeg', 0.92), imageSize:{width:canvas.width, height:canvas.height}};
+      }
     }
-    return '';
+    return {code:'', candidates:[], imageUrl:imageUrl, imageSize:{width:img.naturalWidth || img.width || 0, height:img.naturalHeight || img.height || 0}};
   }finally{
     loaded.revoke();
   }
@@ -4177,9 +4307,13 @@ function pickImageForRecognition(onDetected){
         }
         showToast('正在识别图片，请稍候');
         const detector = await createPreferredDetector();
-        const raw = await recognizeCodeFromImage(file, detector);
+        const result = await recognizeCodeFromImage(file, detector);
+        let raw = result.code || '';
+        if(!raw && result.candidates && result.candidates.length > 1){
+          raw = await chooseCandidateFromImagePreview(result.imageUrl, result.imageSize, result.candidates);
+        }
         if(!raw){
-          showToast('没有识别到二维码，请让二维码完整并尽量占满画面');
+          showToast(result.candidates && result.candidates.length > 1 ? '你取消了条码选择' : '没有识别到二维码或条码，请让目标码尽量占满画面');
           resolve(false);
           return;
         }
@@ -4188,7 +4322,7 @@ function pickImageForRecognition(onDetected){
         resolve(true);
       }catch(err){
         console.error(err);
-        showToast('图片识别失败，请换一张正对二维码的图片');
+        showToast('图片识别失败，请换一张正对条码的图片');
         resolve(false);
       }finally{
         input.value = '';
