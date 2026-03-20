@@ -4040,7 +4040,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'multi-code-v1-test';
+const APP_VERSION = 'multi-code-v2-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4211,6 +4211,7 @@ async function toggleScanTorch(session){
 }
 
 
+
 async function recognizeCodeFromImage(file, detector){
   try{
     if(typeof Html5Qrcode !== 'undefined'){
@@ -4256,9 +4257,10 @@ async function recognizeCodeFromImage(file, detector){
         const html5Qr = new Html5Qrcode(tempId);
         try{
           const result = await html5Qr.scanFile(file, true);
-          const value = typeof result === 'string' ? result : (result && (result.decodedText || result.rawValue || ''));
-          if(String(value || '').trim()){
-            return [String(value).trim()];
+          const raw = typeof result === 'string' ? result : (result && (result.decodedText || result.rawValue || ''));
+          const values = normalizeRecognizedCodes([raw]);
+          if(values.length){
+            return values;
           }
         } finally {
           try{ await html5Qr.clear(); }catch(e){}
@@ -4342,16 +4344,61 @@ function createScanOverlay(useFallback){
 }
 
 
+
 function normalizeRecognizedCodes(values){
   const list = [];
   const seen = new Set();
-  (Array.isArray(values) ? values : [values]).forEach(function(v){
+
+  function pushCode(v){
     const code = String(v == null ? '' : v).trim();
     if(!code) return;
     if(seen.has(code)) return;
     seen.add(code);
     list.push(code);
-  });
+  }
+
+  function expandValue(v){
+    const text = String(v == null ? '' : v).trim();
+    if(!text) return;
+
+    // 某些库会把多个识别结果拼成一个字符串返回，这里做拆分兜底
+    if(/[\n\r]+/.test(text)){
+      text.split(/[\n\r]+/).map(function(s){ return s.trim(); }).filter(Boolean).forEach(pushCode);
+      return;
+    }
+
+    if(text.indexOf(',') !== -1){
+      const parts = text.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      const looksLikeMany = parts.length > 1 && parts.every(function(p){ return p.length >= 4; });
+      if(looksLikeMany){
+        parts.forEach(pushCode);
+        return;
+      }
+    }
+
+    if(text.indexOf('|') !== -1){
+      const parts = text.split('|').map(function(s){ return s.trim(); }).filter(Boolean);
+      const looksLikeMany = parts.length > 1 && parts.every(function(p){ return p.length >= 4; });
+      if(looksLikeMany){
+        parts.forEach(pushCode);
+        return;
+      }
+    }
+
+    // 有些识别结果会被拼成 "123456789012 987654321098 456789012345"
+    if(text.indexOf(' ') !== -1){
+      const parts = text.split(/\s+/).map(function(s){ return s.trim(); }).filter(Boolean);
+      const looksLikeMany = parts.length > 1 && parts.every(function(p){ return /^[A-Za-z0-9._-]{4,}$/.test(p); });
+      if(looksLikeMany){
+        parts.forEach(pushCode);
+        return;
+      }
+    }
+
+    pushCode(text);
+  }
+
+  (Array.isArray(values) ? values : [values]).forEach(expandValue);
   return list.slice(0, 12);
 }
 
