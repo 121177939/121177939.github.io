@@ -960,9 +960,24 @@
   background:#eef1f5;
   color:#4b5563;
 }
+
 .scan-result-btn.primary{
   background:linear-gradient(180deg,#33b4f5,#14d1c4);
   color:#fff;
+}
+.version-badge{
+  position:fixed;
+  right:12px;
+  bottom:92px;
+  z-index:999;
+  background:rgba(37,50,71,.92);
+  color:#fff;
+  font-size:12px;
+  padding:7px 10px;
+  border-radius:999px;
+  box-shadow:0 8px 20px rgba(0,0,0,.16);
+  letter-spacing:.2px;
+  pointer-events:none;
 }
 
     .input-identity-tag{
@@ -3776,7 +3791,7 @@ function render(){
       tradein: tradeinView,
       orders: ordersView
     }[state.tab] || homeView;
-    app.innerHTML = '<div class="page">' + view() + '</div>';
+    app.innerHTML = '<div class="page">' + view() + '</div>' + getVersionBadgeHtml();
     const orderForm = document.getElementById('orderForm');
     if(orderForm){
       safeCall(function(){ hydrateOrderForm(orderForm); }, 'hydrateOrderForm');
@@ -3954,6 +3969,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
+const APP_VERSION = 'ios-adapt-v1-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4220,6 +4236,115 @@ function applyScanResult(session, raw){
   try{ showToast('识别成功：' + code); }catch(e){}
 }
 
+
+function isIOSDevice(){
+  const ua = String(navigator.userAgent || '');
+  const platform = String(navigator.platform || '');
+  const maxTouchPoints = Number(navigator.maxTouchPoints || 0);
+  return /iPad|iPhone|iPod/i.test(ua) || (/Mac/i.test(platform) && maxTouchPoints > 1);
+}
+
+function setScanInputMode(fileInput){
+  if(!fileInput) return;
+  fileInput.setAttribute('accept', 'image/*');
+  if(isIOSDevice()){
+    fileInput.setAttribute('capture', 'environment');
+  }else{
+    fileInput.removeAttribute('capture');
+  }
+}
+
+async function startIOSImageScan(onDetected){
+  const overlay = createScanOverlay(true);
+  const closeBtn = overlay.querySelector('.scan-close');
+  const resultPanel = overlay.querySelector('.scan-result-panel');
+  const resultCode = overlay.querySelector('.scan-result-code');
+  const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
+  const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
+  const torchBtn = overlay.querySelector('.scan-torch-btn');
+  const photoBtn = overlay.querySelector('.scan-photo-btn');
+  const fileInput = overlay.querySelector('.scan-file-input');
+  const readerHost = overlay.querySelector('#scanReaderHost');
+  const tip = overlay.querySelector('.scan-overlay-tip');
+
+  if(readerHost){
+    readerHost.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;padding:0 24px;text-align:center;line-height:1.7">iPhone / iPad 请直接拍摄或选择条码图片识别</div>';
+    readerHost.style.display = 'flex';
+    readerHost.style.alignItems = 'center';
+    readerHost.style.justifyContent = 'center';
+  }
+  if(tip) tip.textContent = 'iOS 设备请点“识别图片”，可直接拍照识别条码 / 二维码';
+  if(torchBtn) torchBtn.style.display = 'none';
+
+  const session = {
+    detector:null,
+    stream:null,
+    overlay,
+    video:null,
+    timer:null,
+    lastCode:'',
+    lastAt:0,
+    paused:false,
+    onDetected:onDetected,
+    track:null,
+    torchSupported:false,
+    usingNativeTorch:false,
+    torchOn:false,
+    torchBtn,
+    photoBtn,
+    fileInput,
+    resultPanel,
+    resultCode,
+    html5Qr:null,
+    html5QrRunning:false
+  };
+  activeScanSession = session;
+  if(closeBtn) closeBtn.onclick = closeRemarkScan;
+  if(stopBtn) stopBtn.onclick = closeRemarkScan;
+  if(confirmBtn) confirmBtn.onclick = function(){
+    session.paused = false;
+    if(resultPanel) resultPanel.hidden = true;
+    if(fileInput) fileInput.click();
+  };
+
+  setScanInputMode(fileInput);
+  if(photoBtn) photoBtn.onclick = function(){
+    if(fileInput) fileInput.click();
+  };
+  if(fileInput) fileInput.onchange = async function(){
+    const file = fileInput.files && fileInput.files[0];
+    if(!file) return;
+    try{
+      session.paused = true;
+      const raw = await recognizeCodeFromImage(file, null);
+      if(!raw){
+        showToast('这张图片里没有识别到条码或二维码');
+        session.paused = false;
+        return;
+      }
+      applyScanResult(session, raw);
+    }catch(err){
+      console.error(err);
+      showToast('图片识别失败，请换一张更清晰的图片');
+      session.paused = false;
+    }finally{
+      fileInput.value = '';
+    }
+  };
+
+  showToast('iOS 请直接拍摄条码图片识别');
+  setTimeout(function(){
+    try{
+      if(fileInput) fileInput.click();
+    }catch(e){}
+  }, 120);
+}
+
+function getVersionBadgeHtml(){
+  return '<div class="version-badge">测试版 ' + escapeHtml(APP_VERSION) + '</div>';
+}
+
+
 async function startFallbackScan(onDetected){
   await loadHtml5QrcodeLib();
   if(typeof Html5Qrcode === 'undefined'){
@@ -4235,6 +4360,7 @@ async function startFallbackScan(onDetected){
   const photoBtn = overlay.querySelector('.scan-photo-btn');
   const fileInput = overlay.querySelector('.scan-file-input');
   const readerHost = overlay.querySelector('#scanReaderHost');
+  setScanInputMode(fileInput);
   const nativeTorchSupported = canUseNativeTorch();
   const session = {
     detector:null,
@@ -4317,6 +4443,16 @@ async function startGenericScan(onDetected){
     showToast('请先关闭当前扫码窗口');
     return;
   }
+  if(isIOSDevice()){
+    try{
+      await startIOSImageScan(onDetected);
+    }catch(err){
+      console.error(err);
+      showToast('iOS 识别启动失败，请重试');
+      closeRemarkScan();
+    }
+    return;
+  }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     showToast('当前设备不支持打开摄像头');
     return;
@@ -4327,7 +4463,7 @@ async function startGenericScan(onDetected){
       await startFallbackScan(onDetected);
     }catch(err){
       console.error(err);
-      showToast('当前设备扫码能力不可用，请升级浏览器或系统 WebView');
+      showToast('当前设备扫码能力不可用，请改用识别图片');
       closeRemarkScan();
     }
     return;
@@ -4594,7 +4730,7 @@ function buildDataHealthSnapshot(source, warnings){
   const snapshot = {
     source: source || 'runtime',
     checkedAt: Date.now(),
-    version: 'v3-safe',
+    version: APP_VERSION,
     orders: Array.isArray(state.orders) ? state.orders.length : 0,
     tradeinOrders: Array.isArray(state.tradeinOrders) ? state.tradeinOrders.length : 0,
     products: Array.isArray(state.products) ? state.products.length : 0,
@@ -4612,7 +4748,7 @@ function getDataHealthHtml(){
   const warningText = info.warnings && info.warnings.length ? info.warnings.join('；') : '未发现结构问题';
   return `
     <div class="row"><span>最近校验</span><span class="right">${info.checkedAt ? new Date(info.checkedAt).toLocaleString() : '未校验'}</span></div>
-    <div class="row"><span>数据版本</span><span class="right">${escapeHtml(info.version || 'v3-safe')}</span></div>
+    <div class="row"><span>数据版本</span><span class="right">${escapeHtml(info.version || APP_VERSION)}</span></div>
     <div class="row"><span>普通订单</span><span class="right">${Number(info.orders || 0)} 笔</span></div>
     <div class="row"><span>换新订单</span><span class="right">${Number(info.tradeinOrders || 0)} 笔</span></div>
     <div class="row"><span>校验结果</span><span class="right">${escapeHtml(warningText)}</span></div>
@@ -4633,7 +4769,7 @@ function normalizeCloudPayload(payload, source){
   if(!Array.isArray(raw.products)) warnings.push('products 已自动修复');
   if(!Array.isArray(raw.suppliers)) warnings.push('suppliers 已自动修复');
   const normalized = {
-    version: raw.version || 'v3-safe',
+    version: raw.version || APP_VERSION,
     schemaVersion: 3,
     orders: (Array.isArray(raw.orders) ? raw.orders : []).map(normalizeOrderItem),
     tradeinOrders: (Array.isArray(raw.tradeinOrders) ? raw.tradeinOrders : []).map(normalizeTradeinItem),
