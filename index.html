@@ -4043,7 +4043,7 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 let html5QrcodeLibLoading = null;
-const APP_VERSION = 'photo-scan-v1-test';
+const APP_VERSION = 'photo-scan-v2-test';
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
@@ -4742,111 +4742,78 @@ function setPhotoOnlyScanInputMode(fileInput){
   fileInput.setAttribute('capture', 'environment');
 }
 
+
 async function startPhotoOnlyScan(onDetected){
-  const overlay = createScanOverlay(true);
-  const closeBtn = overlay.querySelector('.scan-close');
-  const resultPanel = overlay.querySelector('.scan-result-panel');
-  const resultCode = overlay.querySelector('.scan-result-code');
-  const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
-  const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
-  const torchBtn = overlay.querySelector('.scan-torch-btn');
-  const photoBtn = overlay.querySelector('.scan-photo-btn');
-  const fileInput = overlay.querySelector('.scan-file-input');
-  const readerHost = overlay.querySelector('#scanReaderHost');
-  const tip = overlay.querySelector('.scan-overlay-tip');
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.setAttribute('capture', 'environment');
+  input.style.position = 'fixed';
+  input.style.left = '-9999px';
+  input.style.top = '-9999px';
+  document.body.appendChild(input);
 
-  if(readerHost){
-    readerHost.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;padding:0 24px;text-align:center;line-height:1.7">请拍照或从相册选择条码图片识别</div>';
-    readerHost.style.display = 'flex';
-    readerHost.style.alignItems = 'center';
-    readerHost.style.justifyContent = 'center';
+  function cleanup(){
+    try{ input.remove(); }catch(e){}
+    if(activeScanSession && activeScanSession._tempInput === input){
+      activeScanSession = null;
+    }
   }
-  if(tip) tip.textContent = '点“识别图片”后拍照或选图，可识别单个或多个条码';
-  if(torchBtn) torchBtn.style.display = 'none';
 
-  const session = {
-    detector:null,
-    stream:null,
-    overlay,
-    video:null,
-    timer:null,
-    lastCode:'',
-    lastAt:0,
+  activeScanSession = {
     paused:false,
     onDetected:onDetected,
-    track:null,
-    torchSupported:false,
-    usingNativeTorch:false,
-    torchOn:false,
-    torchBtn,
-    photoBtn,
-    fileInput,
-    resultPanel,
-    resultCode,
-    html5Qr:null,
-    html5QrRunning:false
-  };
-  activeScanSession = session;
-
-  if(closeBtn) closeBtn.onclick = closeRemarkScan;
-  if(stopBtn) stopBtn.onclick = closeRemarkScan;
-  if(confirmBtn) confirmBtn.onclick = function(){
-    session.paused = false;
-    if(resultPanel) resultPanel.hidden = true;
-    if(fileInput) fileInput.click();
+    _tempInput:input
   };
 
-  setPhotoOnlyScanInputMode(fileInput);
-
-  async function processSelectedFile(){
-    const file = fileInput && fileInput.files && fileInput.files[0];
-    if(!file) return;
+  input.onchange = async function(){
+    const file = input.files && input.files[0];
+    if(!file){
+      cleanup();
+      return;
+    }
     try{
-      session.paused = true;
       const values = await recognizeCodeFromImage(file, null);
       const codes = normalizeRecognizedCodes(values);
       if(!codes.length){
         showToast('这张图片里没有识别到条码或二维码');
-        session.paused = false;
+        cleanup();
         return;
       }
+      let picked = '';
       if(codes.length > 1){
-        const picked = await showMultiCodePicker(codes);
+        picked = await showMultiCodePicker(codes);
         if(!picked){
-          session.paused = false;
+          cleanup();
           return;
         }
-        applyScanResult(session, picked);
-        return;
+      }else{
+        picked = codes[0];
       }
-      applyScanResult(session, codes[0]);
+      if(typeof onDetected === 'function'){
+        onDetected(picked);
+      }
+      showToast('识别成功：' + picked);
     }catch(err){
       console.error(err);
       showToast('图片识别失败，请换一张更清晰的照片');
-      session.paused = false;
     }finally{
-      if(fileInput) fileInput.value = '';
+      cleanup();
     }
-  }
-
-  if(photoBtn) photoBtn.onclick = function(){
-    if(fileInput) fileInput.click();
   };
-  if(fileInput) fileInput.onchange = processSelectedFile;
 
-  showToast('已切换为拍照识别模式');
+  showToast('已切换为系统拍照/选图模式');
   setTimeout(function(){
-    try{
-      if(fileInput) fileInput.click();
-    }catch(e){}
-  }, 120);
+    try{ input.click(); }catch(e){ cleanup(); }
+  }, 80);
 }
+
 
 
 
 async function startGenericScan(onDetected){
   if(activeScanSession){
-    showToast('请先关闭当前扫码窗口');
+    showToast('请先完成当前选择');
     return;
   }
   try{
@@ -4854,7 +4821,7 @@ async function startGenericScan(onDetected){
   }catch(err){
     console.error(err);
     showToast('拍照识别启动失败，请重试');
-    closeRemarkScan();
+    if(activeScanSession) activeScanSession = null;
   }
 }
 window.startRemarkScan = startRemarkScan;
