@@ -4010,6 +4010,7 @@ function ensureHtml5QrcodeLoaded(){
   if(html5QrcodeLoadPromise) return html5QrcodeLoadPromise;
   const sources = [
     'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
+    'https://fastly.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
     'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
   ];
   html5QrcodeLoadPromise = (async function(){
@@ -4030,35 +4031,186 @@ function ensureHtml5QrcodeLoaded(){
   return html5QrcodeLoadPromise;
 }
 
-async function recognizeCodeFromImage(file){
-  if(!file) return '';
-
-  if(typeof BarcodeDetector !== 'undefined'){
-    try{
-      const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-      const usableFormats = detectorFormats().filter(function(item){ return formats.includes(item); });
-      const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-      const img = new Image();
-      const url = URL.createObjectURL(file);
+function ensureZXingBrowserLoaded(){
+  if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
+    return Promise.resolve(window.ZXingBrowser);
+  }
+  if(window.ZXing && window.ZXing.BrowserMultiFormatReader){
+    return Promise.resolve(window.ZXing);
+  }
+  if(window.ZXing && window.ZXing.BrowserQRCodeReader){
+    return Promise.resolve(window.ZXing);
+  }
+  if(window.zxingBrowserLoadPromise) return window.zxingBrowserLoadPromise;
+  const sources = [
+    'https://cdn.bootcdn.net/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
+    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+    'https://fastly.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+    'https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+    'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',
+    'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'
+  ];
+  window.zxingBrowserLoadPromise = (async function(){
+    let lastError = null;
+    for(const src of sources){
       try{
-        await new Promise(function(resolve, reject){
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = url;
-        });
-        const results = await detector.detect(img);
+        await loadExternalScript(src);
+        if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader) return window.ZXingBrowser;
+        if(window.ZXing && (window.ZXing.BrowserMultiFormatReader || window.ZXing.BrowserQRCodeReader)) return window.ZXing;
+      }catch(err){
+        lastError = err;
+      }
+    }
+    throw lastError || new Error('zxing not loaded');
+  })().catch(function(err){
+    window.zxingBrowserLoadPromise = null;
+    throw err;
+  });
+  return window.zxingBrowserLoadPromise;
+}
+
+function fileToImage(file){
+  return new Promise(function(resolve, reject){
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = function(){
+      img.dataset.objectUrl = url;
+      resolve(img);
+    };
+    img.onerror = function(err){
+      URL.revokeObjectURL(url);
+      reject(err || new Error('image load failed'));
+    };
+    img.src = url;
+  });
+}
+
+function releaseImage(img){
+  try{
+    const url = img && img.dataset ? img.dataset.objectUrl : '';
+    if(url) URL.revokeObjectURL(url);
+  }catch(e){}
+}
+
+async function fileToScanCanvas(file){
+  if(!file) return null;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+  if(!ctx) throw new Error('canvas not supported');
+
+  if(window.createImageBitmap){
+    try{
+      const bitmap = await createImageBitmap(file, {imageOrientation:'from-image'});
+      const maxSide = 2000;
+      const ratio = Math.min(1, maxSide / Math.max(bitmap.width || 1, bitmap.height || 1));
+      canvas.width = Math.max(1, Math.round((bitmap.width || 1) * ratio));
+      canvas.height = Math.max(1, Math.round((bitmap.height || 1) * ratio));
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      if(bitmap.close) bitmap.close();
+      return canvas;
+    }catch(err){}
+  }
+
+  const img = await fileToImage(file);
+  try{
+    const width = img.naturalWidth || img.width || 1;
+    const height = img.naturalHeight || img.height || 1;
+    const maxSide = 2000;
+    const ratio = Math.min(1, maxSide / Math.max(width, height));
+    canvas.width = Math.max(1, Math.round(width * ratio));
+    canvas.height = Math.max(1, Math.round(height * ratio));
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }finally{
+    releaseImage(img);
+  }
+}
+
+function cloneCanvas(source, scale, rotation){
+  scale = scale || 1;
+  rotation = rotation || 0;
+  const srcW = source.width || 1;
+  const srcH = source.height || 1;
+  const swap = Math.abs(rotation) % 180 === 90;
+  const target = document.createElement('canvas');
+  target.width = Math.max(1, Math.round((swap ? srcH : srcW) * scale));
+  target.height = Math.max(1, Math.round((swap ? srcW : srcH) * scale));
+  const ctx = target.getContext('2d', {willReadFrequently:true});
+  if(!ctx) return source;
+  ctx.save();
+  ctx.translate(target.width / 2, target.height / 2);
+  if(rotation) ctx.rotate(rotation * Math.PI / 180);
+  ctx.drawImage(source, -Math.round(srcW * scale / 2), -Math.round(srcH * scale / 2), Math.round(srcW * scale), Math.round(srcH * scale));
+  ctx.restore();
+  return target;
+}
+
+function buildCanvasVariants(baseCanvas){
+  const variants = [];
+  const seen = new Set();
+  [0, 90, 180, 270].forEach(function(rotation){
+    [1, 0.85, 0.65].forEach(function(scale){
+      const canvas = cloneCanvas(baseCanvas, scale, rotation);
+      const key = [canvas.width, canvas.height, rotation].join('_');
+      if(!seen.has(key)){
+        seen.add(key);
+        variants.push(canvas);
+      }
+    });
+  });
+  return variants;
+}
+
+async function decodeCanvasWithBarcodeDetector(canvas){
+  if(typeof BarcodeDetector === 'undefined' || !canvas) return '';
+  try{
+    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+    const usableFormats = detectorFormats().filter(function(item){ return formats.includes(item); });
+    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+    for(const variant of buildCanvasVariants(canvas)){
+      try{
+        const results = await detector.detect(variant);
         if(results && results.length){
           const raw = String(results[0].rawValue || '').trim();
           if(raw) return raw;
         }
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    }catch(err){
-      console.warn('BarcodeDetector image decode skipped', err);
+      }catch(err){}
     }
+  }catch(err){
+    console.warn('BarcodeDetector image decode skipped', err);
   }
+  return '';
+}
 
+async function decodeCanvasWithZXing(canvas){
+  if(!canvas) return '';
+  const ZXingLib = await ensureZXingBrowserLoaded();
+  let reader = null;
+  let img = null;
+  try{
+    reader = ZXingLib.BrowserMultiFormatReader ? new ZXingLib.BrowserMultiFormatReader() : new ZXingLib.BrowserQRCodeReader();
+    for(const variant of buildCanvasVariants(canvas)){
+      img = new Image();
+      await new Promise(function(resolve, reject){
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = variant.toDataURL('image/jpeg', 0.92);
+      });
+      try{
+        const result = await reader.decodeFromImageElement(img);
+        const raw = result && (result.text || (result.getText && result.getText())) ? String(result.text || result.getText()).trim() : '';
+        if(raw) return raw;
+      }catch(err){}
+    }
+  }finally{
+    try{ if(reader && reader.reset) reader.reset(); }catch(e){}
+  }
+  return '';
+}
+
+async function decodeCanvasWithHtml5Qrcode(canvas){
+  if(!canvas) return '';
   const Html5Qrcode = await ensureHtml5QrcodeLoaded();
   const mountId = 'html5QrTemp_' + Date.now();
   const mount = document.createElement('div');
@@ -4073,14 +4225,48 @@ async function recognizeCodeFromImage(file){
   let scanner = null;
   try{
     scanner = new Html5Qrcode(mountId, {verbose:false});
-    const raw = await scanner.scanFile(file, false);
-    return String(raw || '').trim();
+    for(const variant of buildCanvasVariants(canvas)){
+      const blob = await new Promise(function(resolve){ variant.toBlob(resolve, 'image/jpeg', 0.92); });
+      if(!blob) continue;
+      const testFile = new File([blob], 'scan.jpg', {type:'image/jpeg'});
+      try{
+        const raw = await scanner.scanFile(testFile, false);
+        const text = String(raw || '').trim();
+        if(text) return text;
+      }catch(err){}
+    }
   } finally {
     try{
       if(scanner && scanner.clear) await scanner.clear();
     }catch(e){}
     if(mount.parentNode) mount.parentNode.removeChild(mount);
   }
+  return '';
+}
+
+async function recognizeCodeFromImage(file){
+  if(!file) return '';
+  const canvas = await fileToScanCanvas(file);
+  if(!canvas) return '';
+
+  let raw = await decodeCanvasWithBarcodeDetector(canvas);
+  if(raw) return raw;
+
+  try{
+    raw = await decodeCanvasWithZXing(canvas);
+    if(raw) return raw;
+  }catch(err){
+    console.warn('ZXing image decode skipped', err);
+  }
+
+  try{
+    raw = await decodeCanvasWithHtml5Qrcode(canvas);
+    if(raw) return raw;
+  }catch(err){
+    console.warn('html5-qrcode image decode skipped', err);
+  }
+
+  return '';
 }
 
 function showBrowserScanChooser(onDetected){
@@ -4122,7 +4308,7 @@ function showBrowserScanChooser(onDetected){
       setBusy(true, '正在识别，请稍候…');
       const raw = await recognizeCodeFromImage(file);
       if(!raw){
-        setBusy(false, '没有识别到二维码或条码，请换一张更清晰的图片');
+        setBusy(false, '没有识别到二维码或条码，请确认二维码完整并充满画面');
         showToast('没有识别到二维码或条码');
         return;
       }
@@ -4132,7 +4318,7 @@ function showBrowserScanChooser(onDetected){
     }catch(err){
       console.error(err);
       setBusy(false, '识别失败，请换一张更清晰的图片再试');
-      showToast('图片识别失败，请换一张更清晰的图片');
+      showToast('图片识别失败，请换一张包含完整二维码的照片再试');
     }
   }
 
