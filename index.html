@@ -4663,6 +4663,7 @@ async function ensureZXingLoaded(){
     'https://cdn.bootcdn.net/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
     'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+    'https://fastly.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
     'https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js'
   ];
   zxingLoaderPromise = new Promise(async function(resolve, reject){
@@ -4707,6 +4708,92 @@ async function createNativeDetector(){
   }
 }
 
+function extractNativeScanCode(result){
+  if(result == null) return '';
+  if(typeof result === 'string') return result.trim();
+  if(typeof result === 'number') return String(result);
+  const keys = ['code','text','rawValue','result','value','content','data','qr','barcode'];
+  for(const key of keys){
+    if(result && result[key] != null){
+      return String(result[key]).trim();
+    }
+  }
+  return '';
+}
+
+function getNativeScanInvoker(){
+  try{
+    if(window.AndroidBridge){
+      const bridge = window.AndroidBridge;
+      const candidates = [
+        'scanQRCode','scanQrCode','scanQR','scanCode','startScan','startQrScan',
+        'startQRCodeScan','openScanner','openQrScanner','openQRCodeScanner'
+      ];
+      for(const name of candidates){
+        if(typeof bridge[name] === 'function'){
+          return {platform:'android', type:'bridge', name, invoke:function(){ return bridge[name](); }};
+        }
+      }
+    }
+  }catch(err){}
+  try{
+    if(window.webkit && window.webkit.messageHandlers){
+      const handlers = window.webkit.messageHandlers;
+      const names = ['qrScan','scanQRCode','scanCode','nativeScan','openScanner'];
+      for(const name of names){
+        if(handlers[name] && typeof handlers[name].postMessage === 'function'){
+          return {platform:'ios', type:'handler', name, invoke:function(){ return handlers[name].postMessage({action:'scan'}); }};
+        }
+      }
+    }
+  }catch(err){}
+  return null;
+}
+
+function hasNativeAppScanner(){
+  return !!getNativeScanInvoker();
+}
+
+async function tryStartNativeAppScan(session){
+  const invoker = getNativeScanInvoker();
+  if(!invoker) return false;
+  window.__pendingNativeScanSession = session;
+  if(session && session.statusText){
+    session.statusText.textContent = '正在调用APP原生扫码…';
+  }
+  try{
+    const direct = await invoker.invoke();
+    const code = extractNativeScanCode(direct);
+    if(code){
+      handleDetectedCode(session, code);
+      return true;
+    }
+    return true;
+  }catch(err){
+    console.error(err);
+    if(session && session.statusText){
+      session.statusText.textContent = 'APP原生扫码调用失败，已切换到浏览器兼容模式';
+    }
+    showToast('APP原生扫码调用失败，已切换浏览器兼容模式');
+    return false;
+  }
+}
+
+function deliverNativeScanResultToPage(result){
+  const session = window.__pendingNativeScanSession || activeScanSession;
+  if(!session) return false;
+  const code = extractNativeScanCode(result);
+  if(!code) return false;
+  handleDetectedCode(session, code);
+  if(session.statusText) session.statusText.textContent = '原生扫码识别成功';
+  return true;
+}
+
+window.receiveNativeScanResult = deliverNativeScanResultToPage;
+window.onNativeScanResult = deliverNativeScanResultToPage;
+window.handleNativeScanResult = deliverNativeScanResultToPage;
+window.__receiveNativeScanResult = deliverNativeScanResultToPage;
+
 async function startRemarkScan(orderId){
   startGenericScan(function(code){
     appendRemarkCode(orderId, code);
@@ -4717,6 +4804,7 @@ function closeRemarkScan(){
   if(!activeScanSession) return;
   const session = activeScanSession;
   activeScanSession = null;
+  if(window.__pendingNativeScanSession === session) window.__pendingNativeScanSession = null;
   try{
     if(session.scanTimer) clearInterval(session.scanTimer);
     if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
@@ -4877,7 +4965,7 @@ function getUserMediaCompat(constraints){
 async function beginLiveScan(session){
   if(!session) return;
   if(!((navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia)){
-    showToast('当前浏览器不支持实时扫码，请改用拍照识别');
+    showToast('当前浏览器不支持浏览器扫码，请改用APP原生扫码或拍照识别');
     return;
   }
   const status = session.statusText;
@@ -4888,8 +4976,13 @@ async function beginLiveScan(session){
       try{ session.stream.getTracks().forEach(function(track){ track.stop(); }); }catch(e){}
       session.stream = null;
     }
+    const videoConstraints = {
+      facingMode:{ideal:'environment'},
+      width:{ideal:1920},
+      height:{ideal:1080}
+    };
     const stream = await getUserMediaCompat({
-      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}},
+      video: videoConstraints,
       audio:false
     });
     session.stream = stream;
@@ -4902,11 +4995,25 @@ async function beginLiveScan(session){
     session.liveBtn.classList.add('active');
     session.track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
     const capabilities = session.track && session.track.getCapabilities ? session.track.getCapabilities() : null;
+    if(session.track && session.track.applyConstraints && capabilities){
+      const advanced = [];
+      if(capabilities.focusMode && Array.isArray(capabilities.focusMode)){
+        if(capabilities.focusMode.includes('continuous')) advanced.push({focusMode:'continuous'});
+        else if(capabilities.focusMode.includes('single-shot')) advanced.push({focusMode:'single-shot'});
+      }
+      if(capabilities.zoom && typeof capabilities.zoom.min === 'number'){
+        const baseZoom = Math.max(capabilities.zoom.min, 1);
+        advanced.push({zoom: Math.min(baseZoom, capabilities.zoom.max || baseZoom)});
+      }
+      if(advanced.length){
+        try{ await session.track.applyConstraints({advanced}); }catch(err){}
+      }
+    }
     session.usingNativeTorch = canUseNativeTorch();
     session.torchSupported = session.usingNativeTorch || !!(capabilities && capabilities.torch);
     session.torchOn = false;
     updateTorchButtonState(session);
-    if(status) status.textContent = '请将条形码或二维码放入框内';
+    if(status) status.textContent = '请将二维码放入框内，保持 10-20 厘米距离并稍等自动对焦';
 
     if(session.detector){
       if(session.scanTimer) clearInterval(session.scanTimer);
@@ -4935,14 +5042,14 @@ async function beginLiveScan(session){
   }catch(err){
     console.error(err);
     session.liveBtn.classList.remove('active');
-    if(status) status.textContent = '实时扫码打开失败，请改用拍照识别或相册识别';
+    if(status) status.textContent = '浏览器扫码打开失败，请改用APP原生扫码、拍照识别或相册识别';
     const name = err && err.name ? err.name : '';
     if(name === 'NotAllowedError'){
       showToast('摄像头权限被拒绝，请改用拍照识别或到系统设置中开启摄像头权限');
     }else if(name === 'NotFoundError'){
       showToast('当前设备未检测到可用摄像头');
     }else{
-      showToast('实时扫码打开失败，请改用拍照识别');
+      showToast('浏览器扫码打开失败，请改用拍照识别');
     }
   }
 }
@@ -4997,7 +5104,7 @@ async function startGenericScan(onDetected){
   overlay.className = 'scan-overlay';
   overlay.innerHTML = `
     <div class="scan-overlay-top">
-      <div class="scan-title">通用扫码</div>
+      <div class="scan-title">扫码</div>
       <button class="scan-close" type="button">×</button>
     </div>
     <video playsinline autoplay muted hidden></video>
@@ -5008,7 +5115,7 @@ async function startGenericScan(onDetected){
       <span class="corner br"></span>
       <span class="scan-line"></span>
     </div>
-    <div class="scan-overlay-tip">优先推荐拍照识别或相册识别，兼容性更好；支持的浏览器可用实时扫码。</div>
+    <div class="scan-overlay-tip">APP内优先调用原生扫码；纯浏览器建议拍照识别或相册识别。</div>
     <div class="scan-bottom-actions">
       <button class="scan-bottom-action scan-camera-btn" type="button">
         <span class="icon">📸</span>
@@ -5018,9 +5125,13 @@ async function startGenericScan(onDetected){
         <span class="icon">🖼️</span>
         <span>相册识别</span>
       </button>
+      <button class="scan-bottom-action scan-native-btn" type="button">
+        <span class="icon">📱</span>
+        <span>APP原生扫码</span>
+      </button>
       <button class="scan-bottom-action scan-live-btn" type="button">
         <span class="icon">📷</span>
-        <span>实时扫码</span>
+        <span>浏览器扫码</span>
       </button>
       <button class="scan-bottom-action scan-manual-btn" type="button">
         <span class="icon">⌨️</span>
@@ -5053,6 +5164,7 @@ async function startGenericScan(onDetected){
     closeBtn: overlay.querySelector('.scan-close'),
     cameraBtn: overlay.querySelector('.scan-camera-btn'),
     photoBtn: overlay.querySelector('.scan-photo-btn'),
+    nativeBtn: overlay.querySelector('.scan-native-btn'),
     liveBtn: overlay.querySelector('.scan-live-btn'),
     manualBtn: overlay.querySelector('.scan-manual-btn'),
     torchBtn: overlay.querySelector('.scan-torch-btn'),
@@ -5072,7 +5184,8 @@ async function startGenericScan(onDetected){
     lastAt:0,
     scanTimer:null,
     reader:null,
-    zxingControls:null
+    zxingControls:null,
+    nativeAvailable: hasNativeAppScanner()
   };
   session.manualPanel = {hidden:false};
   activeScanSession = session;
@@ -5083,6 +5196,10 @@ async function startGenericScan(onDetected){
   if(session.confirmBtn) session.confirmBtn.onclick = function(){ resumeScanSession(session); };
   if(session.cameraBtn) session.cameraBtn.onclick = function(){ triggerImageScan(session, true); };
   if(session.photoBtn) session.photoBtn.onclick = function(){ triggerImageScan(session, false); };
+  if(session.nativeBtn) session.nativeBtn.onclick = async function(){
+    const ok = await tryStartNativeAppScan(session);
+    if(!ok) beginLiveScan(session);
+  };
   if(session.manualBtn) session.manualBtn.onclick = function(){ applyCodeByPrompt(session); };
   if(session.liveBtn) session.liveBtn.onclick = function(){ beginLiveScan(session); };
   if(session.torchBtn) session.torchBtn.onclick = function(){ toggleScanTorch(session); };
@@ -5094,16 +5211,20 @@ async function startGenericScan(onDetected){
       if(session.statusText) session.statusText.textContent = '正在识别图片，请稍候…';
       const raw = await recognizeCodeFromImageFile(file, session.detector);
       if(!raw){
-        showToast('没有识别到条码或二维码，请换一张更清晰的图片');
+        showToast('没有识别到二维码，请把码放大、对准、补光后重试');
         session.paused = false;
-        if(session.statusText) session.statusText.textContent = '优先推荐拍照识别或相册识别，兼容性更好；支持的浏览器可用实时扫码。';
+        if(session.statusText) session.statusText.textContent = 'APP内优先调用原生扫码；纯浏览器建议拍照识别或相册识别。';
         return;
       }
       handleDetectedCode(session, raw);
-      if(session.statusText) session.statusText.textContent = '识别成功，可继续拍照、相册识别或实时扫码';
+      if(session.statusText) session.statusText.textContent = '识别成功，可继续扫码';
     }catch(err){
       console.error(err);
-      showToast('图片识别失败，请换一张更清晰的图片');
+      if(session.nativeAvailable){
+        showToast('图片识别失败，请优先使用APP原生扫码');
+      }else{
+        showToast('图片识别失败，请换一张清晰正拍的二维码图片');
+      }
       session.paused = false;
       if(session.statusText) session.statusText.textContent = '图片识别失败，请重新选择图片';
     }finally{
@@ -5111,7 +5232,18 @@ async function startGenericScan(onDetected){
     }
   };
 
-  if(session.statusText) session.statusText.textContent = '推荐先用拍照识别；实时扫码仅在兼容浏览器中启用。';
+  if(session.nativeBtn && !session.nativeAvailable){
+    session.nativeBtn.disabled = true;
+    session.nativeBtn.style.opacity = '0.55';
+  }
+  if(session.liveBtn && /iPhone|iPad|iPod/i.test(navigator.userAgent || '')){
+    session.liveBtn.classList.remove('active');
+  }
+  if(session.nativeAvailable){
+    if(session.statusText) session.statusText.textContent = '检测到APP原生扫码能力，优先点击“APP原生扫码”';
+  }else{
+    if(session.statusText) session.statusText.textContent = '当前是纯浏览器兼容模式：优先拍照识别/相册识别；浏览器扫码成功率受机型和HTTPS影响。';
+  }
 }
 
 function appendRemarkCode(orderId, code){
