@@ -3935,506 +3935,267 @@ document.addEventListener('keydown', function(e){
   }
 });
 
-
 let activeScanSession = null;
-let html5QrcodeLoadPromise = null;
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
-function isNativeScanAvailable(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
+async function startRemarkScan(orderId){
+  startGenericScan(function(code){
+    appendRemarkCode(orderId, code);
+  });
 }
-function isNativePhotoScanAvailable(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.startNativePhotoScan === 'function');
-}
-function isNativeAlbumScanAvailable(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeAlbumScan === 'function');
-}
-
-window.__nativeScanDeliver = window.__nativeScanDeliver || function(result){
-  try{
-    const cb = window.__nativeScanPendingCallback;
-    window.__nativeScanPendingCallback = null;
-    if(activeScanSession && activeScanSession.mode === 'native'){
-      activeScanSession = null;
-    }
-    const raw = String(result || '').trim();
-    if(cb && raw){
-      cb(raw);
-      return true;
-    }
-  }catch(e){}
-  return false;
-};
-
-window.__nativeScanCancel = window.__nativeScanCancel || function(){
-  window.__nativeScanPendingCallback = null;
-  if(activeScanSession && activeScanSession.mode === 'native'){
-    activeScanSession = null;
-  }
-  return true;
-};
 
 function closeRemarkScan(){
-  if(window.__nativeScanPendingCallback && (!activeScanSession || activeScanSession.mode !== 'native')){
-    window.__nativeScanPendingCallback = null;
-  }
   if(!activeScanSession) return;
   const session = activeScanSession;
   activeScanSession = null;
   try{
-    if(session.cleanup) session.cleanup();
+    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.forceTorchOff === 'function'){
+      AndroidBridge.forceTorchOff();
+    }else if(session.torchOn && session.track && session.track.applyConstraints){
+      session.track.applyConstraints({advanced:[{torch:false}]});
+    }
   }catch(e){}
+  if(session.timer) clearInterval(session.timer);
+  if(session.stream){
+    session.stream.getTracks().forEach(track => track.stop());
+  }
+  if(session.overlay && session.overlay.parentNode){
+    session.overlay.parentNode.removeChild(session.overlay);
+  }
 }
 
-function loadExternalScript(url){
-  return new Promise(function(resolve, reject){
-    const existing = document.querySelector('script[data-src="' + url + '"]');
-    if(existing){
-      if(existing.dataset.loaded === '1'){
-        resolve();
-        return;
-      }
-      existing.addEventListener('load', function(){ resolve(); }, {once:true});
-      existing.addEventListener('error', function(){ reject(new Error('load failed')); }, {once:true});
+function canUseNativeTorch(){
+  return !!(window.AndroidBridge && typeof AndroidBridge.isTorchAvailable === 'function' && AndroidBridge.isTorchAvailable());
+}
+
+function updateTorchButtonState(session){
+  if(!session || !session.torchBtn) return;
+  session.torchBtn.disabled = !session.torchSupported;
+  session.torchBtn.classList.toggle('active', !!session.torchOn);
+  const label = session.torchBtn.querySelector('span:last-child');
+  if(label) label.textContent = session.torchSupported ? (session.torchOn ? '关闭手电筒' : '手电筒') : '设备不支持';
+}
+
+async function toggleScanTorch(session){
+  if(!session || !session.torchSupported) return;
+  try{
+    const nextState = !session.torchOn;
+    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.setTorchEnabled === 'function'){
+      const ok = AndroidBridge.setTorchEnabled(nextState);
+      session.torchOn = !!ok && nextState;
+      updateTorchButtonState(session);
+      if(!ok) showToast('当前设备暂不支持手电筒');
       return;
     }
+    if(!session.track || !session.track.applyConstraints){
+      showToast('当前设备暂不支持手电筒');
+      return;
+    }
+    session.torchOn = nextState;
+    await session.track.applyConstraints({advanced:[{torch: session.torchOn}]});
+    updateTorchButtonState(session);
+  }catch(err){
+    console.error(err);
+    session.torchOn = false;
+    updateTorchButtonState(session);
+    showToast('当前设备暂不支持手电筒');
+  }
+}
+
+let jsQrLoadPromise = null;
+
+function loadExternalScript(src){
+  return new Promise(function(resolve, reject){
     const script = document.createElement('script');
-    script.src = url;
+    script.src = src;
     script.async = true;
-    script.dataset.src = url;
-    script.onload = function(){ script.dataset.loaded = '1'; resolve(); };
-    script.onerror = function(){ reject(new Error('load failed')); };
+    script.onload = function(){ resolve(); };
+    script.onerror = function(){ reject(new Error('load failed: ' + src)); };
     document.head.appendChild(script);
   });
 }
 
-function ensureHtml5QrcodeLoaded(){
-  if(window.Html5Qrcode) return Promise.resolve(window.Html5Qrcode);
-  if(html5QrcodeLoadPromise) return html5QrcodeLoadPromise;
+async function ensureJsQR(){
+  if(window.jsQR) return window.jsQR;
+  if(jsQrLoadPromise) return jsQrLoadPromise;
   const sources = [
-    'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
-    'https://fastly.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js',
-    'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+    'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+    'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'
   ];
-  html5QrcodeLoadPromise = (async function(){
+  jsQrLoadPromise = (async function(){
     let lastError = null;
     for(const src of sources){
       try{
         await loadExternalScript(src);
-        if(window.Html5Qrcode) return window.Html5Qrcode;
+        if(window.jsQR) return window.jsQR;
       }catch(err){
         lastError = err;
       }
     }
-    throw lastError || new Error('html5-qrcode not loaded');
-  })().catch(function(err){
-    html5QrcodeLoadPromise = null;
-    throw err;
-  });
-  return html5QrcodeLoadPromise;
+    throw lastError || new Error('jsQR load failed');
+  })();
+  return jsQrLoadPromise;
 }
 
-function ensureZXingBrowserLoaded(){
-  if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
-    return Promise.resolve(window.ZXingBrowser);
+async function createPreferredDetector(){
+  if(typeof BarcodeDetector === 'undefined') return null;
+  try{
+    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+    const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
+    return new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+  }catch(err){
+    console.error(err);
+    return null;
   }
-  if(window.ZXing && window.ZXing.BrowserMultiFormatReader){
-    return Promise.resolve(window.ZXing);
-  }
-  if(window.ZXing && window.ZXing.BrowserQRCodeReader){
-    return Promise.resolve(window.ZXing);
-  }
-  if(window.zxingBrowserLoadPromise) return window.zxingBrowserLoadPromise;
-  const sources = [
-    'https://cdn.bootcdn.net/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/browser/0.1.5/zxing-browser.min.js',
-    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-    'https://fastly.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-    'https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
-    'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js',
-    'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'
-  ];
-  window.zxingBrowserLoadPromise = (async function(){
-    let lastError = null;
-    for(const src of sources){
-      try{
-        await loadExternalScript(src);
-        if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader) return window.ZXingBrowser;
-        if(window.ZXing && (window.ZXing.BrowserMultiFormatReader || window.ZXing.BrowserQRCodeReader)) return window.ZXing;
-      }catch(err){
-        lastError = err;
-      }
-    }
-    throw lastError || new Error('zxing not loaded');
-  })().catch(function(err){
-    window.zxingBrowserLoadPromise = null;
-    throw err;
-  });
-  return window.zxingBrowserLoadPromise;
 }
 
-function fileToImage(file){
+function loadImageElementFromFile(file){
   return new Promise(function(resolve, reject){
     const img = new Image();
     const url = URL.createObjectURL(file);
-    img.onload = function(){
-      img.dataset.objectUrl = url;
-      resolve(img);
-    };
-    img.onerror = function(err){
-      URL.revokeObjectURL(url);
-      reject(err || new Error('image load failed'));
-    };
+    img.onload = function(){ resolve({img:img, revoke:function(){ URL.revokeObjectURL(url); }}); };
+    img.onerror = function(err){ URL.revokeObjectURL(url); reject(err || new Error('图片加载失败')); };
     img.src = url;
   });
 }
 
-function releaseImage(img){
-  try{
-    const url = img && img.dataset ? img.dataset.objectUrl : '';
-    if(url) URL.revokeObjectURL(url);
-  }catch(e){}
-}
-
-async function fileToScanCanvas(file){
-  if(!file) return null;
+function createCanvasFromImageVariant(img, options){
+  const naturalWidth = img.naturalWidth || img.width || 0;
+  const naturalHeight = img.naturalHeight || img.height || 0;
+  const cropRatio = Math.max(0.55, Math.min(1, Number(options.cropRatio || 1)));
+  const rotation = Number(options.rotation || 0);
+  const maxSide = Math.max(360, Number(options.maxSide || 1200));
+  const sourceWidth = naturalWidth * cropRatio;
+  const sourceHeight = naturalHeight * cropRatio;
+  const sx = Math.max(0, Math.round((naturalWidth - sourceWidth) / 2));
+  const sy = Math.max(0, Math.round((naturalHeight - sourceHeight) / 2));
+  const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+  const drawWidth = Math.max(160, Math.round(sourceWidth * scale));
+  const drawHeight = Math.max(160, Math.round(sourceHeight * scale));
   const canvas = document.createElement('canvas');
+  const quarterTurn = rotation === 90 || rotation === 270;
+  canvas.width = quarterTurn ? drawHeight : drawWidth;
+  canvas.height = quarterTurn ? drawWidth : drawHeight;
   const ctx = canvas.getContext('2d', {willReadFrequently:true});
-  if(!ctx) throw new Error('canvas not supported');
-
-  if(window.createImageBitmap){
-    try{
-      const bitmap = await createImageBitmap(file, {imageOrientation:'from-image'});
-      const maxSide = 2000;
-      const ratio = Math.min(1, maxSide / Math.max(bitmap.width || 1, bitmap.height || 1));
-      canvas.width = Math.max(1, Math.round((bitmap.width || 1) * ratio));
-      canvas.height = Math.max(1, Math.round((bitmap.height || 1) * ratio));
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      if(bitmap.close) bitmap.close();
-      return canvas;
-    }catch(err){}
-  }
-
-  const img = await fileToImage(file);
-  try{
-    const width = img.naturalWidth || img.width || 1;
-    const height = img.naturalHeight || img.height || 1;
-    const maxSide = 2000;
-    const ratio = Math.min(1, maxSide / Math.max(width, height));
-    canvas.width = Math.max(1, Math.round(width * ratio));
-    canvas.height = Math.max(1, Math.round(height * ratio));
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    return canvas;
-  }finally{
-    releaseImage(img);
-  }
-}
-
-function cloneCanvas(source, scale, rotation){
-  scale = scale || 1;
-  rotation = rotation || 0;
-  const srcW = source.width || 1;
-  const srcH = source.height || 1;
-  const swap = Math.abs(rotation) % 180 === 90;
-  const target = document.createElement('canvas');
-  target.width = Math.max(1, Math.round((swap ? srcH : srcW) * scale));
-  target.height = Math.max(1, Math.round((swap ? srcW : srcH) * scale));
-  const ctx = target.getContext('2d', {willReadFrequently:true});
-  if(!ctx) return source;
   ctx.save();
-  ctx.translate(target.width / 2, target.height / 2);
-  if(rotation) ctx.rotate(rotation * Math.PI / 180);
-  ctx.drawImage(source, -Math.round(srcW * scale / 2), -Math.round(srcH * scale / 2), Math.round(srcW * scale), Math.round(srcH * scale));
+  if(rotation === 90){
+    ctx.translate(canvas.width, 0);
+    ctx.rotate(Math.PI / 2);
+  }else if(rotation === 180){
+    ctx.translate(canvas.width, canvas.height);
+    ctx.rotate(Math.PI);
+  }else if(rotation === 270){
+    ctx.translate(0, canvas.height);
+    ctx.rotate(-Math.PI / 2);
+  }
+  ctx.drawImage(img, sx, sy, sourceWidth, sourceHeight, 0, 0, drawWidth, drawHeight);
   ctx.restore();
-  return target;
+  return canvas;
 }
 
-function buildCanvasVariants(baseCanvas){
-  const variants = [];
-  const seen = new Set();
-  [0, 90, 180, 270].forEach(function(rotation){
-    [1, 0.85, 0.65].forEach(function(scale){
-      const canvas = cloneCanvas(baseCanvas, scale, rotation);
-      const key = [canvas.width, canvas.height, rotation].join('_');
-      if(!seen.has(key)){
-        seen.add(key);
-        variants.push(canvas);
-      }
-    });
-  });
-  return variants;
+function getImageVariants(img){
+  const maxOriginalSide = Math.max(img.naturalWidth || img.width || 0, img.naturalHeight || img.height || 0);
+  const sideA = maxOriginalSide > 2200 ? 1440 : 1200;
+  const sideB = maxOriginalSide > 2200 ? 1080 : 900;
+  return [
+    {rotation:0, maxSide:sideA, cropRatio:1},
+    {rotation:0, maxSide:sideB, cropRatio:1},
+    {rotation:0, maxSide:sideA, cropRatio:0.9},
+    {rotation:90, maxSide:sideA, cropRatio:1},
+    {rotation:270, maxSide:sideA, cropRatio:1},
+    {rotation:180, maxSide:sideA, cropRatio:1}
+  ];
 }
 
-async function decodeCanvasWithBarcodeDetector(canvas){
-  if(typeof BarcodeDetector === 'undefined' || !canvas) return '';
+async function detectWithBarcodeDetectorSource(source, detector){
+  if(!detector) return '';
   try{
-    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-    const usableFormats = detectorFormats().filter(function(item){ return formats.includes(item); });
-    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-    for(const variant of buildCanvasVariants(canvas)){
-      try{
-        const results = await detector.detect(variant);
-        if(results && results.length){
-          const raw = String(results[0].rawValue || '').trim();
-          if(raw) return raw;
-        }
-      }catch(err){}
-    }
+    const results = await detector.detect(source);
+    if(!results || !results.length) return '';
+    return String(results[0].rawValue || '').trim();
   }catch(err){
-    console.warn('BarcodeDetector image decode skipped', err);
+    return '';
   }
-  return '';
 }
 
-async function decodeCanvasWithZXing(canvas){
-  if(!canvas) return '';
-  const ZXingLib = await ensureZXingBrowserLoaded();
-  let reader = null;
-  let img = null;
-  try{
-    reader = ZXingLib.BrowserMultiFormatReader ? new ZXingLib.BrowserMultiFormatReader() : new ZXingLib.BrowserQRCodeReader();
-    for(const variant of buildCanvasVariants(canvas)){
-      img = new Image();
-      await new Promise(function(resolve, reject){
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = variant.toDataURL('image/jpeg', 0.92);
-      });
-      try{
-        const result = await reader.decodeFromImageElement(img);
-        const raw = result && (result.text || (result.getText && result.getText())) ? String(result.text || result.getText()).trim() : '';
-        if(raw) return raw;
-      }catch(err){}
-    }
-  }finally{
-    try{ if(reader && reader.reset) reader.reset(); }catch(e){}
-  }
-  return '';
+async function detectWithJsQRCanvas(canvas){
+  const jsQR = await ensureJsQR();
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const result = jsQR(imageData.data, imageData.width, imageData.height, {
+    inversionAttempts:'attemptBoth'
+  });
+  return result && result.data ? String(result.data).trim() : '';
 }
 
-async function decodeCanvasWithHtml5Qrcode(canvas){
-  if(!canvas) return '';
-  const Html5Qrcode = await ensureHtml5QrcodeLoaded();
-  const mountId = 'html5QrTemp_' + Date.now();
-  const mount = document.createElement('div');
-  mount.id = mountId;
-  mount.style.position = 'fixed';
-  mount.style.left = '-9999px';
-  mount.style.top = '-9999px';
-  mount.style.width = '1px';
-  mount.style.height = '1px';
-  mount.style.overflow = 'hidden';
-  document.body.appendChild(mount);
-  let scanner = null;
-  try{
-    scanner = new Html5Qrcode(mountId, {verbose:false});
-    for(const variant of buildCanvasVariants(canvas)){
-      const blob = await new Promise(function(resolve){ variant.toBlob(resolve, 'image/jpeg', 0.92); });
-      if(!blob) continue;
-      const testFile = new File([blob], 'scan.jpg', {type:'image/jpeg'});
-      try{
-        const raw = await scanner.scanFile(testFile, false);
-        const text = String(raw || '').trim();
-        if(text) return text;
-      }catch(err){}
-    }
-  } finally {
-    try{
-      if(scanner && scanner.clear) await scanner.clear();
-    }catch(e){}
-    if(mount.parentNode) mount.parentNode.removeChild(mount);
-  }
-  return '';
-}
-
-async function recognizeCodeFromImage(file){
+async function recognizeCodeFromImage(file, detector){
   if(!file) return '';
-  const canvas = await fileToScanCanvas(file);
-  if(!canvas) return '';
-
-  let raw = await decodeCanvasWithBarcodeDetector(canvas);
-  if(raw) return raw;
-
+  const loaded = await loadImageElementFromFile(file);
+  const img = loaded.img;
   try{
-    raw = await decodeCanvasWithZXing(canvas);
-    if(raw) return raw;
-  }catch(err){
-    console.warn('ZXing image decode skipped', err);
-  }
-
-  try{
-    raw = await decodeCanvasWithHtml5Qrcode(canvas);
-    if(raw) return raw;
-  }catch(err){
-    console.warn('html5-qrcode image decode skipped', err);
-  }
-
-  return '';
-}
-
-function showAppNativeScanChooser(onDetected){
-  const mask = document.createElement('div');
-  mask.className = 'confirm-mask';
-  mask.innerHTML = `
-    <div class="confirm-box" style="text-align:left;padding:20px 18px 18px;">
-      <div class="confirm-title" style="text-align:center;margin-bottom:8px;">APP内识别方式</div>
-      <div style="font-size:13px;color:#7b8492;line-height:1.7;text-align:center;margin-bottom:14px;">在APP里会优先使用原生扫码、原生拍照识别和原生相册识别，稳定性更高。</div>
-      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
-        <button class="confirm-btn confirm-ok" type="button" data-action="scan">原生扫码</button>
-        <button class="confirm-btn confirm-ok" type="button" data-action="photo" style="background:linear-gradient(180deg,#0ea5e9,#0284c7);">原生拍照识别</button>
-        <button class="confirm-btn confirm-ok" type="button" data-action="album" style="background:linear-gradient(180deg,#8b5cf6,#7c3aed);">原生相册识别</button>
-        <button class="confirm-btn confirm-cancel" type="button" data-action="cancel">取消</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(mask);
-
-  function closeMask(){
-    if(mask.parentNode) mask.parentNode.removeChild(mask);
-  }
-
-  function startNative(action){
-    let starter = null;
-    if(action === 'scan' && isNativeScanAvailable()) starter = function(){ return AndroidBridge.startNativeScan(); };
-    if(action === 'photo' && isNativePhotoScanAvailable()) starter = function(){ return AndroidBridge.startNativePhotoScan(); };
-    if(action === 'album' && isNativeAlbumScanAvailable()) starter = function(){ return AndroidBridge.startNativeAlbumScan(); };
-    if(!starter){
-      showToast('当前APP未提供该原生能力');
-      return;
+    let code = await detectWithBarcodeDetectorSource(img, detector);
+    if(code) return code;
+    const variants = getImageVariants(img);
+    for(const variant of variants){
+      const canvas = createCanvasFromImageVariant(img, variant);
+      code = await detectWithBarcodeDetectorSource(canvas, detector);
+      if(code) return code;
     }
-    activeScanSession = {mode:'native'};
-    window.__nativeScanPendingCallback = function(result){
-      const raw = String(result || '').trim();
-      activeScanSession = null;
-      window.__nativeScanPendingCallback = null;
-      if(raw && typeof onDetected === 'function') onDetected(raw);
-    };
-    closeMask();
-    try{
-      const ok = starter();
-      if(ok === false){
-        activeScanSession = null;
-        window.__nativeScanPendingCallback = null;
-        showToast('原生识别暂时无法打开');
+    for(const variant of variants){
+      const canvas = createCanvasFromImageVariant(img, variant);
+      try{
+        code = await detectWithJsQRCanvas(canvas);
+      }catch(err){
+        console.error(err);
+        code = '';
       }
-    }catch(err){
-      console.error(err);
-      activeScanSession = null;
-      window.__nativeScanPendingCallback = null;
-      showToast('原生识别暂时无法打开');
+      if(code) return code;
     }
-  }
-
-  mask.addEventListener('click', function(e){
-    if(e.target === mask){ closeMask(); return; }
-    const btn = e.target.closest('button[data-action]');
-    if(!btn) return;
-    const action = btn.getAttribute('data-action');
-    if(action === 'cancel'){
-      closeMask();
-      return;
-    }
-    startNative(action);
-  });
-}
-
-function showBrowserScanChooser(onDetected){
-  const mask = document.createElement('div');
-  mask.className = 'confirm-mask';
-  mask.innerHTML = `
-    <div class="confirm-box" style="text-align:left;padding:20px 18px 18px;">
-      <div class="confirm-title" style="text-align:center;margin-bottom:8px;">选择识别方式</div>
-      <div style="font-size:13px;color:#7b8492;line-height:1.7;text-align:center;margin-bottom:14px;">网页端默认使用拍照或相册识别。APP 内会自动调起原生扫码。</div>
-      <div data-role="status" style="font-size:13px;color:#177ddc;text-align:center;min-height:20px;margin-bottom:10px;"></div>
-      <div style="display:grid;grid-template-columns:1fr;gap:10px;">
-        <button class="confirm-btn confirm-ok" type="button" data-action="capture">拍照识别</button>
-        <button class="confirm-btn confirm-ok" type="button" data-action="album" style="background:linear-gradient(180deg,#8b5cf6,#7c3aed);">相册识别</button>
-        <button class="confirm-btn confirm-cancel" type="button" data-action="cancel">取消</button>
-      </div>
-      <input class="scan-file-input" type="file" accept="image/*" capture="environment" data-input="capture" />
-      <input class="scan-file-input" type="file" accept="image/*" data-input="album" />
-    </div>
-  `;
-  document.body.appendChild(mask);
-
-  const statusEl = mask.querySelector('[data-role="status"]');
-  const captureInput = mask.querySelector('[data-input="capture"]');
-  const albumInput = mask.querySelector('[data-input="album"]');
-  const actionButtons = Array.from(mask.querySelectorAll('button[data-action]'));
-
-  function setBusy(busy, message){
-    actionButtons.forEach(function(btn){
-      const action = btn.getAttribute('data-action');
-      btn.disabled = !!busy && action !== 'cancel';
-      btn.style.opacity = btn.disabled ? '.65' : '1';
-    });
-    if(statusEl) statusEl.textContent = message || '';
-  }
-
-  async function handleFile(file){
-    if(!file) return;
-    try{
-      setBusy(true, '正在识别，请稍候…');
-      const raw = await recognizeCodeFromImage(file);
-      if(!raw){
-        setBusy(false, '没有识别到二维码或条码，请确认二维码完整并充满画面');
-        showToast('没有识别到二维码或条码');
-        return;
-      }
-      closeRemarkScan();
-      if(typeof onDetected === 'function') onDetected(raw);
-      showToast('识别成功');
-    }catch(err){
-      console.error(err);
-      setBusy(false, '识别失败，请换一张更清晰的图片再试');
-      showToast('图片识别失败，请换一张包含完整二维码的照片再试');
-    }
-  }
-
-  function cleanup(){
-    if(captureInput) captureInput.value = '';
-    if(albumInput) albumInput.value = '';
-    if(mask.parentNode) mask.parentNode.removeChild(mask);
-  }
-
-  activeScanSession = {mode:'browser', cleanup:cleanup};
-
-  mask.addEventListener('click', function(e){
-    if(e.target === mask) closeRemarkScan();
-  });
-
-  actionButtons.forEach(function(btn){
-    btn.onclick = function(){
-      const action = btn.getAttribute('data-action');
-      if(action === 'cancel'){
-        closeRemarkScan();
-        return;
-      }
-      if(action === 'capture' && captureInput) captureInput.click();
-      if(action === 'album' && albumInput) albumInput.click();
-    };
-  });
-
-  if(captureInput){
-    captureInput.onchange = function(){
-      const file = captureInput.files && captureInput.files[0];
-      handleFile(file).finally(function(){ captureInput.value = ''; });
-    };
-  }
-  if(albumInput){
-    albumInput.onchange = function(){
-      const file = albumInput.files && albumInput.files[0];
-      handleFile(file).finally(function(){ albumInput.value = ''; });
-    };
+    return '';
+  }finally{
+    loaded.revoke();
   }
 }
 
-function startRemarkScan(orderId){
-  startGenericScan(function(code){
-    appendRemarkCode(orderId, code);
+function pickImageForRecognition(onDetected){
+  return new Promise(function(resolve){
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.jpg,.jpeg,.png,.webp,.heic,.heif';
+    input.setAttribute('capture', 'environment');
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = async function(){
+      const file = input.files && input.files[0];
+      try{
+        if(!file){
+          resolve(false);
+          return;
+        }
+        showToast('正在识别图片，请稍候');
+        const detector = await createPreferredDetector();
+        const raw = await recognizeCodeFromImage(file, detector);
+        if(!raw){
+          showToast('没有识别到二维码，请让二维码完整并尽量占满画面');
+          resolve(false);
+          return;
+        }
+        if(typeof onDetected === 'function') onDetected(raw);
+        showToast('识别成功');
+        resolve(true);
+      }catch(err){
+        console.error(err);
+        showToast('图片识别失败，请换一张正对二维码的图片');
+        resolve(false);
+      }finally{
+        input.value = '';
+        if(input.parentNode) input.parentNode.removeChild(input);
+      }
+    };
+    input.click();
   });
 }
 
@@ -4447,6 +4208,7 @@ function appendRemarkCode(orderId, code){
   order.remark = items.join(',');
   persist();
 
+  const activeInput = document.activeElement;
   render();
 
   const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
@@ -4492,16 +4254,171 @@ function startTradeinRemarkScan(form){
   });
 }
 
-function startGenericScan(onDetected){
+async function startGenericScan(onDetected){
   if(activeScanSession){
-    showToast('请先完成当前识别');
+    showToast('请先关闭当前扫码窗口');
     return;
   }
-  if(isNativeScanAvailable() || isNativePhotoScanAvailable() || isNativeAlbumScanAvailable()){
-    showAppNativeScanChooser(onDetected);
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof BarcodeDetector === 'undefined'){
+    await pickImageForRecognition(onDetected);
     return;
   }
-  showBrowserScanChooser(onDetected);
+  try{
+    const detector = await createPreferredDetector();
+    if(!detector){
+      await pickImageForRecognition(onDetected);
+      return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'scan-overlay';
+    overlay.innerHTML = `
+      <div class="scan-overlay-top">
+        <div class="scan-title">扫一扫</div>
+        <button class="scan-close" type="button">×</button>
+      </div>
+      <video playsinline autoplay muted></video>
+      <div class="scan-viewfinder" aria-hidden="true">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+        <span class="scan-line"></span>
+      </div>
+      <div class="scan-overlay-tip">将条形码或二维码放入框内，识别后点确定再继续扫码</div>
+      <div class="scan-bottom-actions">
+        <button class="scan-bottom-action scan-torch-btn" type="button">
+          <span class="icon">🔦</span>
+          <span>手电筒</span>
+        </button>
+        <button class="scan-bottom-action scan-photo-btn" type="button">
+          <span class="icon">🖼️</span>
+          <span>识别图片</span>
+        </button>
+        <input class="scan-file-input" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif" capture="environment" />
+      </div>
+      <div class="scan-result-panel" hidden>
+        <div class="scan-result-title">扫码成功</div>
+        <div class="scan-result-code"></div>
+        <div class="scan-result-actions">
+          <button class="scan-result-btn secondary" type="button">关闭</button>
+          <button class="scan-result-btn primary" type="button">确定，继续扫码</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const video = overlay.querySelector('video');
+    const closeBtn = overlay.querySelector('.scan-close');
+    const resultPanel = overlay.querySelector('.scan-result-panel');
+    const resultCode = overlay.querySelector('.scan-result-code');
+    const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
+    const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
+    const torchBtn = overlay.querySelector('.scan-torch-btn');
+    const photoBtn = overlay.querySelector('.scan-photo-btn');
+    const fileInput = overlay.querySelector('.scan-file-input');
+    video.srcObject = stream;
+    await video.play();
+    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+    const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
+    const nativeTorchSupported = canUseNativeTorch();
+    const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
+
+    const session = {
+      detector,
+      stream,
+      overlay,
+      video,
+      timer:null,
+      lastCode:'',
+      lastAt:0,
+      paused:false,
+      onDetected:onDetected,
+      track,
+      torchSupported,
+      usingNativeTorch:nativeTorchSupported,
+      torchOn:false,
+      torchBtn,
+      photoBtn,
+      fileInput
+    };
+    activeScanSession = session;
+    updateTorchButtonState(session);
+    closeBtn.onclick = closeRemarkScan;
+    if(stopBtn) stopBtn.onclick = closeRemarkScan;
+    if(confirmBtn) confirmBtn.onclick = function(){
+      session.paused = false;
+      if(resultPanel) resultPanel.hidden = true;
+    };
+    if(torchBtn) torchBtn.onclick = function(){
+      toggleScanTorch(session);
+    };
+    if(photoBtn) photoBtn.onclick = function(){
+      if(fileInput) fileInput.click();
+    };
+    if(fileInput) fileInput.onchange = async function(){
+      const file = fileInput.files && fileInput.files[0];
+      if(!file) return;
+      try{
+        session.paused = true;
+        const raw = await recognizeCodeFromImage(file, detector);
+        if(!raw){
+          showToast('没有识别到二维码，请让二维码完整并尽量占满画面');
+          session.paused = false;
+          return;
+        }
+        session.lastCode = raw;
+        session.lastAt = Date.now();
+        if(typeof session.onDetected === 'function'){
+          session.onDetected(raw);
+        }
+        if(resultCode) resultCode.textContent = raw;
+        if(resultPanel) resultPanel.hidden = false;
+      }catch(err){
+        console.error(err);
+        showToast('图片识别失败，请换一张正对二维码的图片');
+        session.paused = false;
+      }finally{
+        fileInput.value = '';
+      }
+    };
+
+    session.timer = setInterval(async function(){
+      if(!activeScanSession || activeScanSession !== session) return;
+      if(session.paused) return;
+      if(video.readyState < 2) return;
+      try{
+        const results = await detector.detect(video);
+        if(!results || !results.length) return;
+        const raw = String(results[0].rawValue || '').trim();
+        if(!raw) return;
+        const now = Date.now();
+        if(raw === session.lastCode && now - session.lastAt < 1200) return;
+        session.lastCode = raw;
+        session.lastAt = now;
+        session.paused = true;
+        if(typeof session.onDetected === 'function'){
+          session.onDetected(raw);
+        }
+        if(resultCode) resultCode.textContent = raw;
+        if(resultPanel) resultPanel.hidden = false;
+      }catch(err){
+        console.error(err);
+      }
+    }, 450);
+  }catch(err){
+    console.error(err);
+    showToast('打开扫码失败，请检查摄像头权限');
+    closeRemarkScan();
+  }
 }
 window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
