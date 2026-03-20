@@ -1,382 +1,492 @@
 <!--
-======================== 项目记录 / 交接说明 ========================
-项目：撸货进销存管理试用版（当前以 HTML 试用版为主）
-更新日期：2026-03-09
-当前状态：已定版，后续在此基础上继续小改，不要重做整体风格
+======================== 最新补充项目记录 / 定版收口版（2026-03-20） ========================
+本次更新性质：定版收口，不改核心业务流转，重点完成界面收口、默认配置清理与交接记录补全。
 
-一、当前共识（非常重要）
-1. 首页继续保持最初那套风格：
-   - 蓝绿渐变顶部
-   - 九宫格功能入口
-   - 不要重做首页视觉
-2. 当前开发以“HTML试用版”作为唯一主文件：
-   - 只同步 HTML
-   - 不要每次都同步安卓项目
-   - 安卓项目等用户明确说“定版同步安卓”后再处理
-3. 后续开发必须遵守：
-   - 只能局部改
-   - 不要整体替换视觉风格
-   - 不要乱改首页、九宫格和其他已确认页面
-4. 用户对“乱改整体风格”非常敏感：
-   - 后续只能在指定模块改
-   - 优先小改、微调、局部修复
-5. 本轮已确认“定版”：
-   - 当前文件可作为后续继续开发与交接的正式基线文件
+一、本轮最终确认完成
+1. 首页右上角“管理员 / APP下载”已改为同一行横排显示。
+2. 已压缩右上角按钮内边距与间距，避免把首页蓝色头部高度继续撑高。
+3. 当前首页头部视觉以“横排按钮 + 不明显增高”为最新定版基线，后续不要再改回上下堆叠。
+4. 新建账号弹窗已明确默认密码口径：
+   - 密码留空时默认使用 `12345678`
+5. 新建账号重复邮箱报错已汉化：
+   - `A user with this email address has already been registered`
+   - 现统一显示为：`该邮箱已被注册`
+6. 默认商品、默认供应商已清空：
+   - 新环境不再自动内置测试商品
+   - 新环境不再自动内置默认供应商
+7. 数据安全状态面板当前定版口径：
+   - 默认关闭
+   - 需要时手动打开
+   - “商品 / 供应商”统计行已删除，不再显示无关信息
+8. 当前文件已作为本轮正式定版 HTML，可直接继续用于后续同步安卓壳。
 
-二、当前首页状态
-1. 首页保留原始方案：
-   - 蓝绿渐变顶部
-   - 九宫格入口
-   - 最近订单列表
-2. 首页顶部标题当前为：
-   - 撸货 · 进销存管理
-3. 首页顶部统计当前为：
-   - 总销售额
-   - 总利润
-   - 收益率
-4. 原来的“库存数量”已经取消，改成“收益率”
-5. 收益率计算规则：
-   - 本金 = 下单金额 + 返款 - 运费
-   - 收益率 = 总利润 ÷ 总本金 × 100%
-6. 首页不要再大改版式，只允许后续做小型数据展示优化
-7. 首页右下角“+”浮动按钮已取消：
-   - 不要再加回
-   - 录入入口统一走首页九宫格和底部导航
-
-三、当前底部导航结构（已定版）
-当前底部导航已调整为以下逻辑：
-1. 首页
-2. 录入
-3. 未售出
-4. 报表
-5. 垫付中心
-
-说明：
-- 原底部“货品”已改成“录入”
-- 录入图标当前为：🧾
-- 原“账号板块”已改成“垫付中心”
-- 原“销售板块”逻辑已改造成“未售出”相关流程，不再按旧销售单逻辑走
-
-四、录入订单页（已定版）
-1. 录入订单页只负责录入，不再在本页下方显示订单表格
-2. 表单字段当前为：
-   - 日期
-   - 下单人
-   - 产品
-   - 下单金额
-   - 返款
-   - 运费
-   - 售出金额
-   - 利润
-   - 物流单号
-   - 备注
-3. 保存按钮当前为两个：
-   - 现货保存
-   - 垫付保存
-4. 保存逻辑：
-   - 现货保存：
-     - 如果“售出金额”为空或 0 → 订单进入“未售出”
-     - 如果“售出金额”大于 0 → 订单直接进入“报表”
-   - 垫付保存：
-     - 订单直接进入“垫付中心”
-5. 当前录入订单页不要再加订单表格回显，用户已经明确取消
-6. 本轮新增：
-   - 备注栏已加 📷 扫码按钮
-   - 可调用摄像头连续扫码
-   - 连续扫码结果自动追加到备注栏
-   - 当前追加格式为：12345,123456,123457
-7. 备注栏样式本轮已优化：
-   - 改为更长、更美观的整行显示
-   - 📷 按钮保留在备注输入框右侧
-
-五、未售出逻辑（已定版）
-1. 未售出订单定义：
-   - 售出金额为空
-   - 或售出金额 = 0
-2. 这些订单：
-   - 不进入报表
-   - 不参与首页和报表统计
-   - 统一进入“未售出”板块
-3. 在未售出板块里：
-   - 可填写售出金额
-   - 目前仍是手动填写后再查看报表
-   - 本次定版没有做“自动跳转报表”
-4. 这条逻辑后续必须保持，不要改回旧逻辑
-5. 本轮新增：
-   - 备注栏后面已增加 📷 按钮
-   - 支持连续扫码并自动追加到备注栏
-
-六、报表页（已定版）
-1. 报表页顶部统计模块已经全部取消
-   - 不再显示订单数量
-   - 不再显示总销售额
-   - 不再显示总利润
-2. 报表页顶部当前改成两个按钮：
-   - 导入
-   - 导出
-3. 报表页只显示“已售出订单”
-   - 即售出金额 > 0 的订单
-4. 报表页当前表格规则：
-   - 可直接在输入框里修改
-   - 取消编辑按钮
-   - 仅保留删除按钮
-5. 之前修复过一个 bug：
-   - 报表里数据不能修改
-   - 现已修复，后续不要再改坏
-6. 之前修复过另一个 bug：
-   - 订单过多时只显示前十几条，后面拉不下来
-   - 现已修复，可正常纵向滚动查看全部订单
-7. 当前表格已再次压缩优化为：
-   - 更紧凑
-   - 更适合手机
-   - 输入框更短
-   - 字号更小
-8. 当前表格规则补充：
-   - 日期列不要固定
-   - 横向滑动时整张表一起滑动
-   - 不要再把第一列做成吸附固定
-9. 后续如果继续调表格：
-   - 只能微调输入框宽度
-   - 不能破坏当前可下拉、可编辑、紧凑显示的状态
-10. 本轮新增：
-   - 备注栏后面已增加 📷 按钮
-   - 支持连续扫码并自动追加到备注栏
-
-七、导入 / 导出（已定版）
-1. 报表页已增加：
-   - 导入按钮
-   - 导出按钮
-2. 导入格式已经按用户提供的 Excel 表结构对齐
-3. 当前识别字段包括：
-   - 日期
-   - 下单人
-   - 产品
-   - 下单金额
-   - 返款
-   - 运费
-   - 售出金额
-   - 利润
-   - 物流单号
-   - 备注
-4. 后续继续开发时：
-   - 优先兼容这个 Excel 结构
-   - 不要随便改字段名
-
-八、垫付中心（已定版）
-1. 原“账号板块”已改为“垫付中心”
-2. 垫付保存的订单全部进入垫付中心
-3. 垫付中心每条订单当前有两个按钮：
-   - 发货
-   - 退款
-4. 业务逻辑：
-   - 发货：
-     - 订单转入“未售出”
-   - 退款：
-     - 直接删除该订单
-5. 垫付中心底部导航已补回：
-   - 后续不要再漏掉底部导航栏
-6. 这条流转逻辑已定版，后续不要变更为别的流程
-7. 本轮修复：
-   - 垫付中心、未售出、报表的搜索栏输入时不再每输一个字符就关闭输入法
-   - 已改为兼容中文输入法的搜索交互
-
-九、当前完整订单流转（非常重要）
-当前订单流转规则如下：
-
-1. 录入订单
-   - 点击“现货保存”
-     - 若售出金额为空或 0 → 进入“未售出”
-     - 若售出金额 > 0 → 进入“报表”
-   - 点击“垫付保存”
-     - 进入“垫付中心”
-
-2. 垫付中心
-   - 点击“发货” → 转入“未售出”
-   - 点击“退款” → 删除订单
-
-3. 未售出
-   - 填写售出金额后 → 手动在报表查看
-
-4. 报表
-   - 只显示已售出订单
-   - 可直接修改数据
-   - 可删除
-
-十、返回按钮（已定版）
-1. 各主要板块已增加返回按钮
-2. 当前样式为：
-   - 左上角“← 返回”
-   - 点击返回首页
-3. 已加返回按钮的页面包括：
-   - 录入订单
+二、当前正式基线补充说明
+1. 本项目当前主线已从通用进销存进一步收口为“撸货专用管理系统”。
+2. 后续继续开发时，优先围绕以下主线能力做增强：
+   - 普通订单
    - 未售出
-   - 报表
    - 垫付中心
-   - 货品
-   - 我的
-   - 新增商品
-   - 供应商
-4. 后续不要删除这些返回按钮
-
-十一、表格相关开发规则（必须遵守）
-1. 用户非常在意表格观感，当前偏好明确为：
-   - 紧凑
-   - 手机能看
-   - 输入框不要太长
-   - 列与列之间不要贴合在一起
-   - 日期列不要固定
-2. 之前已经踩过的坑：
-   - 产品列过长
-   - 下单人和产品贴在一起
-   - 输入框最小宽度导致列宽失效
-   - 表格区域被限制高度导致后面订单看不到
-   - 第一列固定导致滑动体验不对
-3. 这些问题都已经修复，后续不要回退
-4. 表格优化原则：
-   - 只做小改
-   - 不重做结构
-   - 不再把输入框拉成长条
-   - 不要再加回编辑按钮模式
-   - 保持“直接输入框修改”的方案
-   - 保持“整表一起横向滑动”的方案
-
-十二、首页九宫格当前说明（已定版）
-1. 首页九宫格不要重做
-2. 当前以下入口已改成演示占位：
-   - 供应商
-   - 进货
-3. 这两个入口当前显示为：
-   - 演示版可按需拓展
-4. 点击后弹出提示：
-   - 演示版可按需拓展
-5. 后续如要恢复真实功能，必须由用户明确指定再开发
-
-十三、扫码备注功能说明（本轮新增）
-1. 当前已在以下位置加入 📷 按钮：
-   - 录入订单页备注栏
-   - 未售出表格备注栏
-   - 报表表格备注栏
-2. 当前扫码行为：
-   - 调起摄像头
-   - 支持连续扫码
-   - 自动把新识别结果追加到备注字段
-   - 使用英文逗号连接
-3. 示例：
-   - 第一次扫：12345
-   - 第二次扫：12345,123456
-   - 第三次扫：12345,123456,123457
-4. 短时间重复识别同一编码已做简单防抖，避免抖动重复追加
-5. 该功能依赖手机浏览器 / WebView 的摄像头权限与扫码能力
-6. 当前垫付中心未加备注扫码按钮，后续如需加，再由用户明确指定
-
-十四、搜索栏修复说明（本轮新增）
-1. 已修复板块：
-   - 未售出
+   - 以旧换新
    - 报表
-   - 垫付中心
-2. 修复内容：
-   - 之前每输入一个字符都会触发整页重绘
-   - 会导致中文输入法被打断、自动关闭
-3. 当前处理方式：
-   - 已改为兼容输入法合成状态
-   - 增加轻微延迟刷新
-   - 输入体验更稳定
+   - 登录 / 管理员 / 云同步
+3. 非核心的“商品 / 供应商”展示，不再作为当前正式版的必保留模块。
 
-十五、安卓项目同步规则
-1. 当前阶段只交付 HTML 试用版
-2. 安卓项目不要持续跟着同步
-3. 只有以下情况才同步安卓项目：
-   - 用户明确说“定版同步安卓”
-   - 用户重新上传安卓项目
-   - 用户要求把最终 HTML 版本整合进安卓项目
-4. 在此之前，所有开发继续基于当前 HTML 试用版
+三、当前首页 UI 定版提醒
+1. 不要重做首页。
+2. 不要改九宫格主结构。
+3. 右上角账号按钮区保持横排：
+   - 管理员
+   - APP下载
+4. 若后续只做微调，只允许调整：
+   - 按钮尺寸
+   - 间距
+   - 字号
+   不要再把头部高度明显拉高。
 
-十六、后续开发优先级（给新对话看）
-下一阶段如果继续开发，优先顺序如下：
+四、给未来助手的续开发提醒
+1. 新对话继续开发时，必须以当前这份“定版收口版”HTML为唯一正式基线。
+2. 后续若同步安卓工程，优先同步：
+   - assets/index.html
+3. 后续修改必须继续遵守：
+   - 小改
+   - 局部改
+   - 不推翻已定版结构
+4. 若再改管理员页，优先保持：
+   - 新建账号默认密码 `12345678`
+   - 报错中文化
+   - 数据安全状态默认关闭
+5. 若再改首页，优先保持：
+   - 右上角横排按钮
+   - 当前蓝绿渐变头部
+   - 当前利润统计卡布局
 
-第一优先：
-- 修小 bug
-- 修表格排版
-- 修导入导出细节
-- 修订单流转细节
+五、本次定版结论
+1. 当前文件已完成本轮定版。
+2. 后续进入“在此基线上继续小步迭代”阶段。
+3. 不再回退到旧实验版，也不要再切回未收口版本。
+======================== /最新补充项目记录 / 定版收口版 ========================
+-->
 
-第二优先：
-- 优化报表体验
-- 优化未售出和垫付中心操作流
-- 优化移动端显示
+<!--
+======================== 最新补充项目记录 / 自动登录也记当天登录版（2026-03-19） ========================
+本次更新性质：登录统计口径补强，不改订单业务。
 
-第三优先：
-- 在用户明确同意后，再考虑同步安卓项目
+一、本轮新增
+1. 登录统计从“仅手动输入密码登录才记”补强为：
+   - 手动登录成功：记当天登录
+   - 已保持登录状态、第二天直接打开系统进入首页：也记当天登录
+2. 当前口径调整为：
+   - 当天首次进入系统即记一次
+   - 同一天重复打开系统，不重复新增当天人数
+3. 管理员页近 7 天登录统计继续按“每天有多少账号实际进入过系统”汇总。
 
-十七、给未来助手的硬性提醒
-1. 不要再重做首页
-2. 不要再重做九宫格
-3. 不要再把录入订单页下面加回订单表格
-4. 不要随意改已定版的订单流转逻辑
-5. 不要把报表改回“编辑按钮模式”
-6. 不要把紧凑输入框又改成长输入框
-7. 不要破坏报表可滚动、可修改、可导入导出的现状
-8. 不要把日期列再改成固定吸附
-9. 不要把首页右下角“+”按钮再加回来
-10. 本项目当前已经“定版”，以后只能局部微调，不做推倒重来
-11. 本轮已完成扫码备注与搜索栏输入法修复，后续不要误删
-12. 后续继续开发时，请以本文件作为正式基线版本
+二、实现基线
+1. 新增“当天首次进入系统自动补记”逻辑。
+2. 仅在检测到当前账号今天还没有登录记录时才写入。
+3. 自动补记后会同步保存到当前账号云端数据，避免只记本地不记云端。
 
-======================== /项目记录 / 交接说明 ========================
+三、影响说明
+1. 不影响：
+   - 普通订单
+   - 以旧换新
+   - 报表
+   - 管理员账号管理
+   - 云端拉取结构
+2. 影响的是登录统计口径：
+   - 现在更接近“当天实际使用过系统的账号数”
+   - 不再局限于“当天手动输密码登录的账号数”
+
+四、续开发提醒
+1. 后续如果再改登录统计，不要回退到“只有点击登录按钮才记”的旧口径。
+2. 若以后要区分“手动登录次数”和“自动进入次数”，应在现有统计对象里新增字段，不要直接覆盖当前 successCount 逻辑。
+======================== /自动登录也记当天登录版 ========================
+-->
+
+<!--
+======================== 最新补充项目记录 / 本地免报错与登录统计口径版（2026-03-19） ========================
+本次更新性质：稳定性修复 + 记录并回，不改核心业务流程。
+
+一、本轮最新处理
+1. 已处理本地 file:// / content:// 打开时，页面切后台再切回前台触发 `sendBeacon` 报错的问题。
+2. 当前结论：
+   - 本地打开 HTML 时，Cloudflare / beacon 类访问统计脚本可能在页面隐藏或恢复时调用 `navigator.sendBeacon()`。
+   - `sendBeacon` 仅支持 HTTP(S)，因此在本地协议下会报错。
+3. 当前主线按“本地免报错”作为优先基线处理：
+   - 不让本地协议触发这类统计上报错误。
+   - 不影响订单、登录、云端保存/拉取、报表、管理员功能。
+
+二、登录统计当前口径
+1. 当前统计口径是“成功登录人数”，不是“仅打开登录页人数”。
+2. 今日登录人数、近 7 天平均登录人数、近 7 天每日明细，均应以成功登录后的记录为准。
+3. 若后续要统计“打开登录页人数 / 访问人数”，需要单独增加页面访问埋点或独立日志表，不能与成功登录统计混为一套。
+
+三、云端与换新当前基线
+1. 以旧换新数据当前主线要求与普通订单一样纳入云端保存和云端拉取。
+2. 后续凡是改动云端数据结构，必须继续同时检查：
+   - orders
+   - tradeinOrders
+   - products
+   - suppliers
+   - users / 当前账号相关配置
+3. 继续开发时，不能只改保存不改拉取，也不能只改拉取不改保存。
+
+四、页面展示当前基线
+1. 管理员旧业务统计卡片已不再作为必保留模块。
+2. 登录统计卡片允许默认隐藏“最近 7 天明细”，只保留核心数字概览。
+3. 报表顶部月份 / 总订单 / 普通订单 / 换新订单区域已经做小一版，后续只允许微调尺寸，不要再放大回旧版。
+
+五、续开发提醒
+1. 新对话继续开发时，以当前这份 HTML 为正式基线。
+2. 如再出现报错，优先判断是：
+   - 本地协议兼容问题
+   - 缺失函数 / 名称写错
+   - 云端读写字段未双向同步
+3. 每次删代码或禁用脚本，必须同时写明：
+   - 删了什么
+   - 影响什么
+   - 不影响什么
+======================== /最新补充项目记录 / 本地免报错与登录统计口径版 ========================
+-->
+
+<!--
+======================== 最新补充项目记录 / 主线并回报表彻底修复版（2026-03-19） ========================
+本次更新性质：主线并回修复，不改业务规则，重点解决报表长期报错并补齐管理员面板交互。
+
+一、本轮主线并回内容
+1. 报表页已改为真正分页：普通订单、换新订单都按每页 50 笔显示。
+2. 报表页新增顶部 + 底部翻页按钮，减少必须滑到底部再翻页的问题。
+3. 报表页继续保留按月筛选，月份切换、搜索、普通/换新切换时都会自动回到第 1 页。
+4. 报表彻底修复 `fullList is not defined`：
+   - fullList = 普通订单完整结果
+   - fullTradein = 换新订单完整结果
+   - list = 普通订单当前页
+   - tradein = 换新订单当前页
+   后续继续开发不要再把完整数据和当前页数据混用。
+5. 首页统计继续按完整结果统计，不受报表分页影响。
+6. 管理员账号列表继续保持“默认隐藏，需要时再打开”的基线，并保留账号搜索能力。
+
+二、当前主线防卡基线
+1. 首页最近已售出只显示最近 3 条。
+2. 报表默认按月查看，并改成每页 50 笔。
+3. 未售出、垫付、换新列表继续按窗口显示，避免一次渲染过多行。
+4. 统计卡片与报表明细分离：分页只影响报表显示，不影响首页总利润、总销售额、当月利润。
+
+三、后续续开发提醒
+1. 新对话继续开发时，必须以当前这份主线 HTML 为唯一正式基线。
+2. 若继续改报表，只能在现有分页 / 月份筛选 / 完整统计分离结构上小改，不要回退到旧的 fullList 直接渲染写法。
+3. 安卓工程 assets/index.html 需要与本文件同步。
+======================== /最新补充项目记录 / 主线并回报表彻底修复版 ========================
+-->
 
 
-======================== 当前待修复问题（2026‑03‑09 新增） ========================
-本节用于新对话继续修复问题，请不要删除。
+<!--
+======================== 最新补充项目记录 / 批量操作与标签提示优化（2026-03-15） ========================
+本轮改动：操作效率优化，不涉及页面结构调整。
 
-当前版本主要功能正常，但存在以下 BUG，需要在后续对话中继续修复：
+新增功能
+1. 未售出页新增：
+   - 批量快递
+   - 批量售出金额
+2. 批量操作按钮顺序统一为：
+   批量快递 → 批量售出 → 全选列表 → 已选列表
+3. 批量售出金额：
+   - 只对勾选订单生效
+   - 自动写入售出金额
+   - 自动计算利润
+   - 自动进入报表
+4. 批量填写快递单号：
+   - 支持一次填写多个单号
+   - 按勾选顺序分配
 
-1. 录入成功弹窗未显示
-   - 新录入订单后，没有弹出“录入成功”提示弹窗
-   - 功能逻辑正常，但成功提示未触发
+交互优化
+1. 勾选订单不再触发表格整体重渲染，避免“闪屏”。
+2. 全选列表同样避免整页刷新。
 
-2. 未售出页面删除按钮不可用
-   - 点击“删除”没有任何反应
-   - 可能原因：
-     - deleteOrder 事件未绑定
-     - 或 confirmModal 阻断执行
+标签提示规则
+1. 点击选择框：
+   - 只提示物流单号
+   - 没有单号则不显示提示
+2. 点击其他输入框：
+   - 显示 “下单人 · 产品”
 
-3. 垫付中心按钮失效
-   - “发货”按钮点击无反应
-   - “退款”按钮点击无反应
-   - 可能原因：
-     - deliverAdvanceOrder
-     - refundAdvanceOrder
-     函数绑定或弹窗逻辑冲突
+成本自动带出规则
+1. 录入订单时：
+   - 自动带出当前产品历史订单中的“最大下单金额”作为成本参考。
+2. 不再自动带出商品售价。
 
-4. 报表页面删除按钮不可用
-   - 点击删除没有执行
-   - 与未售出删除问题可能是同一个原因
+开发提醒
+1. 所有新增功能必须基于当前 HTML 基线继续修改。
+2. 安卓 assets/index.html 与本文件保持同步。
+3. 不要回退到早期测试版本。
+======================== /批量操作与标签提示优化 ========================
+-->
 
-5. 首页红点功能
-   - 已修复，但后续修改需要注意不要破坏：
-     - 未售出红点：unsoldOrders().length
-     - 垫付中心红点：advanceOrders().length
+<!--
+======================== 最新补充项目记录 / 账号体系与提示文案更新（2026-03-16） ========================
+项目：撸货进销存管理系统（HTML 正式基线 + Android WebView 壳）
+本次更新性质：局部优化，不涉及首页重做、不涉及订单流转改动。
 
-6. 需要保持的 UI 改动
-   当前版本已加入以下 UI 功能，不要误删：
-   - 页面切换淡入动画
-   - 成功提示弹窗
-   - 确认操作居中弹窗
-   - 首页小红点提示
-   - 首页统计数字动画
+一、本轮新增与确认完成
+1. 已新增普通用户“修改密码”功能，入口放在“更多”板块内。
+2. 已保留管理员账号管理能力：新建账号、重置密码、删除/禁用相关操作继续可用。
+3. 账号相关弹窗已统一为当前项目的白色圆角弹窗风格，不再使用 prompt / alert / confirm 这类原始浏览器交互。
+4. Supabase 常见英文错误提示已做中文化处理。
 
-修复优先级建议：
-1️⃣ 修复删除按钮逻辑
-2️⃣ 修复发货 / 退款按钮
-3️⃣ 修复录入成功弹窗触发
-4️⃣ 确认报表删除按钮
+二、本轮账号相关交互基线
+1. 普通用户：
+   - 在“更多”中修改自己的登录密码。
+   - 新密码至少 6 位。
+   - 新密码不能与旧密码相同。
+2. 管理员：
+   - 继续通过管理员面板管理账号。
+   - 新建账号、重置密码、删除账号等操作继续沿用当前结构，不要随意改成别的入口。
+3. 账号相关操作提示：
+   - 优先显示中文提示。
+   - 不要再直接把 Supabase 英文原文暴露给用户。
 
-注意：
-只能局部修复，不要整体重写 UI 或结构。
+三、本轮已确认汉化的提示方向
+1. 登录失败类提示改中文。
+2. 修改密码失败类提示改中文。
+3. 新建账号 / 重置密码 / 删除账号等失败提示改中文。
+4. 如果后续还出现新的英文报错，优先补充映射表，不要回退成英文原文。
 
+四、给未来助手的补充提醒
+1. 后续若继续改账号体系，必须基于这个正式版 HTML 继续改。
+2. 不要再改错底稿；第一份正式基线文件才是主文件。
+3. 第二份文件仅用于参考或提取账号逻辑，不是当前正式发布基线。
+4. 后续继续优化时，优先保持“统一弹窗风格 + 中文提示 + 小改局部改”的原则。
+
+======================== /最新补充项目记录 / 账号体系与提示文案更新 ========================
+-->
+
+<!--
+======================== 最新项目记录 / 精简交接说明（2026-03-15 定版续开发版） ========================
+项目：撸货进销存管理系统（HTML 正式基线 + Android WebView 壳）
+当前状态：稳定版，当前版本无需修复 bug；后续继续“局部优化”阶段。
+
+一、当前唯一正式基线
+1. 本文件就是唯一正式 HTML 基线文件。
+2. 安卓工程内 assets/index.html 必须与本文件保持一致。
+3. 后续新对话继续项目时，必须先读取本记录，再决定是否同步安卓工程。
+4. 后续开发默认继续基于这个文件，不要切回中间试验版。
+
+二、技术路线（已确定，不再讨论回退）
+1. 继续走“自己的安卓工程 + WebView 混合式 App”路线。
+2. 不再走外部浏览器方案。
+3. 安卓工程只作为壳层承载，业务主体仍以本 HTML 为准。
+4. 后续默认优先改 HTML，不先重写安卓原生页面。
+
+三、当前已确认完成
+1. App 可正常打开与登录。
+2. 摄像头 / 扫码权限已打通。
+3. 文件导入已打通。
+4. 安卓桥接导出逻辑已接入 HTML。
+5. 基础返回、页面切换、主要业务流转已可用。
+6. 软件名称：不砍不盾。
+7. 图标方向：橙色左下方案，图标内不要出现文字。
+
+四、当前页面与结构基线（后续不要乱改）
+1. 首页保持：蓝绿渐变顶部 + 九宫格入口 + 最近已售出列表。
+2. 首页顶部统计：总销售额、总利润、收益率。
+3. 首页右下角“+”浮动按钮已取消，不要再加回。
+4. 九宫格不要重做；当前保留入口：录入订单、未售出、垫付中心、报表；其余待开发入口保留占位。
+5. 底部导航固定为：首页 / 录入 / 未售出 / 报表 / 垫付中心。
+6. 录入订单页只负责录入，不要在本页下方加回订单表格。
+7. 报表页保持“直接输入框修改 + 删除按钮”，不要改回编辑按钮模式。
+8. 表格保持紧凑、适合手机、整表横向滑动，日期列不要固定。
+9. 各主要板块保留左上角“← 返回”按钮，不要删除。
+
+五、当前业务规则（已定版）
+1. 现货保存：
+   - 售出金额为空或 0 → 进入未售出。
+   - 售出金额大于 0 → 直接进入报表。
+2. 垫付保存：直接进入垫付中心。
+3. 垫付中心：
+   - 发货 → 转入未售出。
+   - 退款 → 直接删除订单。
+4. 未售出：只放未售出订单，不参与首页和报表统计。
+5. 报表：只显示已售出订单，支持直接修改和删除。
+6. 收益率计算规则：本金 = 下单金额 + 返款 - 运费；收益率 = 总利润 ÷ 总本金 × 100%。
+
+六、当前已保留的重要能力（不要误删）
+1. 登录与云同步继续沿用 Supabase。
+2. 普通账号与管理员账号都可登录。
+3. 管理员入口只对管理员显示；普通账号显示“更多”。
+4. 备注扫码功能已保留，支持连续扫码自动追加。
+5. 首页红点逻辑保留：
+   - 未售出红点：unsoldOrders().length
+   - 垫付中心红点：advanceOrders().length
+6. 页面切换淡入动画、成功提示弹窗、确认操作弹窗、首页统计数字动画均已保留。
+7. 导出逻辑：
+   - 安卓环境优先走 AndroidBridge.saveBase64File(...)
+   - 非安卓环境走浏览器导出回退逻辑
+   - 若后续个别机型导出异常，优先修导出桥接，不要推翻工程结构。
+
+七、当前版本稳定性说明（重要）
+本轮已确认以下问题正常，不再列为待修复 bug：
+1. 录入成功弹窗
+2. 未售出删除按钮
+3. 垫付中心发货按钮
+4. 垫付中心退款按钮
+5. 报表删除按钮
+
+结论：
+- 当前版本属于“稳定版（无需修复 bug）”。
+- 后续开发重点不再是补 bug，而是做局部优化。
+
+八、本轮已确认定版的表格体验（给未来助手重点看）
+1. 不要再做固定列；固定“下单人 / 产品”会显得怪，不采用。
+2. 继续保留“整表横向滑动”方案，不要改回卡片式，不要拆表。
+3. 当前最终采用的识别方案是：
+   - 点击哪个输入框
+   - 身份提示就出现在这个输入框正上方
+   - 提示内容为“下单人 · 产品”
+4. 这个提示是局部浮在当前输入框上方，不是整行提示，不是右侧重复标签，也不是顶部悬浮条。
+5. 不要再回到以下已淘汰方案：
+   - 固定列
+   - 右侧每行重复显示身份
+   - 顶部常驻悬浮提示条
+   - 整行上方插入身份提示行
+6. 后续如果继续优化表格，只能沿着以下方向微调：
+   - 提示标签样式更精致
+   - 标签字数更短
+   - 只在物流单号 / 备注等右侧输入框触发
+   - 手机端横向滑动更顺手
+7. 当前用户已明确认可“点击哪个输入框，提示就出现在那个框上面”这套方案，视为当前表格定版基线。
+
+九、后续开发优先级
+1. 第一优先：优化细节体验。
+2. 第二优先：优化表格排版。
+3. 第三优先：优化导入导出与移动端体验。
+4. 第四优先：在用户明确要求后，再同步安卓工程、图标、自适应图标、启动页、签名等发布项。
+
+十、给未来助手的硬性提醒
+1. 不要重做首页。
+2. 不要重做九宫格。
+3. 不要改已定版订单流转。
+4. 不要把录入页下面的订单表格加回来。
+5. 不要把报表改回旧编辑模式。
+6. 不要把紧凑表格改成长条输入框。
+7. 不要再把项目说成依赖外部浏览器。
+8. 不要再尝试“大改表格方案”；后续所有修改必须：小改、局部改、不推倒重来。
+9. 用户偏好：直接给可落地文件，少讲空话，一步到位。
+10. 新对话继续开发时，先读本记录，再基于本文件继续改，不要从头重新想方案。
+
+======================== /最新项目记录 / 精简交接说明 ========================
 -->
 
 <!doctype html>
+
+<!--
+======================== 项目记录 / 交接说明（最新定版） ========================
+项目：进销存管理试用版（HTML 试用版）
+当前定版文件：index_以旧换新版_定版交接版.html
+用途：给新对话继续开发时直接读取，避免重新来回确认。
+
+一、本轮已确认定版内容
+1. 已开通“以旧换新”板块，首页可进入。
+2. “供应商”方向已改为“以旧换新”。
+3. 以旧换新为独立录入板块，数据单独存储。
+4. 以旧换新不进入首页统计。
+5. 报表页已支持普通订单 / 换新订单切换查看。
+6. 报表页按钮位置：放在“全选列表”旁边。
+7. 报表页按钮文案：
+   - 普通报表页：换新订单
+   - 换新报表页：普通订单
+8. 报表顶部统计当前只显示三个数量：
+   - 总订单
+   - 普通订单
+   - 换新订单
+
+二、以旧换新当前录入字段（已定版）
+录入顺序如下：
+1. 下单人
+2. 新机价格
+3. 旧机价格
+4. 回收返现
+5. 返款
+6. 售出价格
+7. 快递单号
+8. 备注
+9. 备注后附带扫码按钮 📷
+10. 日期录入框已隐藏，不给用户手填
+
+说明：
+- 保存时自动写入当天日期
+- 日期仍会进入数据，用于报表显示和排序
+
+三、以旧换新当前利润公式（已定版）
+实际总成本 = 新机价格 - 回收返现 + 旧机价格 + 返款
+利润 = 售出价格 - 实际总成本
+
+也可写成：
+利润 = 售出价格 - (新机价格 - 回收返现 + 旧机价格 + 返款)
+
+注意：
+- “返款”是减利润项，按成本处理，不是收益项
+- 不要再改回 “-返款” 的旧错误逻辑
+
+四、以旧换新备注扫码功能（已定版）
+1. 备注后的 📷 不是拍照，不是上传图片。
+2. 备注后的 📷 与“录入订单”板块里的 📷 一致。
+3. 当前逻辑为扫码功能。
+4. 扫码结果自动追加到备注中。
+5. 支持连续扫码追加。
+6. 后续不要再把这个按钮改成拍照上传。
+
+五、以旧换新报表结构（当前定版）
+1. 报表页默认显示普通订单报表。
+2. 点击“换新订单”按钮：
+   - 隐藏普通报表
+   - 显示换新报表
+3. 点击“普通订单”按钮：
+   - 返回普通报表
+4. 换新报表为独立板块，不与普通订单强行合并成一张混合表。
+5. 当前用户已明确认可“切换查看”方案，后续不要再改回双表同时展示或统一混排。
+
+六、当前稳定性结论
+1. 已修复白屏问题。
+2. 已修复 addSupplier 未定义导致的启动报错。
+3. 已修复 addTradeinOrder 未定义导致的换新页报错。
+4. 当前版本属于可继续迭代开发的稳定基线。
+5. 后续开发应基于本文件继续，不要回退到更早版本。
+
+七、普通订单主系统基线（继续沿用，不要乱改）
+1. 首页保持：蓝绿渐变顶部 + 九宫格入口 + 最近已售出列表。
+2. 首页顶部统计：总销售额、总利润、收益率。
+3. 九宫格入口保留当前结构，不要重做首页。
+4. 录入订单页只负责录入，不要把订单表格加回录入页下方。
+5. 报表页保持“直接输入框修改 + 删除按钮”模式，不要改回编辑弹窗模式。
+6. 表格继续保持紧凑、手机优先、整表横向滑动。
+7. 各主要板块保留左上角“← 返回”按钮。
+8. 普通订单备注扫码功能继续保留。
+9. 登录、管理员、云同步、导入导出继续沿用当前逻辑。
+
+八、后续开发建议优先级
+1. 第一优先：继续优化以旧换新体验
+   - 例如：导出字段更细、报表筛选、批量操作
+2. 第二优先：优化报表查看体验
+   - 例如：日期筛选、切换按钮样式微调、统计补充
+3. 第三优先：优化移动端录入体验
+   - 例如：输入联想、自动聚焦、扫码后定位
+4. 第四优先：再考虑安卓壳、图标、签名、安装包
+
+九、给新对话的硬性提醒
+1. 先读本记录，再继续开发。
+2. 不要重做首页。
+3. 不要推翻现有普通订单流转。
+4. 不要把以旧换新改成拍照上传方案。
+5. 不要把返款逻辑改错。
+6. 不要把换新报表改成和普通订单混排。
+7. 后续修改必须小步改、局部改、直接出文件。
+8. 用户偏好：直接改文件，少空话，避免反复确认。
+
+十、本次交接结论
+当前文件已经可以作为“新对话继续开发”的正式基线文件。
+新对话接手时，直接基于本文件修改即可。
+======================== /项目记录 / 交接说明（最新定版） ========================
+-->
+
 
 <!--
 ======================== 项目记录 / 交接说明 ========================
@@ -606,17 +716,74 @@
     }
     .topbar{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       font-size:14px;
       opacity:.98;
       margin-bottom:18px;
+      gap:12px;
+    }
+    .topbar-right{
+      display:flex;
+      flex-direction:row;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      flex:0 0 auto;
+      flex-wrap:nowrap;
+    }
+    .download-chip{
+      border:none;
+      background:rgba(255,255,255,.22);
+      color:#fff;
+      border-radius:999px;
+      padding:7px 11px;
+      font-size:12px;
+      font-weight:700;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      cursor:pointer;
+      box-shadow:0 8px 18px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.12);
+      white-space:nowrap;
+    }
+    .download-chip:active{
+      transform:scale(.96);
+    }
+    .title-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:8px;
     }
     .title{
       font-size:15px;
       opacity:.92;
-      margin-bottom:8px;
+      margin-bottom:0;
     }
+    .eye-btn{
+      border:1px solid rgba(255,255,255,.22);
+      background:rgba(255,255,255,.14);
+      color:#fff;
+      width:28px;
+      height:28px;
+      border-radius:10px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      box-shadow:0 6px 16px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.12);
+      transition:transform .15s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .eye-btn svg{
+      width:15px;
+      height:15px;
+      display:block;
+      fill:currentColor;
+      opacity:.96;
+    }
+    .eye-btn:active{transform:scale(.94)}
     .big{
       font-size:54px;
       line-height:1;
@@ -655,10 +822,98 @@
       margin:12px 14px 0;
       background:var(--card);
       border-radius:12px;
-      padding:14px 14px;
+      padding:8px 12px;
       color:#60646d;
       box-shadow:0 2px 10px rgba(0,0,0,.04);
-      display:flex; justify-content:space-between; align-items:center;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-height:38px;
+      overflow:hidden;
+      cursor:pointer;
+      user-select:none;
+    }
+    .notice:active{
+      transform:scale(.985);
+    }
+    .notice-icon{
+      font-size:14px;
+      flex:0 0 auto;
+      color:#177ddc;
+      line-height:1;
+    }
+    .notice-marquee{
+      position:relative;
+      flex:1;
+      height:20px;
+      overflow:hidden;
+    }
+    .notice-lane-wrap{
+      position:absolute;
+      inset:0;
+      transition:transform .28s ease;
+      will-change:transform;
+    }
+    .notice-lane{
+      position:absolute;
+      left:0;
+      width:100%;
+      height:20px;
+      overflow:visible;
+    }
+    .notice-text{
+      position:absolute;
+      top:0;
+      left:0;
+      white-space:nowrap;
+      font-size:13px;
+      line-height:20px;
+      color:#60646d;
+      will-change:transform;
+    }
+    .notice-arrow{
+      flex:0 0 auto;
+      color:#9aa0a6;
+      font-size:14px;
+      line-height:1;
+    }
+    .notice-help{
+      padding:0 14px 12px;
+      color:#8b8f97;
+      font-size:12px;
+      line-height:1.7;
+    }
+    .notice-editor{
+      padding:0 14px 14px;
+    }
+    .notice-editor textarea{
+      width:100%;
+      min-height:100px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      resize:vertical;
+      background:#fff;
+      margin-bottom:10px;
+    }
+    .variable-buttons{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:0 0 10px;
+    }
+    .variable-btn{
+      border:none;
+      border-radius:999px;
+      padding:7px 10px;
+      font-size:12px;
+      color:#177ddc;
+      background:#eef6ff;
+      cursor:pointer;
+    }
+    .variable-btn.loss{
+      color:#d43838;
+      background:#fff1f0;
     }
     .grid{
       margin:12px 14px 0;
@@ -804,10 +1059,66 @@
       width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;
     }
     .field textarea{min-height:72px;resize:vertical}
+    .report-summary-grid{padding:0 14px 12px;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+    .report-mini-field{margin:0}
+    .report-mini-field label{font-size:12px;margin-bottom:4px;color:#777}
+    .report-mini-field input,.report-mini-field select{padding:8px 10px;height:44px;font-size:13px;border-radius:16px}
     .field-inline{display:flex;gap:8px;align-items:center}
     .field-inline input{flex:1}
     .mini-btn{border:none;border-radius:10px;padding:0 12px;height:44px;background:#eef6ff;color:#177ddc;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
     .draft-tip{padding:0 14px 12px;color:#8b8f97;font-size:12px}
+    .autocomplete-wrap{position:relative;width:100%;}
+    .field-inline .autocomplete-wrap{flex:1;min-width:0;}
+    .autocomplete-panel{
+      position:absolute;
+      left:0;
+      right:0;
+      top:calc(100% + 6px);
+      background:#fff;
+      border:1px solid #e6ebf1;
+      border-radius:14px;
+      box-shadow:0 12px 28px rgba(15,23,42,.12);
+      padding:6px;
+      z-index:40;
+      max-height:220px;
+      overflow:auto;
+      display:none;
+    }
+    .autocomplete-panel.show{display:block;}
+    .autocomplete-item{
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:14px;
+      color:#1f2430;
+      line-height:1.4;
+      cursor:pointer;
+      word-break:break-all;
+    }
+    .autocomplete-item:active,
+    .autocomplete-item.active{
+      background:#eef6ff;
+      color:#177ddc;
+    }
+    .autocomplete-empty{
+      padding:10px 12px;
+      font-size:13px;
+      color:#8b8f97;
+    }
+    .batch-toolbar{display:flex;gap:10px;align-items:center;padding:10px 14px 0;background:#fff;flex-wrap:wrap;}
+    .batch-toolbar .small{flex:1 1 auto;}
+    .batch-btn{border:none;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;}
+    .batch-btn.primary{background:#eef6ff;color:#177ddc;}
+    .batch-btn.warn{background:#fff7e6;color:#d48806;}
+    .batch-btn.trade{background:#f3e8ff;color:#7c3aed;border:1px solid #e9d5ff;}
+    .order-check-cell{width:38px;min-width:38px;text-align:center;}
+    .order-check{width:16px;height:16px;accent-color:#177ddc;cursor:pointer;}
+    .auto-backup-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-top:1px solid var(--line);font-size:14px;}
+    .switch{position:relative;display:inline-block;width:52px;height:30px;flex:0 0 52px;}
+    .switch input{opacity:0;width:0;height:0;}
+    .slider{position:absolute;cursor:pointer;inset:0;background:#d8dde6;transition:.2s;border-radius:999px;}
+    .slider:before{position:absolute;content:'';height:24px;width:24px;left:3px;top:3px;background:white;transition:.2s;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.14);}
+    .switch input:checked + .slider{background:linear-gradient(180deg,#33b4f5,#14d1c4);}
+    .switch input:checked + .slider:before{transform:translateX(22px);}
     .btn{
       width:100%;border:none;border-radius:14px;padding:14px 16px;color:#fff;font-weight:700;
       background:linear-gradient(180deg,#33b4f5,#14d1c4);
@@ -880,9 +1191,11 @@
       overflow-x:auto;
       overflow-y:visible;
       -webkit-overflow-scrolling:touch;
-      background:#fff;
+      overscroll-behavior-x:contain;
+      background:linear-gradient(180deg,#ffffff 0%,#fbfcfe 100%);
       max-height:none;
-      padding-bottom:2px;
+      padding:0 0 4px;
+      border-top:1px solid rgba(17,24,39,.05);
     }
     .order-table{
       width:max-content;
@@ -900,27 +1213,29 @@
       top:0;
       z-index:2;
       color:#fff;
-      font-size:9px;
+      font-size:10px;
       font-weight:700;
       text-align:left;
-      padding:8px 5px;
-      height:36px;
+      padding:9px 6px;
+      height:38px;
       white-space:nowrap;
       border-bottom:1px solid #1b2434;
+      box-shadow:0 1px 0 rgba(255,255,255,.04), 0 6px 14px rgba(17,24,39,.08);
+      letter-spacing:.2px;
     }
     .order-table thead th:first-child{border-top-left-radius:16px}
     .order-table thead th:last-child{border-top-right-radius:16px}
     .order-table tbody td{
-      padding:2px 4px;
+      padding:4px 5px;
       border-bottom:1px solid rgba(17,24,39,.06);
       vertical-align:middle;
       background:#fff;
       white-space:nowrap;
-      font-size:9px;
-      height:34px;
+      font-size:10px;
+      height:40px;
     }
     .order-table tbody tr:nth-child(even) td{
-      background:#f9f9f9;
+      background:#f9fbfd;
     }
 
     .table-input{
@@ -928,58 +1243,63 @@
       min-width:0;
       max-width:100%;
       box-sizing:border-box;
-      border:1px solid rgba(17,24,39,.12);
-      background:rgba(255,255,255,.95);
-      border-radius:8px;
-      padding:2px 4px;
-      height:24px;
-      font-size:9px;
+      border:1px solid rgba(17,24,39,.10);
+      background:rgba(255,255,255,.98);
+      border-radius:10px;
+      padding:4px 6px;
+      height:28px;
+      font-size:10px;
+      line-height:1.2;
       color:#1f2430;
       outline:none;
       display:inline-block;
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
     }
     .table-input:focus{
       border-color:rgba(59,130,246,.45);
-      box-shadow:0 0 0 3px rgba(59,130,246,.12);
+      box-shadow:0 0 0 3px rgba(59,130,246,.10);
       background:#fff;
     }
-    .table-input.small{width:54px}
-    .table-input.mid{width:72px}
-    .table-input.long{width:80px}
+    .table-input.small{width:60px}
+    .table-input.mid{width:86px}
+    .table-input.long{width:108px}
     
-    .report-table td:nth-child(2) .table-input{width:62px}
-    .report-table td:nth-child(3) .table-input{width:78px}
+    .report-table td:nth-child(1) .table-input{width:64px}
+    .report-table td:nth-child(2) .table-input{width:76px}
+    .report-table td:nth-child(3) .table-input{width:98px}
     .report-table td:nth-child(4) .table-input,
     .report-table td:nth-child(5) .table-input,
     .report-table td:nth-child(6) .table-input,
-    .report-table td:nth-child(7) .table-input{width:68px}
-    .report-table td:nth-child(9) .table-input{width:80px}
-    .report-table td:nth-child(10) .table-input{width:92px}
+    .report-table td:nth-child(7) .table-input{width:72px}
+    .report-table td:nth-child(9) .table-input{width:96px}
+    .report-table td:nth-child(10) .table-input{width:116px}
     .profit-box{
-      font-weight:700;
+      font-weight:800;
       color:#0e9f8a;
       font-size:12px;
       display:inline-block;
-      min-width:64px;
+      min-width:72px;
+      padding:0 2px;
     }
     .profit-box.negative{
       color:#d43838;
     }
     .actions{
       display:flex;
-      gap:8px;
+      gap:6px;
       align-items:center;
       justify-content:flex-start;
     }
     .icon-btn{
       border:none;
       border-radius:10px;
-      padding:5px 7px;
-      min-width:42px;
+      padding:6px 8px;
+      min-width:44px;
       font-size:11px;
+      font-weight:700;
       cursor:pointer;
       white-space:nowrap;
     }
@@ -1016,22 +1336,22 @@
 
 .remark-cell{
   display:flex;
-  gap:4px;
+  gap:5px;
   align-items:center;
 }
 .scan-icon-btn{
   border:none;
-  border-radius:8px;
-  width:28px;
-  height:24px;
+  border-radius:9px;
+  width:30px;
+  height:28px;
   padding:0;
   background:#eef6ff;
   color:#177ddc;
   font-size:14px;
-  line-height:24px;
+  line-height:28px;
   text-align:center;
   cursor:pointer;
-  flex:0 0 28px;
+  flex:0 0 30px;
 }
 
 .remark-form-row{
@@ -1063,10 +1383,32 @@
 .scan-overlay{
   position:fixed;
   inset:0;
-  background:rgba(0,0,0,.88);
+  background:#000;
   display:flex;
   flex-direction:column;
   z-index:9999;
+  overflow:hidden;
+}
+.scan-overlay::before,
+.scan-overlay::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(72vw,300px);
+  height:min(72vw,300px);
+  pointer-events:none;
+  z-index:1;
+}
+.scan-overlay::before{
+  top:calc(50% - min(36vw,150px));
+  box-shadow:0 0 0 200vmax rgba(0,0,0,.45);
+  border-radius:26px;
+}
+.scan-overlay::after{
+  top:calc(50% - min(36vw,150px));
+  border-radius:26px;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2);
 }
 .scan-overlay video{
   width:100%;
@@ -1077,52 +1419,211 @@
 }
 .scan-overlay-top{
   position:absolute;
-  top:14px;
-  left:14px;
-  right:14px;
+  top:18px;
+  left:16px;
+  right:16px;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  z-index:2;
+  z-index:3;
   color:#fff;
   font-size:14px;
   gap:12px;
 }
+.scan-overlay-top .scan-title{
+  font-weight:700;
+  letter-spacing:.5px;
+  text-shadow:0 1px 10px rgba(0,0,0,.3);
+}
 .scan-overlay-top .scan-close{
   border:none;
-  background:rgba(255,255,255,.16);
+  background:rgba(20,20,20,.34);
   color:#fff;
-  border-radius:12px;
-  padding:8px 12px;
-  font-size:14px;
+  border-radius:999px;
+  width:38px;
+  height:38px;
+  font-size:16px;
   cursor:pointer;
+  backdrop-filter:blur(8px);
+}
+.scan-viewfinder{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:min(72vw,300px);
+  height:min(72vw,300px);
+  transform:translate(-50%,-52%);
+  border-radius:26px;
+  z-index:2;
+  pointer-events:none;
+}
+.scan-viewfinder .corner{
+  position:absolute;
+  width:34px;
+  height:34px;
+  border-color:#2ee6a6;
+  border-style:solid;
+  filter:drop-shadow(0 0 8px rgba(46,230,166,.45));
+}
+.scan-viewfinder .corner.tl{left:0;top:0;border-width:4px 0 0 4px;border-top-left-radius:18px;}
+.scan-viewfinder .corner.tr{right:0;top:0;border-width:4px 4px 0 0;border-top-right-radius:18px;}
+.scan-viewfinder .corner.bl{left:0;bottom:0;border-width:0 0 4px 4px;border-bottom-left-radius:18px;}
+.scan-viewfinder .corner.br{right:0;bottom:0;border-width:0 4px 4px 0;border-bottom-right-radius:18px;}
+.scan-viewfinder .scan-line{
+  position:absolute;
+  left:14px;
+  right:14px;
+  top:18px;
+  height:2px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(46,230,166,0),rgba(46,230,166,.98),rgba(90,255,195,.98),rgba(46,230,166,0));
+  box-shadow:0 0 12px rgba(46,230,166,.95);
+  animation:scanLineMove 2s linear infinite;
+}
+@keyframes scanLineMove{
+  0%{transform:translateY(0);opacity:.9;}
+  50%{transform:translateY(calc(min(72vw,300px) - 40px));opacity:1;}
+  100%{transform:translateY(0);opacity:.9;}
 }
 .scan-overlay-tip{
   position:absolute;
   left:50%;
-  bottom:28px;
+  bottom:106px;
   transform:translateX(-50%);
-  z-index:2;
-  color:#fff;
-  background:rgba(0,0,0,.35);
-  padding:8px 12px;
+  z-index:3;
+  color:rgba(255,255,255,.94);
+  background:rgba(18,18,18,.28);
+  backdrop-filter:blur(10px);
+  padding:9px 14px;
   border-radius:999px;
   font-size:13px;
-  white-space:nowrap;
-  max-width:calc(100% - 24px);
+  max-width:calc(100% - 34px);
   text-align:center;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+.scan-bottom-actions{
+  position:absolute;
+  left:16px;
+  right:16px;
+  bottom:26px;
+  z-index:3;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:42px;
+}
+.scan-bottom-action{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  color:rgba(255,255,255,.96);
+  font-size:12px;
+  border:none;
+  background:none;
+  padding:0;
+  cursor:pointer;
+}
+.scan-bottom-action .icon{
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.2);
+  backdrop-filter:blur(12px);
+  box-shadow:0 10px 24px rgba(0,0,0,.22);
+  font-size:22px;
+}
+.scan-bottom-action.active .icon{
+  background:rgba(7,193,96,.26);
+  border-color:rgba(7,193,96,.7);
+  box-shadow:0 0 0 6px rgba(7,193,96,.12), 0 10px 24px rgba(0,0,0,.22);
+}
+.scan-bottom-action[disabled]{
+  opacity:.45;
+}
+.scan-file-input{
+  display:none;
+}
+
+.scan-result-panel{
+  position:absolute;
+  left:16px;
+  right:16px;
+  bottom:82px;
+  z-index:3;
+  background:rgba(255,255,255,.96);
+  border-radius:18px;
+  padding:14px;
+  box-shadow:0 14px 34px rgba(0,0,0,.22);
+}
+.scan-result-panel[hidden]{
+  display:none;
+}
+.scan-result-title{
+  font-size:16px;
+  font-weight:800;
+  color:#1f2430;
+  margin-bottom:8px;
+  text-align:center;
+}
+.scan-result-code{
+  font-size:14px;
+  color:#177ddc;
+  font-weight:700;
+  text-align:center;
+  word-break:break-all;
+  margin-bottom:12px;
+}
+.scan-result-actions{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.scan-result-btn{
+  border:none;
+  border-radius:12px;
+  height:42px;
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+}
+.scan-result-btn.secondary{
+  background:#eef1f5;
+  color:#4b5563;
+}
+.scan-result-btn.primary{
+  background:linear-gradient(180deg,#33b4f5,#14d1c4);
+  color:#fff;
 }
 
 
-    .page{
-      opacity:0;
-      animation:pageFade .45s ease forwards;
-      will-change:opacity;
+
+    .input-identity-tag{
+      position:absolute;
+      top:-18px;
+      left:0;
+      font-size:11px;
+      color:#6b7280;
+      background:#eef6ff;
+      padding:2px 6px;
+      border-radius:6px;
+      white-space:nowrap;
+      z-index:12;
+      box-shadow:0 2px 8px rgba(0,0,0,.06);
+      pointer-events:none;
+      max-width:120px;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    @keyframes pageFade{
-      to{
-        opacity:1;
-      }
+
+    .page{
+      opacity:1;
+      animation:none;
+      will-change:auto;
     }
 
 
@@ -1285,7 +1786,7 @@
       background:rgba(255,255,255,.18);
       color:#fff;
       border-radius:999px;
-      padding:8px 12px;
+      padding:7px 11px;
       font-size:12px;
       font-weight:700;
       backdrop-filter:blur(8px);
@@ -1404,40 +1905,71 @@
       margin-top:8px;
     }
 
-
-    .suggest-wrap{position:relative;}
-    .smart-suggest{
-      position:absolute;
-      left:0;
-      right:0;
-      top:calc(100% + 6px);
-      background:#fff;
-      border:1px solid #e6ebf1;
-      border-radius:14px;
-      box-shadow:0 12px 28px rgba(15,23,42,.12);
-      max-height:220px;
-      overflow:auto;
-      z-index:40;
-      display:none;
+    .admin-contact{
+      margin-top:10px;
+      text-align:center;
+      font-size:13px;
+      color:#6b7280;
+      line-height:1.7;
     }
-    .smart-suggest.show{display:block;}
-    .smart-suggest button{
-      width:100%;
+    .vx-copy-btn{
+      margin-left:6px;
       border:none;
-      background:#fff;
-      padding:12px 14px;
-      text-align:left;
-      font-size:14px;
-      color:#1f2430;
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:12px;
+      color:#177ddc;
+      background:#eef6ff;
       cursor:pointer;
     }
-    .smart-suggest button + button{border-top:1px solid #eef1f4;}
-    .smart-suggest button:active{background:#f5fbff;}
+    .vx-copy-btn:active{
+      transform:scale(.97);
+    }
 
     @media (max-width: 640px){
       .grid{grid-template-columns:repeat(3,1fr)}
       .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .hero .big{font-size:38px}
+      .order-panel{margin:12px}
+      .order-toolbar{padding:10px 12px;gap:8px}
+      .order-toolbar input{padding:10px 12px;font-size:13px}
+      .order-note{padding:8px 12px 0;font-size:11px}
+      .order-table thead th{font-size:9px;padding:8px 5px;height:36px}
+      .order-table tbody td{padding:3px 4px;font-size:9px;height:36px}
+      .table-input{height:26px;font-size:9px;padding:3px 5px;border-radius:9px}
+      .table-input.small{width:56px}
+      .table-input.mid{width:78px}
+      .table-input.long{width:98px}
+      .report-table td:nth-child(1) .table-input{width:60px}
+      .report-table td:nth-child(2) .table-input{width:68px}
+      .report-table td:nth-child(3) .table-input{width:88px}
+      .report-table td:nth-child(4) .table-input,
+      .report-table td:nth-child(5) .table-input,
+      .report-table td:nth-child(6) .table-input,
+      .report-table td:nth-child(7) .table-input{width:66px}
+      .report-table td:nth-child(9) .table-input{width:88px}
+      .report-table td:nth-child(10) .table-input{width:104px}
+      .profit-box{min-width:66px;font-size:11px}
+      .icon-btn{min-width:40px;padding:5px 7px;font-size:10px}
+      .scan-icon-btn{width:28px;height:26px;line-height:26px;flex-basis:28px}
+    }
+
+
+    @media (max-width: 640px){
+      .topbar{
+        margin-bottom:14px;
+      }
+      .topbar-right{
+        gap:6px;
+      }
+      .download-chip,
+      .auth-chip{
+        padding:6px 10px;
+        font-size:11px;
+      }
+      .auth-chip{
+        max-width:96px;
+      }
     }
 
     .admin-panel{
@@ -1471,7 +2003,177 @@
     .admin-table th{font-size:12px;color:#6b7280;background:#fafbfc;}
     .admin-link{color:#177ddc;font-weight:700;cursor:pointer;text-decoration:none;}
 
+    .account-modal-mask{
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.28);
+      backdrop-filter:blur(4px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      z-index:100001;
+      opacity:0;
+      animation:modalFadeIn .22s ease forwards;
+    }
+    .account-modal-box{
+      width:min(340px, calc(100vw - 32px));
+      background:#fff;
+      border-radius:22px;
+      box-shadow:0 18px 48px rgba(15,23,42,.18);
+      padding:22px 18px 18px;
+      text-align:center;
+      transform:translateY(10px) scale(.96);
+      animation:modalCardIn .24s cubic-bezier(.22,.61,.36,1) forwards;
+    }
+    .account-modal-title{
+      font-size:18px;
+      font-weight:800;
+      color:#1f2430;
+      margin-bottom:6px;
+      line-height:1.5;
+    }
+    .account-modal-desc{
+      font-size:13px;
+      color:#7b8492;
+      line-height:1.6;
+      margin-bottom:14px;
+    }
+    .account-modal-field{
+      margin-bottom:10px;
+      text-align:left;
+    }
+    .account-modal-field label{
+      display:block;
+      font-size:13px;
+      color:#666;
+      margin-bottom:6px;
+    }
+    .account-modal-field input{
+      width:100%;
+      height:44px;
+      border:1px solid #e6ebf1;
+      background:#f8fbff;
+      border-radius:14px;
+      padding:0 14px;
+      font-size:14px;
+      outline:none;
+    }
+    .account-modal-field input:focus{
+      border-color:rgba(51,180,245,.55);
+      box-shadow:0 0 0 3px rgba(51,180,245,.14);
+      background:#fff;
+    }
+    .account-modal-msg{
+      min-height:18px;
+      font-size:12px;
+      color:#d43838;
+      text-align:center;
+      margin-top:2px;
+    }
+    .account-modal-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:14px;
+    }
+    .account-modal-btn{
+      border:none;
+      border-radius:14px;
+      padding:13px 14px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .account-modal-btn.cancel{
+      background:#eef1f5;
+      color:#4b5563;
+    }
+    .account-modal-btn.primary{
+      background:linear-gradient(180deg,#33b4f5,#14d1c4);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(20,209,196,.22);
+    }
+    .account-modal-btn.delete{
+      background:linear-gradient(180deg,#ff7875,#ff4d4f);
+      color:#fff;
+      box-shadow:0 10px 24px rgba(255,77,79,.22);
+    }
+
+
   </style>
+<script>
+
+/*
+【项目续开发记录｜更新于 2026-03-19】
+当前定版文件：
+- 定版继续-自动登录也算登录-最新-已加APP下载按钮-v6修正daily表字段版.html
+
+本次已确认完成：
+1. 首页账号按钮下方已增加“APP下载”按钮
+   - 下载地址：https://www.123865.com/s/eJ1vjv-jzsX
+
+2. 登录统计改为“一个账号一天只统计一次”
+   - 新增表：public.login_daily_stats
+   - 统计主口径：按 user_id + date_key 去重
+   - 管理员统计优先读取 login_daily_stats
+   - 若新表不可用，页面仍保留旧逻辑回退能力
+
+3. 已修正 login_daily_stats 写入字段
+   - 正确字段：user_id / date_key / last_at / updated_at
+   - 之前失败原因：页面曾写入 last_login_at，现已改为 last_at
+
+4. 已确认当前版本可用
+   - 新账号登录后，login_daily_stats 能写入记录
+   - 管理员页可按“同账号同日只算1次”统计
+
+续开发时优先基于本文件继续，不要回退到旧版实验文件。
+若后续继续开发，请先保留以下能力不要删：
+- APP下载按钮
+- 自动登录也算登录
+- login_daily_stats 按日去重统计
+- 管理员登录统计刷新入口
+
+若以后再排查登录统计，请优先检查：
+A. public.login_daily_stats 是否有新记录
+B. 字段是否为 user_id/date_key/last_at/updated_at
+C. 管理员统计是否优先读取 login_daily_stats
+D. 旧版测试文件中出现过的报错函数：
+   - toggleAdminLoginStatsVisible
+   - ensureAdminLoginStats
+这些旧报错不要再带回当前定版
+*/
+
+
+(function(){
+  try {
+    var isLocal = location.protocol === 'file:' || location.protocol === 'content:';
+    if(!isLocal) return;
+    var nav = window.navigator;
+    if(!nav) return;
+    var original = typeof nav.sendBeacon === 'function' ? nav.sendBeacon.bind(nav) : null;
+    Object.defineProperty(nav, 'sendBeacon', {
+      configurable: true,
+      writable: true,
+      value: function(){
+        try {
+          if(original && !isLocal) return original.apply(nav, arguments);
+        } catch (e) {}
+        return false;
+      }
+    });
+    window.addEventListener('error', function(e){
+      try {
+        var msg = String((e && (e.message || (e.error && e.error.message))) || '');
+        if(msg.indexOf('sendBeacon') !== -1 && msg.indexOf('HTTP(S)') !== -1){
+          e.preventDefault && e.preventDefault();
+          return true;
+        }
+      } catch(_) {}
+    }, true);
+  } catch (_) {}
+})();
+</script>
 </head>
 <body>
 <div id="app"></div>
@@ -1487,13 +2189,10 @@ const store = {
 };
 
 const state = {
-  products: store.load('jxc_products', [
-    {name:'华为手表', stock:20, cost:1500, price:2150},
-    {name:'赫莲娜小白瓶', stock:12, cost:900, price:1170},
-    {name:'娇诗韵三件套', stock:8, cost:1200, price:1587}
-  ]),
+  products: store.load('jxc_products', []),
   sales: store.load('jxc_sales', []),
-  suppliers: store.load('jxc_suppliers', [{name:'默认供应商', phone:'13800000000'}]),
+  suppliers: store.load('jxc_suppliers', []),
+  tradeinOrders: store.load('jxc_tradein_orders', []),
   orders: store.load('jxc_orders', [
     {id:id(), status:'normal', date:'03-08', buyer:'象兄', product:'华为手表', orderAmount:2150, rebate:0, freight:0, saleAmount:2150, profit:0, trackingNo:'', remark:''},
     {id:id(), status:'normal', date:'03-08', buyer:'标', product:'赫莲娜小白瓶', orderAmount:1170, rebate:50, freight:0, saleAmount:1170, profit:-50, trackingNo:'', remark:''},
@@ -1501,7 +2200,24 @@ const state = {
   ]),
   tab: 'home',
   orderSearch: '',
-  orderDraft: store.load('jxc_order_draft', {})
+  orderDraft: store.load('jxc_order_draft', {}),
+  noticeTemplates: store.load('jxc_notice_templates', [
+    '不砍不盾，下啥发啥，绝不反撸，🛫！！！'
+  ]),
+  homeProfitVisible: store.load('jxc_home_profit_visible', true),
+  selectedOrderIds: store.load('jxc_selected_order_ids', []),
+  reportTradeinVisible: store.load('jxc_report_tradein_visible', false),
+  reportMonth: store.load('jxc_report_month', String(new Date().getMonth() + 1).padStart(2,'0')),
+  reportPage: store.load('jxc_report_page', 1),
+  reportTradeinPage: store.load('jxc_report_tradein_page', 1),
+  adminListVisible: store.load('jxc_admin_list_visible', false),
+  adminAccountSearch: store.load('jxc_admin_account_search', ''),
+  adminUsers: [],
+  adminLoginStatsVisible: store.load('jxc_admin_login_stats_visible', false),
+  loginStats: store.load('jxc_login_stats', {}),
+  adminLoginStats: null,
+  lastDataHealth: store.load('jxc_last_data_health', null),
+  dataHealthVisible: store.load('jxc_data_health_visible', false),
 };
 
 function id(){
@@ -1521,11 +2237,26 @@ state.orders = state.orders.map(o => ({
   trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
   remark: o.remark ?? o.notes ?? ''
 }));
+state.tradeinOrders = (state.tradeinOrders || []).map(o => ({
+  id: o.id || id(),
+  date: o.date || new Date().toISOString().slice(5,10),
+  buyer: o.buyer ?? o.customer ?? '',
+  newMachinePrice: Number(o.newMachinePrice ?? o.newPrice ?? 0),
+  oldMachinePrice: Number(o.oldMachinePrice ?? o.oldPrice ?? 0),
+  recyclePrice: Number(o.recyclePrice ?? o.recycleCashback ?? 0),
+  refundPrice: Number(o.refundPrice ?? o.refund ?? 0),
+  salePrice: Number(o.salePrice ?? o.saleAmount ?? 0),
+  profit: Number(o.profit ?? 0),
+  trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
+  remark: o.remark ?? o.notes ?? '',
+  dealDone: typeof o.dealDone === 'boolean' ? o.dealDone : Number(o.salePrice ?? o.saleAmount ?? 0) > 0
+}));
 
 function persist(){
   store.save('jxc_products', state.products);
   store.save('jxc_sales', state.sales);
   store.save('jxc_suppliers', state.suppliers);
+  store.save('jxc_tradein_orders', state.tradeinOrders);
   store.save('jxc_orders', state.orders);
   if(authState && authState.user){
     scheduleCloudSave('persist');
@@ -1551,8 +2282,21 @@ function todaySales(){
 function monthSales(){
   return soldOrders().reduce((a,b)=>a+Number(b.saleAmount||0),0);
 }
-function monthProfit(){
+function totalProfit(){
   return soldOrders().reduce((a,b)=>a+Number(b.profit||0),0);
+}
+function currentMonthProfit(){
+  const currentMonth = new Date().toISOString().slice(5,7);
+  return soldOrders().filter(s => String(s.date || '').slice(0,2) === currentMonth).reduce((a,b)=>a+Number(b.profit||0),0);
+}
+function monthProfit(){
+  return totalProfit();
+}
+function tradeinList(){
+  return sortByDateDesc(state.tradeinOrders || []);
+}
+function soldTradeinOrders(){
+  return sortByDateDesc((state.tradeinOrders || []).filter(o => !!o.dealDone));
 }
 function totalPrincipal(){
   return soldOrders().reduce((a,b)=>{
@@ -1562,15 +2306,204 @@ function totalPrincipal(){
 function profitRate(){
   const principal = totalPrincipal();
   if(principal <= 0) return '0.00';
-  return (monthProfit() / principal * 100).toFixed(2);
+  return (totalProfit() / principal * 100).toFixed(2);
+}
+
+function lossAmount(){
+  return soldOrders().reduce((sum, order) => {
+    const profit = Number(order.profit || 0);
+    return profit < 0 ? sum + Math.abs(profit) : sum;
+  }, 0);
+}
+function yesterdayProfit(){
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const shortDate = mm + '-' + dd;
+  return soldOrders()
+    .filter(o => String(o.date || '') === shortDate)
+    .reduce((sum, order) => sum + Number(order.profit || 0), 0);
+}
+function resolveNoticeTemplateVariables(content){
+  let text = String(content || '');
+  const values = {
+    yesterdayProfit: money(yesterdayProfit()),
+    todaySales: money(todaySales()),
+    monthProfit: money(monthProfit()),
+    monthSales: money(monthSales()),
+    unsoldCount: String(unsoldOrders().length),
+    advanceCount: String(advanceOrders().length),
+    lossAmount: money(lossAmount())
+  };
+  Object.keys(values).forEach(function(key){
+    text = text.replaceAll('{' + key + '}', values[key]);
+  });
+  return text;
+}
+function getResolvedNoticeTexts(){
+  const saved = store.load('jxc_notice_templates', null);
+  if(Array.isArray(saved) && saved.length){
+    state.noticeTemplates = saved;
+  }else if(!Array.isArray(state.noticeTemplates) || !state.noticeTemplates.length){
+    state.noticeTemplates = ['不砍不盾，下啥发啥，绝不反撸，🛫！！！'];
+  }
+  return (state.noticeTemplates || []).map(function(item){
+    return resolveNoticeTemplateVariables(item).trim();
+  }).filter(Boolean);
+}
+function saveNoticeTemplates(){
+  store.save('jxc_notice_templates', state.noticeTemplates || []);
+}
+function openNoticeSettings(){
+  setTab('more');
+  setTimeout(function(){
+    const input = document.getElementById('noticeInput');
+    if(input) input.focus();
+  }, 30);
+}
+function insertNoticeVariable(variable){
+  const textarea = document.getElementById('noticeInput');
+  if(!textarea) return;
+  const start = textarea.selectionStart || 0;
+  const end = textarea.selectionEnd || 0;
+  const value = textarea.value || '';
+  textarea.value = value.slice(0, start) + variable + value.slice(end);
+  updateNoticeDraft(textarea.value);
+  textarea.focus();
+  const pos = start + variable.length;
+  try{ textarea.setSelectionRange(pos, pos); }catch(e){}
+}
+function updateNoticeDraft(value){
+  const lines = String(value || '').split('\n').map(function(line){ return line.trim(); }).filter(Boolean);
+  state.noticeTemplates = lines.length ? lines : ['昨天一共挣了 {yesterdayProfit} 元，继续加油！'];
+  saveNoticeTemplates();
+}
+function commitNoticeTextarea(){
+  const textarea = document.getElementById('noticeInput');
+  updateNoticeDraft(textarea ? textarea.value : '');
+  saveNoticeTemplates();
+}
+let noticeTickerTimer = null;
+function stopNoticeTicker(){
+  if(noticeTickerTimer){
+    clearTimeout(noticeTickerTimer);
+    noticeTickerTimer = null;
+  }
+}
+function startNoticeTicker(){
+  stopNoticeTicker();
+  const viewport = document.getElementById('noticeMarquee');
+  const wrap = document.getElementById('noticeLaneWrap');
+  const laneA = document.getElementById('noticeLaneA');
+  const laneB = document.getElementById('noticeLaneB');
+  if(!viewport || !wrap || !laneA || !laneB) return;
+
+  const texts = getResolvedNoticeTexts();
+  if(!texts.length){
+    laneA.textContent = '';
+    laneB.textContent = '';
+    return;
+  }
+
+  let activeLane = laneA;
+  let standbyLane = laneB;
+  let index = 0;
+  let loopCount = 0;
+
+  laneA.style.top = '0px';
+  laneB.style.top = '20px';
+  wrap.style.transform = 'translateY(0)';
+  laneA.textContent = texts[0] || '';
+  laneB.textContent = texts[1] || texts[0] || '';
+
+  function runCurrent(){
+    const text = texts[index] || '';
+    activeLane.textContent = text;
+    activeLane.style.transition = 'none';
+    const viewportWidth = viewport.clientWidth || 1;
+    const textWidth = activeLane.scrollWidth || 1;
+    const startX = -textWidth - 12;
+    const endX = viewportWidth + 12;
+    activeLane.style.transform = 'translateX(' + startX + 'px)';
+    requestAnimationFrame(function(){
+      const distance = endX - startX;
+      const duration = Math.max(4800, Math.min(9000, distance * 12));
+      activeLane.style.transition = 'transform ' + duration + 'ms linear';
+      activeLane.style.transform = 'translateX(' + endX + 'px)';
+      noticeTickerTimer = setTimeout(function(){
+        loopCount += 1;
+        if(loopCount < 2){
+          runCurrent();
+          return;
+        }
+        loopCount = 0;
+        index = (index + 1) % texts.length;
+        standbyLane.textContent = texts[index] || '';
+        standbyLane.style.transition = 'none';
+        standbyLane.style.transform = 'translateX(' + (-((standbyLane.scrollWidth || 1) + 12)) + 'px)';
+        wrap.style.transition = 'transform .12s ease';
+        wrap.style.transform = 'translateY(-20px)';
+        noticeTickerTimer = setTimeout(function(){
+          const temp = activeLane;
+          activeLane = standbyLane;
+          standbyLane = temp;
+          wrap.style.transition = 'none';
+          wrap.style.transform = 'translateY(0)';
+          activeLane.style.top = '0px';
+          standbyLane.style.top = '20px';
+          runCurrent();
+        }, 100);
+      }, duration);
+    });
+  }
+
+  runCurrent();
 }
 function money(n){ return Number(n||0).toFixed(2); }
-function setTab(tab){
+function applyTab(tab, opts={}){
   state.tab = tab;
   render();
   if(tab === 'admin' && authState.isAdmin){
     setTimeout(loadAdminList, 60);
   }
+  if(tab === 'admin' && authState.isAdmin){
+    setTimeout(function(){ refreshAdminLoginStats(false).then(render); }, 80);
+  }
+  if(opts.skipHistory) return;
+  try{
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = '#tab=' + encodeURIComponent(tab);
+    const currentTab = history.state && history.state.tab;
+    if(opts.replace){
+      history.replaceState({tab}, '', nextUrl.toString());
+    }else if(currentTab !== tab){
+      history.pushState({tab}, '', nextUrl.toString());
+    }
+  }catch(e){}
+}
+function setTab(tab){
+  applyTab(tab);
+}
+function initTabHistory(){
+  let initialTab = state.tab || 'home';
+  try{
+    const hash = String(window.location.hash || '');
+    const match = hash.match(/tab=([^&]+)/);
+    if(match && match[1]){
+      initialTab = decodeURIComponent(match[1]);
+    }
+  }catch(e){}
+  state.tab = initialTab;
+  try{
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = '#tab=' + encodeURIComponent(initialTab);
+    history.replaceState({tab: initialTab}, '', nextUrl.toString());
+  }catch(e){}
+  window.addEventListener('popstate', function(e){
+    const tab = e.state && e.state.tab ? e.state.tab : 'home';
+    applyTab(tab, {skipHistory:true});
+  });
 }
 
 function showToast(message){
@@ -1587,6 +2520,41 @@ function showToast(message){
   showToast._timer = setTimeout(function(){
     toast.classList.remove('show');
   }, 1800);
+}
+
+
+function translateSupabaseError(message){
+  const raw = String(message || '').trim();
+  if(!raw) return '操作失败，请稍后再试';
+  const mappings = [
+    ['Invalid login credentials', '账号或密码错误'],
+    ['Email not confirmed', '账号尚未激活'],
+    ['User already registered', '该账号已经存在'],
+    ['A user with this email address has already been registered', '该邮箱已被注册'],
+    ['User not found', '账号不存在'],
+    ['Password should be at least', '密码至少需要 6 位'],
+    ['Password should contain at least', '密码格式不符合要求'],
+    ['different from the old password', '新密码不能和旧密码相同'],
+    ['New password should be different', '新密码不能和旧密码相同'],
+    ['same as the old password', '新密码不能和旧密码相同'],
+    ['Invalid email', '邮箱格式不正确'],
+    ['Signup disabled', '当前不允许注册账号'],
+    ['Email rate limit exceeded', '发送过于频繁，请稍后再试'],
+    ['Too many requests', '操作过于频繁，请稍后再试'],
+    ['Network request failed', '网络连接失败，请检查网络后重试'],
+    ['Failed to fetch', '网络连接失败，请检查网络后重试'],
+    ['JWT expired', '登录状态已过期，请重新登录'],
+    ['token is expired', '登录状态已过期，请重新登录'],
+    ['Unauthorized', '没有操作权限'],
+    ['permission denied', '没有操作权限'],
+    ['duplicate key value violates unique constraint', '该账号已经存在'],
+    ['User disabled', '该账号已被禁用'],
+    ['Database error saving new user', '创建账号失败，请稍后再试']
+  ];
+  for(let i=0;i<mappings.length;i++){
+    if(raw.toLowerCase().includes(String(mappings[i][0]).toLowerCase())) return mappings[i][1];
+  }
+  return raw;
 }
 
 
@@ -1677,6 +2645,12 @@ function calcProfit(orderAmount, rebate, freight, saleAmount){
   if(sale <= 0) return 0;
   return sale - Number(orderAmount||0) - Number(rebate||0) - Number(freight||0);
 }
+function calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice){
+  return Number(newMachinePrice||0) - Number(recyclePrice||0) + Number(oldMachinePrice||0) + Number(refundPrice||0);
+}
+function calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice){
+  return Number(salePrice||0) - calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice);
+}
 
 
 function orderDraftDefaults(){
@@ -1724,64 +2698,173 @@ function hydrateOrderForm(form){
   }
 }
 
-function escapeJsString(v){
-  return String(v || '').replaceAll('\\','\\\\').replaceAll("'","\\'");
+function normalizeSuggestionText(value){
+  return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
-function getOrderSmartOptions(type){
-  if(type === 'buyer') return Array.from(new Set(state.orders.map(o => String(o.buyer || '').trim()).filter(Boolean))).slice(0,50);
-  if(type === 'product') return state.products.map(p => String(p.name || '').trim()).filter(Boolean).slice(0,50);
-  return [];
+function collectBuyerSuggestions(){
+  const set = new Set();
+  const list = [];
+  state.orders.forEach(function(order){
+    const value = normalizeSuggestionText(order && order.buyer);
+    if(!value) return;
+    const key = value.toLowerCase();
+    if(set.has(key)) return;
+    set.add(key);
+    list.push(value);
+  });
+  return list;
 }
 
-function updateOrderSmartSuggest(input, boxId, type){
-  const box = document.getElementById(boxId);
-  if(!input || !box) return;
-  const keyword = String(input.value || '').trim().toLowerCase();
-  box.dataset.inputName = input.name || '';
-  if(!keyword){
-    box.innerHTML = '';
-    box.classList.remove('show');
+function collectProductSuggestions(){
+  const set = new Set();
+  const list = [];
+  state.products.forEach(function(product){
+    const value = normalizeSuggestionText(product && product.name);
+    if(!value) return;
+    const key = value.toLowerCase();
+    if(set.has(key)) return;
+    set.add(key);
+    list.push(value);
+  });
+  state.orders.forEach(function(order){
+    const value = normalizeSuggestionText(order && order.product);
+    if(!value) return;
+    const key = value.toLowerCase();
+    if(set.has(key)) return;
+    set.add(key);
+    list.push(value);
+  });
+  return list;
+}
+
+function matchSuggestions(keyword, source){
+  const q = normalizeSuggestionText(keyword).toLowerCase();
+  const list = Array.isArray(source) ? source.slice() : [];
+  if(!q) return list.slice(0, 8);
+  const starts = [];
+  const includes = [];
+  list.forEach(function(item){
+    const text = String(item || '');
+    const lower = text.toLowerCase();
+    if(lower.startsWith(q)) starts.push(text);
+    else if(lower.includes(q)) includes.push(text);
+  });
+  return starts.concat(includes).slice(0, 8);
+}
+
+function closeAutocompletePanel(panel){
+  if(!panel) return;
+  panel.classList.remove('show');
+  panel.innerHTML = '';
+}
+
+function renderAutocompletePanel(panel, items, onPick){
+  if(!panel) return;
+  if(!items.length){
+    closeAutocompletePanel(panel);
     return;
   }
-  const list = getOrderSmartOptions(type).filter(item => item.toLowerCase().includes(keyword)).slice(0,8);
-  if(!list.length){
-    box.innerHTML = '';
-    box.classList.remove('show');
-    return;
+  panel.innerHTML = items.map(function(item, index){
+    return '<div class="autocomplete-item' + (index === 0 ? ' active' : '') + '" data-value="' + escapeHtml(item) + '">' + escapeHtml(item) + '</div>';
+  }).join('');
+  panel.classList.add('show');
+  Array.from(panel.querySelectorAll('.autocomplete-item')).forEach(function(el){
+    el.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      onPick(el.getAttribute('data-value') || '');
+    });
+  });
+}
+
+function attachAutocomplete(input, panel, sourceGetter, afterPick){
+  if(!input || !panel) return;
+  let currentItems = [];
+  let activeIndex = 0;
+  let suppressRefresh = false;
+
+  function pick(value){
+    suppressRefresh = true;
+    input.value = value;
+    closeAutocompletePanel(panel);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    if(typeof afterPick === 'function') afterPick(value);
+    setTimeout(function(){
+      suppressRefresh = false;
+      closeAutocompletePanel(panel);
+    }, 0);
   }
-  box.innerHTML = list.map(item => `<button type="button" onclick="selectOrderSmartSuggest('${boxId}','${escapeJsString(item)}')">${escapeHtml(item)}</button>`).join('');
-  box.classList.add('show');
+
+  function refresh(){
+    if(suppressRefresh){
+      closeAutocompletePanel(panel);
+      return;
+    }
+    currentItems = matchSuggestions(input.value, sourceGetter());
+    activeIndex = 0;
+    renderAutocompletePanel(panel, currentItems, pick);
+  }
+
+  input.addEventListener('focus', refresh);
+  input.addEventListener('input', refresh);
+  input.addEventListener('keydown', function(e){
+    if(!panel.classList.contains('show') || !currentItems.length) return;
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      activeIndex = (activeIndex + 1) % currentItems.length;
+    }else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      activeIndex = (activeIndex - 1 + currentItems.length) % currentItems.length;
+    }else if(e.key === 'Enter'){
+      e.preventDefault();
+      pick(currentItems[activeIndex]);
+      return;
+    }else if(e.key === 'Escape'){
+      closeAutocompletePanel(panel);
+      return;
+    }else{
+      return;
+    }
+    Array.from(panel.querySelectorAll('.autocomplete-item')).forEach(function(el, index){
+      el.classList.toggle('active', index === activeIndex);
+    });
+  });
+  input.addEventListener('blur', function(){
+    setTimeout(function(){ closeAutocompletePanel(panel); }, 120);
+  });
 }
 
-function selectOrderSmartSuggest(boxId, value){
-  const box = document.getElementById(boxId);
-  if(!box) return;
-  const name = box.dataset.inputName || '';
-  const input = name ? document.querySelector(`#orderForm [name="${name}"]`) : null;
-  if(!input) return;
-  input.value = value;
-  box.classList.remove('show');
-  input.dispatchEvent(new Event('input', {bubbles:true}));
-  input.focus();
-  try{ input.setSelectionRange(input.value.length, input.value.length); }catch(e){}
+function initOrderAutocomplete(form){
+  if(!form) return;
+  const buyerInput = form.querySelector('[name="buyer"]');
+  const buyerPanel = form.querySelector('#buyerAutocomplete');
+  const productInput = form.querySelector('[name="product"]');
+  const productPanel = form.querySelector('#productAutocomplete');
+  attachAutocomplete(buyerInput, buyerPanel, collectBuyerSuggestions, function(){
+    saveOrderDraftFromForm(form);
+  });
+  attachAutocomplete(productInput, productPanel, collectProductSuggestions, function(){
+    saveOrderDraftFromForm(form);
+  });
 }
 
-function hideOrderSmartSuggest(boxId){
-  setTimeout(function(){
-    const box = document.getElementById(boxId);
-    if(box) box.classList.remove('show');
-  }, 160);
+function getSuggestedOrderAmountByProduct(productName){
+  const target = normalizeSuggestionText(productName).toLowerCase();
+  if(!target) return 0;
+  const values = state.orders
+    .filter(function(order){ return normalizeSuggestionText(order && order.product).toLowerCase() === target; })
+    .map(function(order){ return Number(order && order.orderAmount || 0); })
+    .filter(function(value){ return value > 0; });
+  return values.length ? Math.max.apply(null, values) : 0;
 }
 
 function useProductTemplate(form){
   if(!form) return;
   const productName = form.querySelector('[name="product"]')?.value?.trim();
   if(!productName) return;
-  const product = state.products.find(p => p.name === productName);
-  if(!product) return;
-  const saleInput = form.querySelector('[name="saleAmount"]');
-  if(saleInput && !saleInput.value) saleInput.value = Number(product.price || 0);
+  const orderInput = form.querySelector('[name="orderAmount"]');
+  const suggestedAmount = getSuggestedOrderAmountByProduct(productName);
+  if(orderInput && !orderInput.value && suggestedAmount > 0) orderInput.value = suggestedAmount;
   saveOrderDraftFromForm(form);
   const preview = form.querySelector('#profitPreview');
   if(preview){
@@ -1803,7 +2886,7 @@ function addOrder(form, mode='normal'){
   state.orders.unshift({
     id: id(),
     status: mode === 'advance' ? 'advance' : 'normal',
-    date: normalizeDate(fd.get('date')),
+    date: normalizeDate(fd.get('date') || new Date().toISOString().slice(0,10)),
     buyer: fd.get('buyer'),
     product: fd.get('product'),
     orderAmount,
@@ -1842,6 +2925,80 @@ function filteredOrders(sourceList){
     );
   }
   return list;
+}
+
+
+function reportMonthOptionsHtml(){
+  const current = String(state.reportMonth || 'all');
+  const options = ['all'].concat(Array.from({length:12}, (_,i)=> String(i+1).padStart(2,'0')));
+  return options.map(function(value){
+    return `<option value="${value}" ${current===value?'selected':''}>${value==='all'?'全部月份':value+' 月'}</option>`;
+  }).join('');
+}
+
+function normalizeMonthValue(dateText){
+  const text = String(dateText || '').trim();
+  if(!text) return '';
+  const match = text.match(/(\d{1,2})[^\d]?/);
+  if(!match) return '';
+  return match[1].padStart(2,'0');
+}
+
+function filterByReportMonth(list){
+  const month = String(state.reportMonth || 'all');
+  const safeList = Array.isArray(list) ? list : [];
+  if(month === 'all') return safeList;
+  return safeList.filter(function(item){ return normalizeMonthValue(item.date) === month; });
+}
+
+function getPagedList(list, page, pageSize){
+  const safeList = Array.isArray(list) ? list : [];
+  const size = Math.max(1, Number(pageSize || 50));
+  const totalPages = Math.max(1, Math.ceil(safeList.length / size));
+  const currentPage = Math.min(Math.max(1, Number(page || 1)), totalPages);
+  const start = (currentPage - 1) * size;
+  return {
+    list: safeList.slice(start, start + size),
+    page: currentPage,
+    totalPages,
+    total: safeList.length,
+    pageSize: size,
+  };
+}
+
+function setReportMonth(value){
+  state.reportMonth = value || 'all';
+  state.reportPage = 1;
+  state.reportTradeinPage = 1;
+  store.save('jxc_report_month', state.reportMonth);
+  store.save('jxc_report_page', 1);
+  store.save('jxc_report_tradein_page', 1);
+  render();
+}
+
+function setReportPage(page, type){
+  if(type === 'tradein'){
+    state.reportTradeinPage = Math.max(1, Number(page || 1));
+    store.save('jxc_report_tradein_page', state.reportTradeinPage);
+  }else{
+    state.reportPage = Math.max(1, Number(page || 1));
+    store.save('jxc_report_page', state.reportPage);
+  }
+  render();
+}
+
+function renderReportPager(meta, type){
+  if(!meta || meta.totalPages <= 1) return '';
+  const prev = Math.max(1, meta.page - 1);
+  const next = Math.min(meta.totalPages, meta.page + 1);
+  const kind = type === 'tradein' ? 'tradein' : 'normal';
+  return `<div class="batch-toolbar" style="justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <span class="small">第 ${meta.page} / ${meta.totalPages} 页，共 ${meta.total} 笔，每页 ${meta.pageSize} 笔</span>
+    <div style="display:flex;gap:8px">
+      <button class="batch-btn warn" type="button" ${meta.page<=1?'disabled':''} onclick="setReportPage(${prev}, '${kind}')">上一页</button>
+      <button class="batch-btn primary" type="button" ${meta.page>=meta.totalPages?'disabled':''} onclick="setReportPage(${next}, '${kind}')">下一页</button>
+    </div>
+  </div>`;
 }
 
 function updateOrderField(orderId, field, value){
@@ -1916,12 +3073,24 @@ function menuCard(iconClass, emoji, text, sub, onClick, badgeCount=0){
   </div>`;
 }
 
+function triggerTapHaptic(){
+  try{
+    if(window.AndroidBridge && typeof AndroidBridge.tapHaptic === 'function'){
+      AndroidBridge.tapHaptic();
+      return;
+    }
+    if(window.AndroidBridge && typeof AndroidBridge.vibrate === 'function'){
+      AndroidBridge.vibrate(10);
+      return;
+    }
+    if(navigator.vibrate) navigator.vibrate(10);
+  }catch(e){}
+}
+
 function tapMenuCard(el, action){
   if(!el) return;
   el.classList.add('pressed');
-  try{
-    if(navigator.vibrate) navigator.vibrate(10);
-  }catch(e){}
+  triggerTapHaptic();
   setTimeout(function(){
     try{
       if(action) (new Function(action))();
@@ -1939,6 +3108,11 @@ function animateHomeStats(){
     document.querySelectorAll('.hero .stat .value, .hero .big').forEach(el => {
       const raw = el.getAttribute('data-value');
       if(raw === null) return;
+      if(!state.homeProfitVisible && el.getAttribute('data-sensitive') === 'true'){
+        const isPercentHidden = el.getAttribute('data-suffix') === '%';
+        el.textContent = isPercentHidden ? '**.**%' : '****';
+        return;
+      }
       const end = Number(raw || 0);
       const isPercent = el.getAttribute('data-suffix') === '%';
       const duration = 700;
@@ -1974,11 +3148,10 @@ function sectionHeader(title, subtitle=''){
 
 
 function accountEntryHtml(){
-  if(!authState.ready || !authState.user){
-    return `<button class="auth-chip" type="button" onclick="openLoginLayer()">登录</button>`;
-  }
-  const label = authState.isAdmin ? '管理员' : ((authState.user.email || '已登录').split('@')[0] || '已登录');
-  return `<button class="auth-chip ${authState.isAdmin ? 'admin' : ''}" type="button" onclick="handleAccountTap()">${escapeHtml(label)}</button>`;
+  const accountButton = (!authState.ready || !authState.user)
+    ? `<button class="auth-chip" type="button" onclick="openLoginLayer()">登录</button>`
+    : `<button class="auth-chip ${authState.isAdmin ? 'admin' : ''}" type="button" onclick="handleAccountTap()">${escapeHtml(authState.isAdmin ? '管理员' : ((authState.user.email || '已登录').split('@')[0] || '已登录'))}</button>`;
+  return `<div class="topbar-right">${accountButton}<button class="download-chip" type="button" onclick="openAppDownload()">APP下载</button></div>`;
 }
 
 function handleAccountTap(){
@@ -1991,27 +3164,85 @@ function handleAccountTap(){
   });
 }
 
+function openAppDownload(){
+  const url = 'https://www.123865.com/s/eJ1vjv-jzsX';
+  try{
+    if(window.AndroidBridge){
+      if(typeof AndroidBridge.openExternalUrl === 'function'){
+        const ok = AndroidBridge.openExternalUrl(url);
+        if(ok !== false) return;
+      }
+      if(typeof AndroidBridge.openBrowser === 'function'){
+        const ok = AndroidBridge.openBrowser(url);
+        if(ok !== false) return;
+      }
+      if(typeof AndroidBridge.openUrl === 'function'){
+        const ok = AndroidBridge.openUrl(url);
+        if(ok !== false) return;
+      }
+    }
+  }catch(e){}
+  try{
+    const win = window.open(url, '_blank');
+    if(win) return;
+  }catch(e){}
+  try{
+    location.href = url;
+  }catch(e){}
+}
+
+function formatHeroMetric(value, options){
+  const opts = options || {};
+  if(!state.homeProfitVisible && opts.sensitive) return opts.percent ? '**.**%' : '****';
+  if(opts.percent) return Number(value || 0).toFixed(2) + '%';
+  return money(value || 0);
+}
+
+function toggleHomeProfitVisible(){
+  state.homeProfitVisible = !state.homeProfitVisible;
+  store.save('jxc_home_profit_visible', state.homeProfitVisible);
+  render();
+}
+
+function toggleReportTradein(){
+  state.reportTradeinVisible = !state.reportTradeinVisible;
+  store.save('jxc_report_tradein_visible', state.reportTradeinVisible);
+  render();
+}
+
 function homeView(){
+  const eyeIcon = state.homeProfitVisible
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.2A1.8 1.8 0 1 0 12 10.2a1.8 1.8 0 0 0 0 3.6Z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m2.1 3.5 1.4-1.4 18 18-1.4 1.4-3.2-3.2A11.8 11.8 0 0 1 12 19c-5 0-9.27-3.11-11-7a12.7 12.7 0 0 1 4.05-4.77L2.1 3.5Zm8.52 8.52a2 2 0 0 0 2.86 2.86l-2.86-2.86ZM12 7c5 0 9.27 3.11 11 7a12.48 12.48 0 0 1-3.63 4.48l-2.1-2.1A4 4 0 0 0 9.62 8.75L7.9 7.03A12.2 12.2 0 0 1 12 7Z"/></svg>';
   return `
   <div class="phone">
     <div class="hero">
       <div class="topbar"><div>撸货 · 进销存管理</div>${accountEntryHtml()}</div>
-      <div class="title">今日销售额</div>
-      <div class="big" data-value="${todaySales()}">${money(todaySales())}</div>
+      <div class="title-row"><div class="title">今年总撸利润</div><button class="eye-btn" type="button" onclick="toggleHomeProfitVisible()" aria-label="${state.homeProfitVisible ? '隐藏数据' : '显示数据'}">${eyeIcon}</button></div>
+      <div class="big" data-value="${totalProfit()}" data-sensitive="true">${formatHeroMetric(totalProfit(), {sensitive:true})}</div>
       <div class="statrow">
-        <div class="stat"><span class="label">总销售额</span><span class="value" data-value="${monthSales()}">${money(monthSales())}</span></div>
-        <div class="stat"><span class="label">总利润</span><span class="value" data-value="${monthProfit()}">${money(monthProfit())}</span></div>
-        <div class="stat"><span class="label">收益率</span><span class="value" data-value="${profitRate()}" data-suffix="%">${profitRate()}%</span></div>
+        <div class="stat"><span class="label">总销售额</span><span class="value" data-value="${monthSales()}" data-sensitive="true">${formatHeroMetric(monthSales(), {sensitive:true})}</span></div>
+        <div class="stat"><span class="label">当月利润</span><span class="value" data-value="${currentMonthProfit()}" data-sensitive="true">${formatHeroMetric(currentMonthProfit(), {sensitive:true})}</span></div>
+        <div class="stat"><span class="label">收益率</span><span class="value" data-value="${profitRate()}" data-suffix="%" data-sensitive="true">${formatHeroMetric(profitRate(), {sensitive:true, percent:true})}</span></div>
       </div>
     </div>
 
-    <div class="notice"><span>先赚人心后赚钱</span><span>›</span></div>
+    <div class="notice" onclick="openNoticeSettings()" role="button" tabindex="0">
+      <span class="notice-icon">📢</span>
+      <div class="notice-marquee" id="noticeMarquee">
+        <div class="notice-lane-wrap" id="noticeLaneWrap">
+          <div class="notice-lane"><span class="notice-text" id="noticeLaneA"></span></div>
+          <div class="notice-lane"><span class="notice-text" id="noticeLaneB"></span></div>
+        </div>
+      </div>
+      <span class="notice-arrow">›</span>
+    </div>
 
     <div class="grid">
       ${menuCard('i1','🧾','录入订单','订单录入',"setTab('orders')")}
       ${menuCard('i2','💰','未售出','待填写售出金额',"setTab('sale')", unsoldOrders().length)}
       ${menuCard('i3','💳','垫付中心','待发货 / 退款',"setTab('advance')", advanceOrders().length)}
-      ${menuCard('i4','🏭','供应商','待开发',"showToast('供应商待开发')")}
+      ${menuCard('i4','🔁','以旧换新','单独表格',"setTab('tradein')", tradeinList().length)}
       ${menuCard('i5','📦','进货','待开发',"showToast('进货待开发')")}
       ${menuCard('i6','🧾','其他支出','待开发',"showToast('其他支出待开发')")}
       ${menuCard('i7','⭐','VIP会员','待开发',"showToast('VIP会员待开发')")}
@@ -2052,12 +3283,14 @@ function saleView(){
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
       </div>
-      <div class="order-note">未填写售出金额的订单在这里管理，填写后会自动移到报表</div>
+      <div class="order-note">未填写售出金额的订单在这里管理，表格保持紧凑显示，左右滑动可查看全部列，填写后会自动移到报表</div>
+      <div class="batch-toolbar"><button class="batch-btn primary" type="button" onclick="openBatchTrackingModal('sale')">批量快递</button><button class="batch-btn primary" type="button" onclick="openBatchSaleAmountModal()">批量售出</button><button class="batch-btn warn" type="button" onclick="toggleSelectAllOrders('sale', true)">全选列表</button><span class="small" id="batchSelectedCount">已选列表 ${countSelectedInList(list)} / ${list.length} 笔</span></div>
       <div class="order-table-wrap">
         ${list.length ? `
         <table class="order-table report-table">
           <thead>
             <tr>
+              <th class="order-check-cell"><input id="selectAllCheckbox" class="order-check" type="checkbox" onclick="event.stopPropagation()" ${list.length && countSelectedInList(list) === list.length ? 'checked' : ''} onchange="toggleSelectAllOrders('sale',this.checked)" /></th>
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
@@ -2068,6 +3301,7 @@ function saleView(){
               <th>利润</th>
               <th>物流单号</th>
               <th>备注</th>
+              <th>成交</th>
               <th>删除</th>
             </tr>
           </thead>
@@ -2108,12 +3342,14 @@ function advanceView(){
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
       </div>
-      <div class="order-note">垫付保存的订单会放在这里，点击发货后进入未售出，点击退款则删除</div>
+      <div class="order-note">垫付保存的订单会放在这里，表格已优化为更适合手机查看，左右滑动可查看全部列，点击发货后进入未售出，点击退款则删除</div>
+      <div class="batch-toolbar"><button class="batch-btn primary" type="button" onclick="openBatchTrackingModal('advance')">批量快递</button><button class="batch-btn warn" type="button" onclick="toggleSelectAllOrders('advance', true)">全选列表</button><span class="small" id="batchSelectedCount">已选列表 ${countSelectedInList(list)} / ${list.length} 笔</span></div>
       <div class="order-table-wrap">
         ${list.length ? `
         <table class="order-table report-table">
           <thead>
             <tr>
+              <th class="order-check-cell"><input id="selectAllCheckbox" class="order-check" type="checkbox" onclick="event.stopPropagation()" ${list.length && countSelectedInList(list) === list.length ? 'checked' : ''} onchange="toggleSelectAllOrders('advance',this.checked)" /></th>
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
@@ -2136,7 +3372,23 @@ function advanceView(){
 }
 
 function detailView(){
-  const list = filteredOrders(soldOrders());
+  const fullList = filterByReportMonth(filteredOrders(soldOrders()));
+  const fullTradein = filterByReportMonth(filteredTradeinOrders().filter(function(item){ return item.dealDone === true; }));
+  const normalMeta = getPagedList(fullList, state.reportPage, 50);
+  const tradeinMeta = getPagedList(fullTradein, state.reportTradeinPage, 50);
+  const list = normalMeta.list;
+  const tradein = tradeinMeta.list;
+  if(state.reportPage !== normalMeta.page){
+    state.reportPage = normalMeta.page;
+    store.save('jxc_report_page', state.reportPage);
+  }
+  if(state.reportTradeinPage !== tradeinMeta.page){
+    state.reportTradeinPage = tradeinMeta.page;
+    store.save('jxc_report_tradein_page', state.reportTradeinPage);
+  }
+  const normalProfit = fullList.reduce((sum, order) => sum + Number(order.profit || 0), 0);
+  const tradeProfit = fullTradein.reduce((sum, order) => sum + Number(order.profit || 0), 0);
+  const totalOrders = fullList.length + fullTradein.length;
   return `<div class="phone">
     <div class="order-panel" style="margin-top:14px">
       <div class="sheet-hd" style="border-bottom:none;padding-bottom:8px;">
@@ -2146,7 +3398,7 @@ function detailView(){
           </button>
           <span>报表</span>
         </div>
-        <span class="small">已售出订单</span>
+        <span class="small">普通订单 / 换新订单</span>
       </div>
       <div class="report-actions">
         <button class="action-btn secondary" onclick="triggerImportOrders()">导入</button>
@@ -2154,14 +3406,24 @@ function detailView(){
       </div>
       <div class="order-toolbar">
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
-        <span class="small">${list.length} 条</span>
+        <span class="small">按月查看</span>
       </div>
-      <div class="order-note">这里只显示已售出的订单，未填写售出金额的订单会进入未售出板块</div>
+      <div class="form-grid report-summary-grid">
+        <div class="field report-mini-field"><label>月份</label><select onchange="setReportMonth(this.value)">${reportMonthOptionsHtml()}</select></div>
+        <div class="field report-mini-field"><label>总订单</label><input type="text" value="${totalOrders} 笔" disabled /></div>
+        <div class="field report-mini-field"><label>普通订单</label><input type="text" value="${fullList.length} 笔" disabled /></div>
+        <div class="field report-mini-field"><label>换新订单</label><input type="text" value="${fullTradein.length} 笔" disabled /></div>
+      </div>
+      ${!state.reportTradeinVisible ? `
+      <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>普通订单</span><span class="small">利润 ¥${money(normalProfit)}</span></div>
+      <div class="batch-toolbar"><button class="batch-btn primary" type="button" onclick="openBatchTrackingModal('detail')">批量快递</button><button class="batch-btn warn" type="button" onclick="toggleSelectAllOrders('detail', true)">全选列表</button><button class="batch-btn trade" type="button" onclick="toggleReportTradein()">换新订单</button><span class="small" id="batchSelectedCount">已选列表 ${countSelectedInList(list)} / ${list.length} 笔</span></div>
+      ${renderReportPager(normalMeta, 'normal')}
       <div class="order-table-wrap">
         ${list.length ? `
         <table class="order-table report-table">
           <thead>
             <tr>
+              <th class="order-check-cell"><input id="selectAllCheckbox" class="order-check" type="checkbox" onclick="event.stopPropagation()" ${list.length && countSelectedInList(list) === list.length ? 'checked' : ''} onchange="toggleSelectAllOrders('detail',this.checked)" /></th>
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
@@ -2172,14 +3434,46 @@ function detailView(){
               <th>利润</th>
               <th>物流单号</th>
               <th>备注</th>
+              <th>成交</th>
               <th>删除</th>
             </tr>
           </thead>
           <tbody>
             ${list.map(renderOrderRow).join('')}
           </tbody>
-        </table>` : '<div class="empty">暂无订单</div>'}
+        </table>` : '<div class="empty">暂无普通订单</div>'}
       </div>
+      ${renderReportPager(normalMeta, 'normal')}
+      ` : `
+      <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>换新订单</span><span class="small">利润 ¥${money(tradeProfit)}</span></div>
+      <div class="batch-toolbar"><button class="batch-btn trade" type="button" onclick="toggleReportTradein()">普通订单</button><span class="small">当前仅显示换新订单报表</span></div>
+      ${renderReportPager(tradeinMeta, 'tradein')}
+      <div class="order-table-wrap">
+        ${tradein.length ? `
+        <table class="order-table report-table">
+          <thead>
+            <tr>
+              <th onclick="sortTradeinByDateDesc()" style="cursor:pointer">日期 ↓</th>
+              <th>下单人</th>
+              <th>新机价格</th>
+              <th>旧机价格</th>
+              <th>回收返现</th>
+              <th>返款</th>
+              <th>售出价格</th>
+              <th>利润</th>
+              <th>快递单号</th>
+              <th>备注</th>
+              <th>成交</th>
+              <th>删除</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tradein.map(renderTradeinRow).join('')}
+          </tbody>
+        </table>` : '<div class="empty">暂无换新订单</div>'}
+      </div>
+      ${renderReportPager(tradeinMeta, 'tradein')}
+      `}
       <input id="importOrdersInput" type="file" accept=".xlsx,.xls" style="display:none" onchange="handleImportOrders(event)" />
     </div>
     ${tabbar('detail')}
@@ -2187,11 +3481,243 @@ function detailView(){
 }
 
 
+
+function getLocalDateKey(dateObj){
+  const d = dateObj instanceof Date ? dateObj : new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+function getRecentDateKeys(days){
+  const total = Math.max(1, Number(days || 7));
+  const list = [];
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  for(let i = total - 1; i >= 0; i -= 1){
+    const d = new Date(base);
+    d.setDate(base.getDate() - i);
+    list.push(getLocalDateKey(d));
+  }
+  return list;
+}
+
+function normalizeLoginStats(raw){
+  const daily = raw && typeof raw === 'object' && raw.daily && typeof raw.daily === 'object' ? raw.daily : {};
+  const nextDaily = {};
+  Object.keys(daily).forEach(function(key){
+    const item = daily[key] || {};
+    nextDaily[key] = {
+      successCount: Math.max(0, Number(item.successCount || 0)),
+      lastAt: Number(item.lastAt || 0)
+    };
+  });
+  return { daily: nextDaily };
+}
+
+function persistLoginStats(){
+  state.loginStats = normalizeLoginStats(state.loginStats);
+  store.save('jxc_login_stats', state.loginStats);
+}
+
+function recordLoginSuccess(){
+  state.loginStats = normalizeLoginStats(state.loginStats);
+  const key = getLocalDateKey();
+  const daily = state.loginStats.daily || (state.loginStats.daily = {});
+  const current = daily[key] || { successCount: 0, lastAt: 0 };
+  daily[key] = {
+    successCount: Number(current.successCount || 0) + 1,
+    lastAt: Date.now()
+  };
+  persistLoginStats();
+}
+
+function ensureTodayLoginRecorded(){
+  state.loginStats = normalizeLoginStats(state.loginStats);
+  const key = getLocalDateKey();
+  const daily = state.loginStats.daily || (state.loginStats.daily = {});
+  const current = daily[key] || { successCount: 0, lastAt: 0 };
+  if(Number(current.successCount || 0) > 0) return false;
+  daily[key] = {
+    successCount: 1,
+    lastAt: Date.now()
+  };
+  persistLoginStats();
+  return true;
+}
+
+
+function getTodayLoginStatMeta(){
+  state.loginStats = normalizeLoginStats(state.loginStats);
+  const key = getLocalDateKey();
+  const daily = state.loginStats.daily || {};
+  const item = daily[key] || null;
+  return {
+    dateKey: key,
+    successCount: Number(item && item.successCount || 0),
+    lastAt: Number(item && item.lastAt || 0)
+  };
+}
+
+async function upsertDailyUniqueLoginStat(dateKey, lastAt){
+  if(!supa || !authState.user || !dateKey) return false;
+  try{
+    const payload = {
+      user_id: String(authState.user.id || ''),
+      date_key: String(dateKey || ''),
+      last_at: Number(lastAt || Date.now()),
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supa.from('login_daily_stats').upsert(payload, { onConflict: 'user_id,date_key' });
+    if(error) throw error;
+    return true;
+  }catch(err){
+    console.warn('login_daily_stats upsert skipped', err);
+    return false;
+  }
+}
+
+async function syncTodayLoginStatToDailyTable(){
+  const meta = getTodayLoginStatMeta();
+  if(meta.successCount <= 0) return false;
+  return await upsertDailyUniqueLoginStat(meta.dateKey, meta.lastAt || Date.now());
+}
+
+function emptyAdminLoginStats(){
+  const dates = getRecentDateKeys(7);
+  return {
+    todayCount: 0,
+    avg7: 0,
+    daily: dates.map(function(date){ return { date: date, count: 0 }; }),
+    updatedAt: 0
+  };
+}
+
+
+async function refreshAdminLoginStats(showMsg){
+  if(!authState.isAdmin || !supa) return emptyAdminLoginStats();
+  const dates = getRecentDateKeys(7);
+  const makeDaily = function(countMap){
+    return dates.map(function(date){ return { date: date, count: Number(countMap[date] || 0) }; });
+  };
+  try{
+    const countMap = {};
+    dates.forEach(function(date){ countMap[date] = 0; });
+
+    let from = 0;
+    const pageSize = 1000;
+    let usedDailyTable = false;
+    while(true){
+      const { data, error } = await supa.from('login_daily_stats').select('user_id,date_key').in('date_key', dates).range(from, from + pageSize - 1);
+      if(error) throw error;
+      const rows = Array.isArray(data) ? data : [];
+      rows.forEach(function(row){
+        const key = String(row && row.date_key || '');
+        if(key && Object.prototype.hasOwnProperty.call(countMap, key)){
+          countMap[key] += 1;
+        }
+      });
+      usedDailyTable = true;
+      if(rows.length < pageSize) break;
+      from += pageSize;
+    }
+
+    const daily = makeDaily(countMap);
+    const todayCount = daily.length ? Number(daily[daily.length - 1].count || 0) : 0;
+    const avg7 = daily.length ? (daily.reduce(function(sum, item){ return sum + Number(item.count || 0); }, 0) / daily.length) : 0;
+    state.adminLoginStats = {
+      todayCount: todayCount,
+      avg7: avg7,
+      daily: daily,
+      updatedAt: Date.now(),
+      source: usedDailyTable ? 'login_daily_stats' : 'app_state_user'
+    };
+    if(showMsg) showToast('登录统计已刷新');
+    return state.adminLoginStats;
+  }catch(primaryErr){
+    try{
+      const countMap = {};
+      dates.forEach(function(date){ countMap[date] = 0; });
+      let from = 0;
+      const pageSize = 1000;
+      while(true){
+        const { data, error } = await supa.from('app_state_user').select('id,data').range(from, from + pageSize - 1);
+        if(error) throw error;
+        const rows = Array.isArray(data) ? data : [];
+        rows.forEach(function(row){
+          let payload = row && row.data && typeof row.data === 'object' ? row.data : null;
+          if(payload && payload.data && typeof payload.data === 'object') payload = payload.data;
+          const stats = payload && payload.loginStats && payload.loginStats.daily && typeof payload.loginStats.daily === 'object' ? payload.loginStats.daily : null;
+          if(!stats) return;
+          dates.forEach(function(date){
+            const item = stats[date];
+            if(item && Number(item.successCount || 0) > 0) countMap[date] += 1;
+          });
+        });
+        if(rows.length < pageSize) break;
+        from += pageSize;
+      }
+      const daily = makeDaily(countMap);
+      const todayCount = daily.length ? Number(daily[daily.length - 1].count || 0) : 0;
+      const avg7 = daily.length ? (daily.reduce(function(sum, item){ return sum + Number(item.count || 0); }, 0) / daily.length) : 0;
+      state.adminLoginStats = {
+        todayCount: todayCount,
+        avg7: avg7,
+        daily: daily,
+        updatedAt: Date.now(),
+        source: 'app_state_user'
+      };
+      if(showMsg) showToast('登录统计已刷新');
+      return state.adminLoginStats;
+    }catch(err){
+      console.error(primaryErr);
+      console.error(err);
+      state.adminLoginStats = state.adminLoginStats || emptyAdminLoginStats();
+      if(showMsg) showToast('登录统计刷新失败');
+      return state.adminLoginStats;
+    }
+  }
+}
+
+function ensureAdminLoginStats(){
+
+  if(!state.adminLoginStats) state.adminLoginStats = emptyAdminLoginStats();
+  return state.adminLoginStats;
+}
+
+function toggleAdminLoginStatsVisible(){
+  state.adminLoginStatsVisible = !state.adminLoginStatsVisible;
+  store.save('jxc_admin_login_stats_visible', state.adminLoginStatsVisible);
+  render();
+}
+
+function renderAdminLoginStatsCard(){
+  const stats = ensureAdminLoginStats();
+  const dailyRows = (stats.daily || []).map(function(item){
+    return `<div class="row"><span>${item.date}</span><span class="right">${Number(item.count || 0)} 人</span></div>`;
+  }).join('');
+  return `<div class="sheet" style="margin-top:14px">
+    ${sectionHeader('登录统计','按成功登录账号汇总')}
+    <div class="statrow" style="padding:14px 16px 4px">
+      <div class="stat"><span class="label">今日登录人数</span><span class="value">${Number(stats.todayCount || 0)}</span></div>
+      <div class="stat"><span class="label">近7天日均</span><span class="value">${Number(stats.avg7 || 0).toFixed(1)}</span></div>
+      <div class="stat"><span class="label">统计天数</span><span class="value">7</span></div>
+    </div>
+    <div class="row"><span>统计口径</span><span class="right">成功登录账号数（每天去重）</span></div>
+    <div class="row"><span>统计来源</span><span class="right">${stats.source || 'app_state_user'}</span></div>
+    <div class="row"><span>最近更新时间</span><span class="right">${stats.updatedAt ? new Date(stats.updatedAt).toLocaleString() : '未刷新'}</span></div>
+    <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>最近7天明细</span><div style="display:flex;gap:8px;"><button class="back-btn" type="button" onclick="toggleAdminLoginStatsVisible()">${state.adminLoginStatsVisible ? '隐藏' : '打开'}</button><button class="back-btn" type="button" onclick="refreshAdminLoginStats(true).then(render)">刷新</button></div></div>
+    ${state.adminLoginStatsVisible ? (dailyRows || '<div class="empty">暂无登录统计</div>') : '<div class="order-note">最近7天登录明细当前已隐藏，需要时再打开。</div>'}
+  </div>`;
+}
+
 function adminView(){
   if(!authState.isAdmin){
     return `<div class="phone"><div class="sheet" style="margin-top:14px">${sectionHeader('管理员','仅管理员可见')}<div class="empty">当前账号无权限访问</div></div>${tabbar('home')}</div>`;
   }
   return `<div class="phone">
+    ${renderAdminLoginStatsCard()}
     <div class="admin-panel" style="margin-top:14px">
       ${sectionHeader('管理员','沿用旧系统管理员功能')}
       <div class="order-note">可新建账号、重置密码、删除账号、查看账号列表，并禁用或恢复登录</div>
@@ -2205,11 +3731,21 @@ function adminView(){
         <button class="admin-btn create" type="button" onclick="loadCloudState(true)">从云端拉取</button>
         <button class="admin-btn delete" type="button" onclick="saveCurrentAppStateToCloud(true)">保存到云端</button>
       </div>
-      <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>账号列表</span><button class="back-btn" onclick="loadAdminList()">刷新</button></div>
+      <div class="admin-actions" style="margin-top:10px">
+        <button class="admin-btn reset" type="button" onclick="runDataIntegrityCheck(true)">数据校验</button>
+        <button class="admin-btn create" type="button" onclick="runDataIntegrityCheck(true);saveCurrentAppStateToCloud(true)">修复并保存</button>
+        <button class="admin-btn reset" type="button" onclick="loadCloudState(true)">重新校验云端</button>
+      </div>
+      <div class="sheet" style="margin:0 14px 14px">
+        <div class="sheet-hd"><span>数据安全状态</span><div style="display:flex;gap:8px;align-items:center"><span class="small">自动修复层</span><button class="back-btn" type="button" onclick="toggleDataHealthVisible()">${state.dataHealthVisible ? '隐藏' : '打开'}</button></div></div>
+        ${state.dataHealthVisible ? getDataHealthHtml() : '<div class="order-note">数据安全状态默认关闭，需要时再打开。</div>'}
+      </div>
+      <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>账号列表</span><div style="display:flex;gap:8px;"><button class="back-btn" onclick="toggleAdminListVisible()">${state.adminListVisible ? '隐藏' : '打开'}</button><button class="back-btn" onclick="loadAdminList()">刷新</button></div></div>
+      ${state.adminListVisible ? `<div class="order-toolbar" style="padding-top:0"><input class="search-input" placeholder="搜索账号邮箱" value="${escapeHtml(state.adminAccountSearch)}" oninput="setAdminAccountSearch(this.value)" /><span class="small">按邮箱搜索</span></div>` : `<div class="order-note">账号列表默认隐藏，需要时再打开，减少管理员面板信息暴露。</div>`}
       <div class="admin-list-wrap">
         <table class="admin-table">
           <thead><tr><th>邮箱</th><th>登录状态</th><th>创建时间</th></tr></thead>
-          <tbody id="adminTbody"><tr><td colspan="3">加载中…</td></tr></tbody>
+          <tbody id="adminTbody"><tr><td colspan="3">${state.adminListVisible ? '加载中…' : '账号列表当前已隐藏'}</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -2222,10 +3758,34 @@ function moreView(){
     <div class="sheet" style="margin-top:14px">
       ${sectionHeader('更多','备份与数据操作')}
       <div class="order-note">普通账号可在这里回滚到最近备份数据，也可以手动同步云端</div>
+      <div class="sheet" style="margin:14px">
+        <div class="sheet-hd"><span>数据安全状态</span><div style="display:flex;gap:8px;align-items:center"><button class="back-btn" type="button" onclick="toggleDataHealthVisible()">${state.dataHealthVisible ? '隐藏' : '打开'}</button><button class="back-btn" type="button" onclick="runDataIntegrityCheck(true)">立即校验</button></div></div>
+        ${state.dataHealthVisible ? getDataHealthHtml() : '<div class="order-note">数据安全状态默认关闭，需要时再打开。</div>'}
+      </div>
       <div class="admin-actions" style="padding:14px">
         <button class="admin-btn reset" type="button" onclick="restoreFromBackup()">回滚到备份数据</button>
         <button class="admin-btn create" type="button" onclick="loadCloudState(true)">从云端拉取</button>
         <button class="admin-btn delete" type="button" onclick="saveCurrentAppStateToCloud(true)">保存到云端</button>
+      </div>
+      <div class="admin-actions" style="padding:0 14px 14px">
+        <button class="admin-btn create" type="button" onclick="openChangePasswordModal()">修改密码</button>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="sheet-hd"><span>首页滚动公告</span><span class="small">一行一条</span></div>
+      <div class="notice-help">可用变量：{yesterdayProfit} 昨日利润，{todaySales} 今日销售额，{monthProfit} 总利润，{monthSales} 总销售额，{unsoldCount} 未售出数量，{advanceCount} 垫付数量，{lossAmount} 亏损金额。点变量按钮后会直接插入到输入框。</div>
+      <div class="notice-editor">
+        <div class="variable-buttons">
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{yesterdayProfit}')">昨日利润</button>
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{todaySales}')">今日销售额</button>
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{monthProfit}')">总利润</button>
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{monthSales}')">总销售额</button>
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{unsoldCount}')">未售出数量</button>
+          <button class="variable-btn" type="button" onclick="insertNoticeVariable('{advanceCount}')">垫付数量</button>
+          <button class="variable-btn loss" type="button" onclick="insertNoticeVariable('{lossAmount}')">亏损金额</button>
+        </div>
+        <textarea id="noticeInput" oninput="updateNoticeDraft(this.value)" placeholder="一行一条公告">${escapeHtml((state.noticeTemplates || []).join('\n'))}</textarea>
+        <button class="btn" type="button" style="margin-top:0" onclick="commitNoticeTextarea();render();showNiceModal('保存成功','首页公告已更新','✓')">保存首页公告</button>
       </div>
     </div>
     ${tabbar('home')}
@@ -2262,30 +3822,313 @@ function addProductView(){
   </div>`;
 }
 
-function suppliersView(){
+function tradeinView(){
+  const list = filteredTradeinOrders();
   return `<div class="phone">
-    <div class="sheet" style="margin-top:14px">
-      ${sectionHeader('供应商','新增供应商')}
-      <form class="form" onsubmit="event.preventDefault();addSupplier(this)">
+    <div class="order-panel" style="margin-top:14px">
+      ${sectionHeader('以旧换新','独立录入，报表单独显示')}
+      <form class="form" onsubmit="event.preventDefault();addTradeinOrder(this)">
         <div class="form-grid">
-          <div class="field"><label>供应商名称</label><input name="name" required placeholder="供应商名称" /></div>
-          <div class="field"><label>联系电话</label><input name="phone" placeholder="手机号" /></div>
+          <div class="field"><label>下单人</label><input name="buyer" required placeholder="输入下单人" /></div>
+          <div class="field"><label>新机价格</label><input name="newMachinePrice" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+          <div class="field"><label>旧机价格</label><input name="oldMachinePrice" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+          <div class="field"><label>回收返现</label><input name="recyclePrice" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+          <div class="field"><label>返款</label><input name="refundPrice" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+          <div class="field"><label>售出价格</label><input name="salePrice" type="number" min="0" step="0.01" placeholder="0.00" /></div>
+          <div class="field full"><label>快递单号</label><input name="trackingNo" placeholder="输入快递单号" /></div>
+          <div class="field full"><label>备注</label><div class="remark-form-row"><input name="remark" placeholder="输入备注" /><button class="scan-icon-btn" type="button" onclick="startTradeinRemarkScan(this.form)" title="扫码">📷</button></div></div>
         </div>
-        <button class="btn" type="submit">保存供应商</button>
+        <button class="btn" type="submit">保存以旧换新</button>
       </form>
-      ${state.suppliers.map(s=>`<div class="row"><span>${s.name}</span><span class="small">${s.phone||'--'}</span></div>`).join('')}
+      <div class="order-toolbar">
+        <input class="search-input" placeholder="搜索下单人 / 快递单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
+        <span class="small">${list.length} 条</span>
+      </div>
+      <div class="order-note">以旧换新表格独立保存，不进入首页统计；报表页会单独显示换新订单板块。按当前公式：实际总成本 = 新机价格 - 回收返现 + 旧机价格 + 返款；利润 = 售出价格 - 实际总成本。</div>
+      <div class="order-table-wrap">
+        ${list.length ? `
+        <table class="order-table report-table">
+          <thead>
+            <tr>
+              <th onclick="sortTradeinByDateDesc()" style="cursor:pointer">日期 ↓</th>
+              <th>下单人</th>
+              <th>新机价格</th>
+              <th>旧机价格</th>
+              <th>回收返现</th>
+              <th>返款</th>
+              <th>售出价格</th>
+              <th>利润</th>
+              <th>快递单号</th>
+              <th>备注</th>
+              <th>成交</th>
+              <th>删除</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map(renderTradeinRow).join('')}
+          </tbody>
+        </table>` : '<div class="empty">暂无以旧换新记录</div>'}
+      </div>
     </div>
+    ${tabbar('home')}
   </div>`;
 }
 
-function addSupplier(form){
+function addTradeinOrder(form){
   const fd = new FormData(form);
-  state.suppliers.push({name:fd.get('name'), phone:fd.get('phone')});
-  persist(); showToast('供应商已添加'); setTab('home');
+  const newMachinePrice = Number(fd.get('newMachinePrice')||0);
+  const oldMachinePrice = Number(fd.get('oldMachinePrice')||0);
+  const recyclePrice = Number(fd.get('recyclePrice')||0);
+  const refundPrice = Number(fd.get('refundPrice')||0);
+  const salePrice = Number(fd.get('salePrice')||0);
+  state.tradeinOrders.unshift({
+    id:id(),
+    date: normalizeDate(fd.get('date') || new Date().toISOString().slice(0,10)),
+    buyer: fd.get('buyer'),
+    newMachinePrice,
+    oldMachinePrice,
+    recyclePrice,
+    refundPrice,
+    salePrice,
+    profit: calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice),
+    trackingNo: fd.get('trackingNo'),
+    remark: fd.get('remark'),
+    dealDone: false
+  });
+  persist();
+  form.reset();
+  const dateInput = form.querySelector('[name="date"]');
+  if(dateInput) dateInput.value = new Date().toISOString().slice(0,10);
+  render();
+  showNiceModal('保存成功', '以旧换新记录已保存', '✓');
+}
+
+function filteredTradeinOrders(){
+  const q = state.orderSearch.trim().toLowerCase();
+  const list = tradeinList();
+  if(!q) return list;
+  return list.filter(function(o){
+    return [o.date,o.buyer,o.trackingNo,o.remark].join(' ').toLowerCase().includes(q);
+  });
+}
+
+function updateTradeinField(orderId, field, value){
+  const order = (state.tradeinOrders || []).find(function(item){ return item.id === orderId; });
+  if(!order) return;
+  if(['newMachinePrice','oldMachinePrice','recyclePrice','refundPrice','salePrice'].includes(field)){
+    order[field] = value === '' ? 0 : Number(value || 0);
+    order.profit = calcTradeinProfit(order.newMachinePrice, order.oldMachinePrice, order.recyclePrice, order.refundPrice, order.salePrice);
+  }else{
+    order[field] = value;
+  }
+  persist();
+}
+
+function refreshTradeinRowAfterNumericEdit(inputEl, orderId, field, value){
+  updateTradeinField(orderId, field, value);
+  const row = inputEl && inputEl.closest ? inputEl.closest('tr') : null;
+  if(row){
+    const profitBox = row.querySelector('.profit-box');
+    const order = (state.tradeinOrders || []).find(function(item){ return item.id === orderId; });
+    if(profitBox && order){
+      profitBox.textContent = '¥' + money(order.profit);
+      profitBox.classList.toggle('negative', Number(order.profit || 0) < 0);
+    }
+  }
+}
+
+function finalizeTradeinRow(){
+  persist();
+  render();
+}
+
+function markTradeinDeal(orderId){
+  const order = (state.tradeinOrders || []).find(function(item){ return item.id === orderId; });
+  if(!order || order.dealDone) return;
+  order.dealDone = true;
+  order.profit = calcTradeinProfit(order.newMachinePrice, order.oldMachinePrice, order.recyclePrice, order.refundPrice, order.salePrice);
+  persist();
+  render();
+  showNiceModal('成交成功', '这笔以旧换新订单已录入报表', '✓');
+}
+
+function deleteTradeinOrder(orderId){
+  const idx = (state.tradeinOrders || []).findIndex(function(item){ return item.id === orderId; });
+  if(idx === -1) return;
+  showConfirmModal('确定删除这笔以旧换新记录吗？', function(){
+    state.tradeinOrders.splice(idx, 1);
+    persist();
+    render();
+    showNiceModal('删除成功', '这笔以旧换新记录已经删除', '✓');
+  });
+}
+
+function renderTradeinRow(o){
+  return `<tr>
+    <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateTradeinField('${o.id}','date',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateTradeinField('${o.id}','buyer',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input small" type="number" value="${o.newMachinePrice}" oninput="refreshTradeinRowAfterNumericEdit(this,'${o.id}','newMachinePrice',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input small" type="number" value="${o.oldMachinePrice}" oninput="refreshTradeinRowAfterNumericEdit(this,'${o.id}','oldMachinePrice',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input small" type="number" value="${o.recyclePrice}" oninput="refreshTradeinRowAfterNumericEdit(this,'${o.id}','recyclePrice',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input small" type="number" value="${o.refundPrice || 0}" oninput="refreshTradeinRowAfterNumericEdit(this,'${o.id}','refundPrice',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input small" type="number" value="${o.salePrice}" oninput="refreshTradeinRowAfterNumericEdit(this,'${o.id}','salePrice',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><span class="profit-box ${Number(o.profit||0) < 0 ? 'negative' : ''}">¥${money(o.profit)}</span></td>
+    <td><input class="table-input mid" value="${escapeHtml(o.trackingNo || '')}" oninput="updateTradeinField('${o.id}','trackingNo',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><input class="table-input long" value="${escapeHtml(o.remark || '')}" oninput="updateTradeinField('${o.id}','remark',this.value)" onchange="finalizeTradeinRow()" /></td>
+    <td><button class="icon-btn ${o.dealDone ? 'success' : 'edit'}" onclick="markTradeinDeal('${o.id}')" ${o.dealDone ? 'disabled' : ''}>${o.dealDone ? '已成交' : '成交'}</button></td>
+    <td><button class="icon-btn delete" onclick="deleteTradeinOrder('${o.id}')">删除</button></td>
+  </tr>`;
+}
+
+function sortTradeinByDateDesc(){
+  state.tradeinOrders = tradeinList();
+  persist();
+  render();
+}
+
+function persistSelectedOrderIds(){
+  store.save('jxc_selected_order_ids', state.selectedOrderIds || []);
+}
+
+function isOrderSelected(orderId){
+  return Array.isArray(state.selectedOrderIds) && state.selectedOrderIds.includes(orderId);
+}
+
+function getCurrentSelectionScopeKey(){
+  if(state.tab === 'sale' || state.tab === 'advance' || state.tab === 'detail') return state.tab;
+  return '';
+}
+
+function getVisibleOrdersByScope(scopeKey){
+  if(scopeKey === 'sale') return filteredOrders(unsoldOrders());
+  if(scopeKey === 'advance') return filteredOrders(advanceOrders());
+  if(scopeKey === 'detail') return filteredOrders(soldOrders());
+  return [];
+}
+
+function updateBatchSelectionUI(scopeKey){
+  const currentScope = scopeKey || getCurrentSelectionScopeKey();
+  if(!currentScope) return;
+  const list = getVisibleOrdersByScope(currentScope);
+  const selectedCount = countSelectedInList(list);
+  const countEl = document.getElementById('batchSelectedCount');
+  if(countEl) countEl.textContent = '已选 ' + selectedCount + ' / ' + list.length + ' 笔';
+  const headCheckbox = document.getElementById('selectAllCheckbox');
+  if(headCheckbox){
+    const allChecked = !!list.length && selectedCount === list.length;
+    headCheckbox.checked = allChecked;
+    headCheckbox.indeterminate = selectedCount > 0 && selectedCount < list.length;
+  }
+}
+
+function toggleOrderSelection(orderId, checked){
+  const set = new Set(Array.isArray(state.selectedOrderIds) ? state.selectedOrderIds : []);
+  if(checked) set.add(orderId);
+  else set.delete(orderId);
+  state.selectedOrderIds = Array.from(set);
+  persistSelectedOrderIds();
+  updateBatchSelectionUI();
+}
+
+function toggleSelectAllOrders(scopeKey, checked){
+  const list = getVisibleOrdersByScope(scopeKey);
+  const set = new Set(Array.isArray(state.selectedOrderIds) ? state.selectedOrderIds : []);
+  list.forEach(function(order){
+    if(checked) set.add(order.id);
+    else set.delete(order.id);
+  });
+  state.selectedOrderIds = Array.from(set);
+  persistSelectedOrderIds();
+  const idSet = new Set(list.map(function(order){ return order.id; }));
+  document.querySelectorAll('tr[data-order-id]').forEach(function(row){
+    const orderId = row.getAttribute('data-order-id');
+    if(!idSet.has(orderId)) return;
+    const checkbox = row.querySelector('.order-check');
+    if(checkbox) checkbox.checked = !!checked;
+  });
+  updateBatchSelectionUI(scopeKey);
+}
+
+function countSelectedInList(list){
+  const ids = new Set(Array.isArray(state.selectedOrderIds) ? state.selectedOrderIds : []);
+  return (Array.isArray(list) ? list : []).filter(function(item){ return ids.has(item.id); }).length;
+}
+
+function openBatchTrackingModal(scopeKey){
+  const visibleList = filteredOrders(scopeKey === 'sale' ? unsoldOrders() : (scopeKey === 'advance' ? advanceOrders() : soldOrders()));
+  const selected = visibleList.filter(function(item){ return isOrderSelected(item.id); });
+  if(!selected.length){
+    showToast('请先勾选订单');
+    return;
+  }
+  openAccountModal({
+    title:'批量填快递单号',
+    desc:'可输入 1 个或多个单号。多个单号支持按换行、空格、逗号分隔；若只填 1 个，则会批量填到全部选中订单。',
+    confirmText:'立即填入',
+    loadingText:'处理中...',
+    fields:[
+      {key:'trackingNos', label:'快递单号', type:'textarea', placeholder:'一行一个，或直接粘贴多个单号'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const raw = String(values.trackingNos || '').trim();
+      if(!raw){ setMsg('请输入快递单号'); return; }
+      const numbers = raw.split(/[\n,，\s]+/).map(function(item){ return String(item || '').trim(); }).filter(Boolean);
+      if(!numbers.length){ setMsg('请输入有效快递单号'); return; }
+      if(numbers.length !== 1 && numbers.length !== selected.length){
+        setMsg('单号数量需等于选中订单数，或只填 1 个');
+        return;
+      }
+      selected.forEach(function(order, index){
+        order.trackingNo = numbers.length === 1 ? numbers[0] : numbers[index];
+      });
+      persist();
+      close();
+      showNiceModal('批量填写成功', '已更新 ' + selected.length + ' 笔订单的快递单号', '✓');
+    }
+  });
+}
+
+function openBatchSaleAmountModal(){
+  const visibleList = filteredOrders(unsoldOrders());
+  const selected = visibleList.filter(function(item){ return isOrderSelected(item.id); });
+  if(!selected.length){
+    showToast('请先勾选订单');
+    return;
+  }
+  openAccountModal({
+    title:'批量填售出金额',
+    desc:'会把选中订单批量写入售出金额，并自动计算利润；保存后这些订单会从未售出进入报表。',
+    confirmText:'立即填入',
+    loadingText:'处理中...',
+    fields:[
+      {key:'saleAmount', label:'售出金额', type:'number', placeholder:'请输入售出金额'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const raw = String(values.saleAmount || '').trim();
+      if(!raw){ setMsg('请输入售出金额'); return; }
+      const saleAmount = Number(raw);
+      if(!Number.isFinite(saleAmount) || saleAmount <= 0){
+        setMsg('售出金额必须大于 0');
+        return;
+      }
+      selected.forEach(function(order){
+        order.saleAmount = saleAmount;
+        order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, saleAmount);
+      });
+      const removeIds = new Set(selected.map(function(order){ return order.id; }));
+      state.selectedOrderIds = (state.selectedOrderIds || []).filter(function(id){ return !removeIds.has(id); });
+      persistSelectedOrderIds();
+      persist();
+      close();
+      render();
+      showNiceModal('批量填写成功', '已更新 ' + selected.length + ' 笔订单的售出金额，并转入报表', '✓');
+    }
+  });
 }
 
 function renderOrderRow(o){
-  return `<tr>
+  return `<tr data-order-id="${o.id}">
+    <td class="order-check-cell"><input class="order-check" type="checkbox" ${isOrderSelected(o.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleOrderSelection('${o.id}',this.checked)" /></td>
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -2305,7 +4148,8 @@ function renderOrderRow(o){
 }
 
 function renderAdvanceRow(o){
-  return `<tr>
+  return `<tr data-order-id="${o.id}">
+    <td class="order-check-cell"><input class="order-check" type="checkbox" ${isOrderSelected(o.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleOrderSelection('${o.id}',this.checked)" /></td>
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -2331,8 +4175,8 @@ function ordersView(){
       <form id="orderForm" class="form" onsubmit="event.preventDefault();addOrder(this)">
         <div class="form-grid">
           <div class="field"><label>日期</label><input name="date" type="date" value="${escapeHtml(draft.date || new Date().toISOString().slice(0,10))}" required /></div>
-          <div class="field"><label>下单人</label><div class="suggest-wrap"><input name="buyer" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" autocomplete="off" onfocus="updateOrderSmartSuggest(this,'buyerSuggest','buyer')" oninput="updateOrderSmartSuggest(this,'buyerSuggest','buyer')" onblur="hideOrderSmartSuggest('buyerSuggest')" /><div id="buyerSuggest" class="smart-suggest"></div></div></div>
-          <div class="field full"><label>产品</label><div class="suggest-wrap"><div class="field-inline"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入或选择产品名称" autocomplete="off" onfocus="updateOrderSmartSuggest(this,'productSuggest','product')" oninput="updateOrderSmartSuggest(this,'productSuggest','product')" onblur="hideOrderSmartSuggest('productSuggest')" /><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出售价</button></div><div id="productSuggest" class="smart-suggest"></div></div></div>
+          <div class="field"><label>下单人</label><div class="autocomplete-wrap"><input name="buyer" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" autocomplete="off" /><div class="autocomplete-panel" id="buyerAutocomplete"></div></div></div>
+          <div class="field full"><label>产品</label><div class="field-inline"><div class="autocomplete-wrap"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入产品名称" autocomplete="off" /><div class="autocomplete-panel" id="productAutocomplete"></div></div><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出下单价</button></div></div>
           <div class="field"><label>下单金额</label><input name="orderAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.orderAmount || '')}" required placeholder="0.00" /></div>
           <div class="field"><label>返款</label><input name="rebate" type="number" min="0" step="0.01" value="${escapeHtml(draft.rebate || '0')}" /></div>
           <div class="field"><label>运费</label><input name="freight" type="number" min="0" step="0.01" value="${escapeHtml(draft.freight || '0')}" /></div>
@@ -2346,7 +4190,7 @@ function ordersView(){
           <button class="btn btn-alt" type="button" onclick="addOrder(this.form,'advance')">垫付保存</button>
         </div>
       </form>
-      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；点“带出售价”可自动带入商品售价</div>
+      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；支持历史下单人快捷按钮；点“带出下单价”会自动带入下单金额和商品售价</div>
     </div>
 
     <div class="sheet">
@@ -2422,8 +4266,7 @@ function handleImportOrders(event){
       saveBackupSnapshot('before-import-orders', true);
       state.orders = imported;
       persist();
-      state.tab = 'detail';
-      render();
+      setTab('detail');
       showToast('已成功导入 ' + imported.length + ' 条订单');
     }catch(err){
       console.error(err);
@@ -2457,7 +4300,47 @@ function exportOrders(){
   }]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, '订单利润数据');
-  XLSX.writeFile(workbook, '订单利润数据导出.xlsx');
+  const tradeinRows = (state.tradeinOrders || []).map(o => ({
+    '日期': o.date,
+    '下单人': o.buyer,
+    '新机价格': Number(o.newMachinePrice || 0),
+    '旧机价格': Number(o.oldMachinePrice || 0),
+    '回收返现': Number(o.recyclePrice || 0),
+    '返款': Number(o.refundPrice || 0),
+    '售出价格': Number(o.salePrice || 0),
+    '利润': Number(o.profit || 0),
+    '快递单号': o.trackingNo || '',
+    '备注': o.remark || ''
+  }));
+  const tradeinSheet = XLSX.utils.json_to_sheet(tradeinRows.length ? tradeinRows : [{
+    '日期':'','下单人':'','新机价格':'','旧机价格':'','回收返现':'','返款':'','售出价格':'','利润':'','快递单号':'','备注':''
+  }]);
+  XLSX.utils.book_append_sheet(workbook, tradeinSheet, '换新订单');
+  const fileName = '订单利润数据导出.xlsx';
+  const mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  if(window.AndroidBridge && typeof AndroidBridge.saveBase64File === 'function'){
+    try{
+      const base64Data = XLSX.write(workbook, { bookType:'xlsx', type:'base64' });
+      const ok = AndroidBridge.saveBase64File(fileName, mimeType, base64Data);
+      if(ok){
+        showToast('导出成功，已保存到下载目录');
+        return;
+      }
+      showToast('安卓导出失败，已尝试浏览器方式继续导出');
+    }catch(err){
+      console.error(err);
+      showToast('安卓导出桥接失败，已尝试浏览器方式继续导出');
+    }
+  }
+
+  try{
+    XLSX.writeFile(workbook, fileName);
+    showToast('已触发浏览器导出');
+  }catch(err){
+    console.error(err);
+    showToast('导出失败，请稍后重试');
+  }
 }
 
 
@@ -2470,6 +4353,12 @@ function setSearchComposing(flag){
 
 function setOrderSearch(v, evt){
   state.orderSearch = v;
+  if(state.tab === 'detail'){
+    state.reportPage = 1;
+    state.reportTradeinPage = 1;
+    store.save('jxc_report_page', 1);
+    store.save('jxc_report_tradein_page', 1);
+  }
   if(searchIsComposing || (evt && evt.isComposing)) return;
 
   if(searchRenderTimer) clearTimeout(searchRenderTimer);
@@ -2514,28 +4403,105 @@ function tabbar(active){
   ).join('') + `</div>`;
 }
 
-function render(){
-  const app = document.getElementById('app');
-  const view = {
-    home: homeView,
-    goods: goodsView,
-    sale: saleView,
-    detail: detailView,
-    advance: advanceView,
-    admin: adminView,
-    more: moreView,
-    my: myView,
-    addProduct: addProductView,
-    suppliers: suppliersView,
-    orders: ordersView
-  }[state.tab] || homeView;
-  app.innerHTML = '<div class="page">' + view() + '</div>';
-  const orderForm = document.getElementById('orderForm');
-  if(orderForm) hydrateOrderForm(orderForm);
-  if(state.tab === 'home'){
-    animateHomeStats();
+function escapeFatalHtml(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function ensureAppRoot(){
+  let app = document.getElementById('app');
+  if(app) return app;
+  app = document.createElement('div');
+  app.id = 'app';
+  (document.body || document.documentElement).appendChild(app);
+  return app;
+}
+
+function mountFatalError(err, source){
+  const app = ensureAppRoot();
+  const message = err && err.message ? err.message : String(err || '未知错误');
+  const stack = err && err.stack ? String(err.stack) : '';
+  app.innerHTML = `
+    <div class="page" style="padding:24px">
+      <div class="card" style="margin-top:18px;padding:18px;border:1px solid rgba(255,90,90,.2)">
+        <div style="font-size:20px;font-weight:800;margin-bottom:8px">页面已拦截异常，避免白屏</div>
+        <div class="muted" style="line-height:1.7">来源：${escapeFatalHtml(source || '运行时')}<br>错误：${escapeFatalHtml(message)}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn primary" type="button" onclick="bootApp(true)">重新加载页面</button>
+          <button class="btn" type="button" onclick="setTab('tradein')">打开以旧换新</button>
+          <button class="btn" type="button" onclick="setTab('home')">返回首页</button>
+        </div>
+        ${stack ? `<details style="margin-top:14px"><summary>错误详情</summary><pre style="white-space:pre-wrap;word-break:break-word;margin-top:10px;font-size:12px;line-height:1.6">${escapeFatalHtml(stack)}</pre></details>` : ''}
+      </div>
+    </div>`;
+}
+
+function safeCall(fn, source){
+  try{
+    return fn();
+  }catch(err){
+    mountFatalError(err, source);
+    return null;
   }
 }
+
+function render(){
+  return safeCall(function(){
+    const app = ensureAppRoot();
+    const view = {
+      home: homeView,
+      goods: goodsView,
+      sale: saleView,
+      detail: detailView,
+      advance: advanceView,
+      admin: adminView,
+      more: moreView,
+      my: myView,
+      addProduct: addProductView,
+      suppliers: tradeinView,
+      tradein: tradeinView,
+      orders: ordersView
+    }[state.tab] || homeView;
+    app.innerHTML = '<div class="page">' + view() + '</div>';
+    const orderForm = document.getElementById('orderForm');
+    if(orderForm){
+      safeCall(function(){ hydrateOrderForm(orderForm); }, 'hydrateOrderForm');
+      safeCall(function(){ initOrderAutocomplete(orderForm); }, 'initOrderAutocomplete');
+    }
+    if(state.tab === 'home'){
+      safeCall(function(){ animateHomeStats(); }, 'animateHomeStats');
+      setTimeout(function(){ safeCall(startNoticeTicker, 'startNoticeTicker'); }, 0);
+    }else{
+      safeCall(stopNoticeTicker, 'stopNoticeTicker');
+    }
+    safeCall(function(){ updateBatchSelectionUI(state.tab); }, 'updateBatchSelectionUI');
+  }, 'render');
+}
+
+window.addEventListener('error', function(event){
+  if(!event || !event.error) return;
+  mountFatalError(event.error, event.filename || 'window.error');
+});
+
+window.addEventListener('unhandledrejection', function(event){
+  const reason = event && event.reason ? event.reason : new Error('Promise 异常');
+  mountFatalError(reason, 'unhandledrejection');
+});
+
+function bootApp(forceReload){
+  return safeCall(function(){
+    if(forceReload){
+      removeInputIdentityTags();
+    }
+    initTabHistory();
+    restoreLoginSession();
+  }, 'bootApp');
+}
+
 
 document.addEventListener('input', function(e){
   const form = e.target && e.target.form;
@@ -2551,10 +4517,81 @@ document.addEventListener('input', function(e){
   }
 });
 
+
+function shortenIdentityText(text){
+  const value = String(text || '').trim();
+  if(value.length <= 12) return value;
+  return value.slice(0, 12) + '…';
+}
+
+function removeInputIdentityTags(){
+  document.querySelectorAll('.input-identity-tag').forEach(function(tag){
+    if(tag && tag.parentNode) tag.parentNode.removeChild(tag);
+  });
+}
+
+function showInputIdentityTag(input){
+  if(!input || !input.closest || !input.closest('.order-table')) return;
+  const row = input.closest('tr[data-order-id]');
+  const cell = input.closest('td');
+  if(!row || !cell) return;
+
+  const orderId = row.getAttribute('data-order-id');
+  const order = state.orders.find(function(item){ return item.id === orderId; });
+  if(!order) return;
+
+  removeInputIdentityTags();
+
+  let text = '';
+  if(input.classList && input.classList.contains('order-check')){
+    text = String(order.trackingNo || '').trim();
+  }else{
+    const buyer = String(order.buyer || '').trim();
+    const product = String(order.product || '').trim();
+    text = [buyer, product].filter(Boolean).join(' · ');
+  }
+
+  text = shortenIdentityText(text);
+  if(!text) return;
+
+  const tag = document.createElement('div');
+  tag.className = 'input-identity-tag';
+  tag.textContent = text;
+
+  cell.style.position = 'relative';
+  cell.appendChild(tag);
+}
+
+document.addEventListener('focusin', function(e){
+  const target = e.target;
+  if(!target || !target.matches || !target.matches('.order-table input')) return;
+  showInputIdentityTag(target);
+});
+
+document.addEventListener('click', function(e){
+  const target = e.target;
+  if(!target || !target.matches || !target.matches('.order-table input')) return;
+  showInputIdentityTag(target);
+});
+
+document.addEventListener('focusout', function(e){
+  const target = e.target;
+  if(!target || !target.matches || !target.matches('.order-table input')) return;
+  setTimeout(function(){
+    const active = document.activeElement;
+    if(!active || !active.closest || !active.closest('.order-table')) removeInputIdentityTags();
+  }, 0);
+});
+
+
+function addSupplier(){
+  showToast('供应商入口已改为以旧换新');
+}
+
 window.setTab = setTab;
 window.addProduct = addProduct;
 window.addSale = addSale;
-window.addSupplier = addSupplier;
+window.addSupplier = typeof addSupplier === 'function' ? addSupplier : function(){ showToast('供应商入口已改为以旧换新'); };
 window.addOrder = addOrder;
 window.updateOrderField = updateOrderField;
 window.refreshRowAfterNumericEdit = refreshRowAfterNumericEdit;
@@ -2563,16 +4600,29 @@ window.deliverAdvanceOrder = deliverAdvanceOrder;
 window.refundAdvanceOrder = refundAdvanceOrder;
 window.deleteOrder = deleteOrder;
 window.setOrderSearch = setOrderSearch;
+window.setReportMonth = setReportMonth;
+window.setReportPage = setReportPage;
+window.toggleAdminListVisible = toggleAdminListVisible;
+window.toggleAdminLoginStatsVisible = toggleAdminLoginStatsVisible;
+window.setAdminAccountSearch = setAdminAccountSearch;
 window.setSearchComposing = setSearchComposing;
 window.sortOrdersByDateDesc = sortOrdersByDateDesc;
 window.triggerImportOrders = triggerImportOrders;
 window.handleImportOrders = handleImportOrders;
 window.exportOrders = exportOrders;
 window.useProductTemplate = useProductTemplate;
-window.updateOrderSmartSuggest = updateOrderSmartSuggest;
-window.hideOrderSmartSuggest = hideOrderSmartSuggest;
-window.selectOrderSmartSuggest = selectOrderSmartSuggest;
 window.tapMenuCard = tapMenuCard;
+window.insertNoticeVariable = insertNoticeVariable;
+window.updateNoticeDraft = updateNoticeDraft;
+window.saveNoticeTemplates = saveNoticeTemplates;
+window.openNoticeSettings = openNoticeSettings;
+window.commitNoticeTextarea = commitNoticeTextarea;
+window.addTradeinOrder = addTradeinOrder;
+window.updateTradeinField = updateTradeinField;
+window.refreshTradeinRowAfterNumericEdit = refreshTradeinRowAfterNumericEdit;
+window.finalizeTradeinRow = finalizeTradeinRow;
+window.deleteTradeinOrder = deleteTradeinOrder;
+window.sortTradeinByDateDesc = sortTradeinByDateDesc;
 
 document.addEventListener('input', function(e){
   const form = e.target && e.target.form;
@@ -2586,11 +4636,73 @@ document.addEventListener('change', function(e){
   saveOrderDraftFromForm(form);
 });
 
+document.addEventListener('keydown', function(e){
+  const target = e.target;
+  if(!target || !target.classList || !target.classList.contains('notice')) return;
+  if(e.key === 'Enter' || e.key === ' '){
+    e.preventDefault();
+    openNoticeSettings();
+  }
+});
+
+
 
 let activeScanSession = null;
+let zxingLoaderPromise = null;
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+}
+
+async function ensureZXingLoaded(){
+  if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
+    return window.ZXingBrowser;
+  }
+  if(zxingLoaderPromise) return zxingLoaderPromise;
+  const cdnList = [
+    'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js',
+    'https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js'
+  ];
+  zxingLoaderPromise = new Promise(async function(resolve, reject){
+    for(const src of cdnList){
+      try{
+        await new Promise(function(ok, fail){
+          const old = document.querySelector('script[data-zxing-loader="1"][src="' + src + '"]');
+          if(old){
+            if(window.ZXingBrowser) return ok();
+            old.addEventListener('load', ok, {once:true});
+            old.addEventListener('error', fail, {once:true});
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = true;
+          script.dataset.zxingLoader = '1';
+          script.onload = ok;
+          script.onerror = fail;
+          document.head.appendChild(script);
+        });
+        if(window.ZXingBrowser && window.ZXingBrowser.BrowserMultiFormatReader){
+          resolve(window.ZXingBrowser);
+          return;
+        }
+      }catch(err){}
+    }
+    reject(new Error('ZXing load failed'));
+  });
+  return zxingLoaderPromise;
+}
+
+async function createNativeDetector(){
+  if(typeof BarcodeDetector === 'undefined') return null;
+  try{
+    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+    const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
+    return new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+  }catch(err){
+    console.error(err);
+    return null;
+  }
 }
 
 async function startRemarkScan(orderId){
@@ -2603,13 +4715,341 @@ function closeRemarkScan(){
   if(!activeScanSession) return;
   const session = activeScanSession;
   activeScanSession = null;
-  if(session.timer) clearInterval(session.timer);
+  try{
+    if(session.scanTimer) clearInterval(session.scanTimer);
+    if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
+    if(session.reader && session.reader.reset) session.reader.reset();
+    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.forceTorchOff === 'function'){
+      AndroidBridge.forceTorchOff();
+    }else if(session.torchOn && session.track && session.track.applyConstraints){
+      session.track.applyConstraints({advanced:[{torch:false}]});
+    }
+  }catch(e){}
   if(session.stream){
-    session.stream.getTracks().forEach(track => track.stop());
+    try{ session.stream.getTracks().forEach(function(track){ track.stop(); }); }catch(e){}
   }
   if(session.overlay && session.overlay.parentNode){
     session.overlay.parentNode.removeChild(session.overlay);
   }
+}
+
+function canUseNativeTorch(){
+  return !!(window.AndroidBridge && typeof AndroidBridge.isTorchAvailable === 'function' && AndroidBridge.isTorchAvailable());
+}
+
+function updateTorchButtonState(session){
+  if(!session || !session.torchBtn) return;
+  session.torchBtn.disabled = !session.torchSupported;
+  session.torchBtn.classList.toggle('active', !!session.torchOn);
+  const label = session.torchBtn.querySelector('span:last-child');
+  if(label) label.textContent = session.torchSupported ? (session.torchOn ? '关闭手电筒' : '手电筒') : '设备不支持';
+}
+
+async function toggleScanTorch(session){
+  if(!session || !session.torchSupported) return;
+  try{
+    const nextState = !session.torchOn;
+    if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.setTorchEnabled === 'function'){
+      const ok = AndroidBridge.setTorchEnabled(nextState);
+      session.torchOn = !!ok && nextState;
+      updateTorchButtonState(session);
+      if(!ok) showToast('当前设备暂不支持手电筒');
+      return;
+    }
+    if(!session.track || !session.track.applyConstraints){
+      showToast('当前设备暂不支持手电筒');
+      return;
+    }
+    session.torchOn = nextState;
+    await session.track.applyConstraints({advanced:[{torch: session.torchOn}]});
+    updateTorchButtonState(session);
+  }catch(err){
+    console.error(err);
+    session.torchOn = false;
+    updateTorchButtonState(session);
+    showToast('当前设备暂不支持手电筒');
+  }
+}
+
+async function fileToImage(file){
+  if(!file) return null;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  await new Promise(function(resolve, reject){
+    img.onload = resolve;
+    img.onerror = reject;
+    img.src = url;
+  });
+  img.dataset.objectUrl = url;
+  return img;
+}
+
+function releaseImage(img){
+  try{
+    const url = img && img.dataset ? img.dataset.objectUrl : '';
+    if(url) URL.revokeObjectURL(url);
+  }catch(e){}
+}
+
+async function recognizeCodeFromImageFile(file, detector){
+  if(!file) return '';
+  let img = null;
+  try{
+    img = await fileToImage(file);
+    if(detector){
+      const nativeResults = await detector.detect(img);
+      if(nativeResults && nativeResults.length){
+        return String(nativeResults[0].rawValue || '').trim();
+      }
+    }
+    const ZXingLib = await ensureZXingLoaded();
+    const reader = new ZXingLib.BrowserMultiFormatReader();
+    const result = await reader.decodeFromImageElement(img);
+    if(reader && reader.reset) reader.reset();
+    return result && result.text ? String(result.text).trim() : '';
+  }finally{
+    if(img) releaseImage(img);
+  }
+}
+
+async function beginLiveScan(session){
+  if(!session) return;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showToast('当前浏览器不支持实时扫码，请改用拍照识别');
+    return;
+  }
+  const status = session.statusText;
+  try{
+    if(status) status.textContent = '正在打开摄像头…';
+    if(session.reader && session.reader.reset) session.reader.reset();
+    if(session.stream){
+      try{ session.stream.getTracks().forEach(function(track){ track.stop(); }); }catch(e){}
+      session.stream = null;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}},
+      audio:false
+    });
+    session.stream = stream;
+    session.video.srcObject = stream;
+    await session.video.play();
+    session.mode = 'live';
+    session.manualPanel.hidden = true;
+    session.video.hidden = false;
+    session.viewfinder.hidden = false;
+    session.liveBtn.classList.add('active');
+    session.track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+    const capabilities = session.track && session.track.getCapabilities ? session.track.getCapabilities() : null;
+    session.usingNativeTorch = canUseNativeTorch();
+    session.torchSupported = session.usingNativeTorch || !!(capabilities && capabilities.torch);
+    session.torchOn = false;
+    updateTorchButtonState(session);
+    if(status) status.textContent = '请将条形码或二维码放入框内';
+
+    if(session.detector){
+      if(session.scanTimer) clearInterval(session.scanTimer);
+      session.scanTimer = setInterval(async function(){
+        if(!activeScanSession || activeScanSession !== session) return;
+        if(session.paused || session.resultVisible) return;
+        if(session.video.readyState < 2) return;
+        try{
+          const results = await session.detector.detect(session.video);
+          if(!results || !results.length) return;
+          handleDetectedCode(session, String(results[0].rawValue || '').trim());
+        }catch(err){}
+      }, 380);
+      return;
+    }
+
+    const ZXingLib = await ensureZXingLoaded();
+    if(session.reader && session.reader.reset) session.reader.reset();
+    session.reader = new ZXingLib.BrowserMultiFormatReader();
+    session.zxingControls = await session.reader.decodeFromVideoDevice(null, session.video, function(result, err, controls){
+      if(controls) session.zxingControls = controls;
+      if(result && result.text){
+        handleDetectedCode(session, String(result.text || '').trim());
+      }
+    });
+  }catch(err){
+    console.error(err);
+    session.liveBtn.classList.remove('active');
+    if(status) status.textContent = '实时扫码打开失败，请改用拍照识别或相册识别';
+    const name = err && err.name ? err.name : '';
+    if(name === 'NotAllowedError'){
+      showToast('摄像头权限被拒绝，请改用拍照识别或到系统设置中开启摄像头权限');
+    }else if(name === 'NotFoundError'){
+      showToast('当前设备未检测到可用摄像头');
+    }else{
+      showToast('实时扫码打开失败，请改用拍照识别');
+    }
+  }
+}
+
+function handleDetectedCode(session, raw){
+  raw = String(raw || '').trim();
+  if(!raw || !session || session.resultVisible) return;
+  const now = Date.now();
+  if(raw === session.lastCode && now - session.lastAt < 1200) return;
+  session.lastCode = raw;
+  session.lastAt = now;
+  session.resultVisible = true;
+  session.paused = true;
+  if(typeof session.onDetected === 'function') session.onDetected(raw);
+  if(session.resultCode) session.resultCode.textContent = raw;
+  if(session.resultPanel) session.resultPanel.hidden = false;
+}
+
+function resumeScanSession(session){
+  if(!session) return;
+  session.resultVisible = false;
+  session.paused = false;
+  if(session.resultPanel) session.resultPanel.hidden = true;
+}
+
+function applyCodeByPrompt(session){
+  const code = window.prompt('请输入条码或二维码内容');
+  if(!code) return;
+  const cleaned = String(code || '').trim();
+  if(!cleaned) return;
+  handleDetectedCode(session, cleaned);
+}
+
+async function triggerImageScan(session, captureMode){
+  if(!session || !session.fileInput) return;
+  session.fileInput.value = '';
+  if(captureMode){
+    session.fileInput.setAttribute('capture', 'environment');
+  }else{
+    session.fileInput.removeAttribute('capture');
+  }
+  session.fileInput.click();
+}
+
+async function startGenericScan(onDetected){
+  if(activeScanSession){
+    showToast('请先关闭当前扫码窗口');
+    return;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'scan-overlay';
+  overlay.innerHTML = `
+    <div class="scan-overlay-top">
+      <div class="scan-title">通用扫码</div>
+      <button class="scan-close" type="button">×</button>
+    </div>
+    <video playsinline autoplay muted hidden></video>
+    <div class="scan-viewfinder" aria-hidden="true" hidden>
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+      <span class="scan-line"></span>
+    </div>
+    <div class="scan-overlay-tip">优先推荐拍照识别或相册识别，兼容性更好；支持的浏览器可用实时扫码。</div>
+    <div class="scan-bottom-actions">
+      <button class="scan-bottom-action scan-camera-btn" type="button">
+        <span class="icon">📸</span>
+        <span>拍照识别</span>
+      </button>
+      <button class="scan-bottom-action scan-photo-btn" type="button">
+        <span class="icon">🖼️</span>
+        <span>相册识别</span>
+      </button>
+      <button class="scan-bottom-action scan-live-btn" type="button">
+        <span class="icon">📷</span>
+        <span>实时扫码</span>
+      </button>
+      <button class="scan-bottom-action scan-manual-btn" type="button">
+        <span class="icon">⌨️</span>
+        <span>手动输入</span>
+      </button>
+      <button class="scan-bottom-action scan-torch-btn" type="button">
+        <span class="icon">🔦</span>
+        <span>手电筒</span>
+      </button>
+      <input class="scan-file-input" type="file" accept="image/*" />
+    </div>
+    <div class="scan-result-panel" hidden>
+      <div class="scan-result-title">识别成功</div>
+      <div class="scan-result-code"></div>
+      <div class="scan-result-actions">
+        <button class="scan-result-btn secondary" type="button">关闭</button>
+        <button class="scan-result-btn primary" type="button">确定，继续扫码</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const session = {
+    overlay,
+    detector: await createNativeDetector(),
+    onDetected:onDetected,
+    video: overlay.querySelector('video'),
+    viewfinder: overlay.querySelector('.scan-viewfinder'),
+    statusText: overlay.querySelector('.scan-overlay-tip'),
+    closeBtn: overlay.querySelector('.scan-close'),
+    cameraBtn: overlay.querySelector('.scan-camera-btn'),
+    photoBtn: overlay.querySelector('.scan-photo-btn'),
+    liveBtn: overlay.querySelector('.scan-live-btn'),
+    manualBtn: overlay.querySelector('.scan-manual-btn'),
+    torchBtn: overlay.querySelector('.scan-torch-btn'),
+    fileInput: overlay.querySelector('.scan-file-input'),
+    resultPanel: overlay.querySelector('.scan-result-panel'),
+    resultCode: overlay.querySelector('.scan-result-code'),
+    stopBtn: overlay.querySelector('.scan-result-btn.secondary'),
+    confirmBtn: overlay.querySelector('.scan-result-btn.primary'),
+    stream:null,
+    track:null,
+    torchSupported:false,
+    usingNativeTorch:false,
+    torchOn:false,
+    paused:false,
+    resultVisible:false,
+    lastCode:'',
+    lastAt:0,
+    scanTimer:null,
+    reader:null,
+    zxingControls:null
+  };
+  session.manualPanel = {hidden:false};
+  activeScanSession = session;
+  updateTorchButtonState(session);
+
+  session.closeBtn.onclick = closeRemarkScan;
+  if(session.stopBtn) session.stopBtn.onclick = closeRemarkScan;
+  if(session.confirmBtn) session.confirmBtn.onclick = function(){ resumeScanSession(session); };
+  if(session.cameraBtn) session.cameraBtn.onclick = function(){ triggerImageScan(session, true); };
+  if(session.photoBtn) session.photoBtn.onclick = function(){ triggerImageScan(session, false); };
+  if(session.manualBtn) session.manualBtn.onclick = function(){ applyCodeByPrompt(session); };
+  if(session.liveBtn) session.liveBtn.onclick = function(){ beginLiveScan(session); };
+  if(session.torchBtn) session.torchBtn.onclick = function(){ toggleScanTorch(session); };
+  if(session.fileInput) session.fileInput.onchange = async function(){
+    const file = session.fileInput.files && session.fileInput.files[0];
+    if(!file) return;
+    try{
+      session.paused = true;
+      if(session.statusText) session.statusText.textContent = '正在识别图片，请稍候…';
+      const raw = await recognizeCodeFromImageFile(file, session.detector);
+      if(!raw){
+        showToast('没有识别到条码或二维码，请换一张更清晰的图片');
+        session.paused = false;
+        if(session.statusText) session.statusText.textContent = '优先推荐拍照识别或相册识别，兼容性更好；支持的浏览器可用实时扫码。';
+        return;
+      }
+      handleDetectedCode(session, raw);
+      if(session.statusText) session.statusText.textContent = '识别成功，可继续拍照、相册识别或实时扫码';
+    }catch(err){
+      console.error(err);
+      showToast('图片识别失败，请换一张更清晰的图片');
+      session.paused = false;
+      if(session.statusText) session.statusText.textContent = '图片识别失败，请重新选择图片';
+    }finally{
+      session.fileInput.value = '';
+    }
+  };
+
+  if(session.statusText) session.statusText.textContent = '推荐先用拍照识别；实时扫码仅在兼容浏览器中启用。';
 }
 
 function appendRemarkCode(orderId, code){
@@ -2625,7 +5065,7 @@ function appendRemarkCode(orderId, code){
   render();
 
   const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
-  const targetButton = targetButtons.find(btn => btn.getAttribute('onclick') === "startRemarkScan('" + orderId + "')");
+  const targetButton = targetButtons.find(function(btn){ return btn.getAttribute('onclick') === "startRemarkScan('" + orderId + "')"; });
   const remarkInput = targetButton && targetButton.parentNode ? targetButton.parentNode.querySelector('input') : null;
   if(remarkInput){
     remarkInput.focus();
@@ -2636,7 +5076,7 @@ function appendRemarkCode(orderId, code){
 
 
 function appendCodeToText(current, code){
-  const items = String(current || '').split(',').map(s => s.trim()).filter(Boolean);
+  const items = String(current || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
   items.push(String(code || '').trim());
   return items.join(',');
 }
@@ -2655,90 +5095,23 @@ function startDraftRemarkScan(form){
   });
 }
 
-async function startGenericScan(onDetected){
-  if(activeScanSession){
-    showToast('请先关闭当前扫码窗口');
-    return;
-  }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    showToast('当前设备不支持打开摄像头');
-    return;
-  }
-  if(typeof BarcodeDetector === 'undefined'){
-    showToast('当前浏览器暂不支持扫码，请用 Chrome 或系统 WebView 新版打开');
-    return;
-  }
-  try{
-    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-    const usableFormats = detectorFormats().filter(f => formats.includes(f));
-    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
-      audio:false
-    });
-
-    const overlay = document.createElement('div');
-    overlay.className = 'scan-overlay';
-    overlay.innerHTML = `
-      <div class="scan-overlay-top">
-        <div>连续扫码中，识别后自动追加到备注</div>
-        <button class="scan-close" type="button">关闭</button>
-      </div>
-      <video playsinline autoplay muted></video>
-      <div class="scan-overlay-tip">把条形码或二维码对准镜头，多个编码会自动用逗号追加</div>
-    `;
-    document.body.appendChild(overlay);
-
-    const video = overlay.querySelector('video');
-    const closeBtn = overlay.querySelector('.scan-close');
-    video.srcObject = stream;
-    await video.play();
-
-    const session = {
-      detector,
-      stream,
-      overlay,
-      video,
-      timer:null,
-      lastCode:'',
-      lastAt:0,
-      onDetected:onDetected
-    };
-    activeScanSession = session;
-    closeBtn.onclick = closeRemarkScan;
-
-    session.timer = setInterval(async function(){
-      if(!activeScanSession || activeScanSession !== session) return;
-      if(video.readyState < 2) return;
-      try{
-        const results = await detector.detect(video);
-        if(!results || !results.length) return;
-        const raw = String(results[0].rawValue || '').trim();
-        if(!raw) return;
-        const now = Date.now();
-        if(raw === session.lastCode && now - session.lastAt < 1200) return;
-        session.lastCode = raw;
-        session.lastAt = now;
-        if(typeof session.onDetected === 'function'){
-          session.onDetected(raw);
-        }
-      }catch(err){
-        console.error(err);
-      }
-    }, 450);
-  }catch(err){
-    console.error(err);
-    showToast('打开扫码失败，请检查摄像头权限');
-    closeRemarkScan();
-  }
+function startTradeinRemarkScan(form){
+  if(!form) return;
+  startGenericScan(function(code){
+    const input = form.querySelector('[name="remark"]');
+    if(!input) return;
+    input.value = appendCodeToText(input.value, code);
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    input.focus();
+    const len = input.value.length;
+    try{ input.setSelectionRange(len, len); }catch(e){}
+  });
 }
+
 window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
+window.startTradeinRemarkScan = startTradeinRemarkScan;
 
 
 const authState = {
@@ -2773,6 +5146,7 @@ function mountLoginLayer(){
         <button id="loginSubmitBtn" class="login-btn" type="button">登录</button>
         <div id="loginMsg" class="login-msg"></div>
         <div class="login-tip">账号体系沿用旧系统，登录后进入当前正式版</div>
+        <div class="admin-contact">联系管理员 VX：pinking0000 <button class="vx-copy-btn" type="button" onclick="copyAdminVX()">复制</button></div>
       </div>
     </div>`;
   document.body.appendChild(layer);
@@ -2807,20 +5181,167 @@ function getCloudRowId(){
   return authState.user ? authState.user.id : '';
 }
 
-function makeCloudPayload(){
+function safeText(value, fallback){
+  if(value === undefined || value === null) return fallback || '';
+  return String(value);
+}
+
+function safeNumber(value, fallback){
+  const num = Number(value);
+  return Number.isFinite(num) ? num : Number(fallback || 0);
+}
+
+function normalizeProductItem(item){
+  const next = item && typeof item === 'object' ? item : {};
   return {
-    version:'v2',
+    name: safeText(next.name, ''),
+    stock: Math.max(0, safeNumber(next.stock, 0)),
+    cost: safeNumber(next.cost, 0),
+    price: safeNumber(next.price, 0)
+  };
+}
+
+function normalizeSupplierItem(item){
+  const next = item && typeof item === 'object' ? item : {};
+  return {
+    name: safeText(next.name, ''),
+    phone: safeText(next.phone, '')
+  };
+}
+
+function normalizeOrderItem(item){
+  const next = item && typeof item === 'object' ? item : {};
+  const orderAmount = safeNumber(next.orderAmount ?? next.order_price, 0);
+  const rebate = safeNumber(next.rebate ?? next.refund, 0);
+  const freight = safeNumber(next.freight ?? next.shipping, 0);
+  const saleAmount = safeNumber(next.saleAmount ?? next.sellAmount, 0);
+  return {
+    id: safeText(next.id, id()),
+    status: next.status === 'advance' ? 'advance' : 'normal',
+    date: safeText(next.date, new Date().toISOString().slice(5,10)),
+    buyer: safeText(next.buyer ?? next.customer, ''),
+    product: safeText(next.product, ''),
+    orderAmount: orderAmount,
+    rebate: rebate,
+    freight: freight,
+    saleAmount: saleAmount,
+    profit: next.status === 'advance' ? 0 : calcProfit(orderAmount, rebate, freight, saleAmount),
+    trackingNo: safeText(next.trackingNo ?? next.trackingNumber, ''),
+    remark: safeText(next.remark ?? next.notes, '')
+  };
+}
+
+function normalizeTradeinItem(item){
+  const next = item && typeof item === 'object' ? item : {};
+  const newMachinePrice = safeNumber(next.newMachinePrice ?? next.newPrice, 0);
+  const oldMachinePrice = safeNumber(next.oldMachinePrice ?? next.oldPrice, 0);
+  const recyclePrice = safeNumber(next.recyclePrice ?? next.recycleCashback, 0);
+  const refundPrice = safeNumber(next.refundPrice ?? next.refund, 0);
+  const salePrice = safeNumber(next.salePrice ?? next.saleAmount, 0);
+  const dealDone = typeof next.dealDone === 'boolean' ? next.dealDone : salePrice > 0;
+  return {
+    id: safeText(next.id, id()),
+    date: safeText(next.date, new Date().toISOString().slice(5,10)),
+    buyer: safeText(next.buyer ?? next.customer, ''),
+    newMachinePrice: newMachinePrice,
+    oldMachinePrice: oldMachinePrice,
+    recyclePrice: recyclePrice,
+    refundPrice: refundPrice,
+    salePrice: salePrice,
+    profit: dealDone ? calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice) : 0,
+    trackingNo: safeText(next.trackingNo ?? next.trackingNumber, ''),
+    remark: safeText(next.remark ?? next.notes, ''),
+    dealDone: dealDone
+  };
+}
+
+function buildDataHealthSnapshot(source, warnings){
+  const snapshot = {
+    source: source || 'runtime',
+    checkedAt: Date.now(),
+    version: 'v3-safe',
+    orders: Array.isArray(state.orders) ? state.orders.length : 0,
+    tradeinOrders: Array.isArray(state.tradeinOrders) ? state.tradeinOrders.length : 0,
+    products: Array.isArray(state.products) ? state.products.length : 0,
+    suppliers: Array.isArray(state.suppliers) ? state.suppliers.length : 0,
+    warnings: Array.isArray(warnings) ? warnings.slice(0, 20) : []
+  };
+  state.lastDataHealth = snapshot;
+  store.save('jxc_last_data_health', snapshot);
+  return snapshot;
+}
+
+function getDataHealthHtml(){
+  const info = state.lastDataHealth || null;
+  if(!info) return '<div class="order-note">暂未生成数据校验结果，保存到云端或从云端拉取后会自动记录。</div>';
+  const warningText = info.warnings && info.warnings.length ? info.warnings.join('；') : '未发现结构问题';
+  return `
+    <div class="row"><span>最近校验</span><span class="right">${info.checkedAt ? new Date(info.checkedAt).toLocaleString() : '未校验'}</span></div>
+    <div class="row"><span>数据版本</span><span class="right">${escapeHtml(info.version || 'v3-safe')}</span></div>
+    <div class="row"><span>普通订单</span><span class="right">${Number(info.orders || 0)} 笔</span></div>
+    <div class="row"><span>换新订单</span><span class="right">${Number(info.tradeinOrders || 0)} 笔</span></div>
+    <div class="row"><span>校验结果</span><span class="right">${escapeHtml(warningText)}</span></div>
+  `;
+}
+
+function toggleDataHealthVisible(){
+  state.dataHealthVisible = !state.dataHealthVisible;
+  store.save('jxc_data_health_visible', state.dataHealthVisible);
+  render();
+}
+
+function normalizeCloudPayload(payload, source){
+  const raw = payload && typeof payload === 'object' ? payload : {};
+  const warnings = [];
+  if(!Array.isArray(raw.orders)) warnings.push('orders 已自动修复');
+  if(!Array.isArray(raw.tradeinOrders)) warnings.push('tradeinOrders 已自动修复');
+  if(!Array.isArray(raw.products)) warnings.push('products 已自动修复');
+  if(!Array.isArray(raw.suppliers)) warnings.push('suppliers 已自动修复');
+  const normalized = {
+    version: raw.version || 'v3-safe',
+    schemaVersion: 3,
+    orders: (Array.isArray(raw.orders) ? raw.orders : []).map(normalizeOrderItem),
+    tradeinOrders: (Array.isArray(raw.tradeinOrders) ? raw.tradeinOrders : []).map(normalizeTradeinItem),
+    products: (Array.isArray(raw.products) ? raw.products : []).map(normalizeProductItem),
+    suppliers: (Array.isArray(raw.suppliers) ? raw.suppliers : []).map(normalizeSupplierItem),
+    orderDraft: raw.orderDraft && typeof raw.orderDraft === 'object' ? Object.assign(orderDraftDefaults(), raw.orderDraft) : orderDraftDefaults(),
+    loginStats: normalizeLoginStats(raw.loginStats),
+    updatedAt: safeNumber(raw.updatedAt, Date.now()),
+    dataHealth: { source: source || 'runtime', checkedAt: Date.now(), warnings: warnings.slice(0, 20) }
+  };
+  buildDataHealthSnapshot(source || 'runtime', warnings);
+  return { ok: true, payload: normalized, warnings: warnings };
+}
+
+function runDataIntegrityCheck(showMsg){
+  const result = normalizeCloudPayload(makeCloudPayload(), 'manual-check');
+  if(showMsg){
+    if(result.warnings.length) showToast('已完成校验并自动修复');
+    else showToast('数据校验通过');
+  }
+  render();
+  return result;
+}
+
+function makeCloudPayload(){
+  const normalized = normalizeCloudPayload({
+    version:'v3-safe',
+    schemaVersion: 3,
     orders: state.orders || [],
+    tradeinOrders: state.tradeinOrders || [],
     products: state.products || [],
     suppliers: state.suppliers || [],
     orderDraft: state.orderDraft || {},
+    loginStats: normalizeLoginStats(state.loginStats),
     updatedAt: Date.now()
-  };
+  }, 'save').payload;
+  return normalized;
 }
 
 function backupStorageKey(){
   return authState.user ? ('jxc_backup_' + authState.user.id) : 'jxc_backup_guest';
 }
+
 
 function saveBackupSnapshot(reason, force){
   try{
@@ -2850,11 +5371,16 @@ function saveBackupSnapshot(reason, force){
 }
 
 function applyCloudPayload(payload){
-  if(!payload || typeof payload !== 'object') return false;
-  state.orders = Array.isArray(payload.orders) ? payload.orders : [];
-  state.products = Array.isArray(payload.products) ? payload.products : [];
-  state.suppliers = Array.isArray(payload.suppliers) ? payload.suppliers : [];
-  state.orderDraft = payload.orderDraft || {};
+  const normalized = normalizeCloudPayload(payload, 'cloud-load');
+  if(!normalized || !normalized.ok || !normalized.payload) return false;
+  const next = normalized.payload;
+  state.orders = next.orders;
+  state.tradeinOrders = next.tradeinOrders;
+  state.products = next.products;
+  state.suppliers = next.suppliers;
+  state.orderDraft = next.orderDraft || orderDraftDefaults();
+  state.loginStats = normalizeLoginStats(next.loginStats);
+  persistLoginStats();
   persist();
   render();
   return true;
@@ -2867,13 +5393,15 @@ async function saveCurrentAppStateToCloud(showMsg){
     if(showMsg) saveBackupSnapshot('manual-cloud-save', true);
     const rowId = getCloudRowId();
     const payload = makeCloudPayload();
+    buildDataHealthSnapshot('cloud-save', (payload.dataHealth && payload.dataHealth.warnings) || []);
     const { error } = await supa.from('app_state_user').upsert({ id: rowId, data: payload, updated_at: new Date().toISOString() }, { onConflict: 'id' });
     if(error) throw error;
-    if(showMsg) showToast('已保存到云端');
+    await syncTodayLoginStatToDailyTable();
+    if(showMsg) showToast((payload.dataHealth && payload.dataHealth.warnings && payload.dataHealth.warnings.length) ? '已修复并保存到云端' : '已保存到云端');
     return true;
   }catch(err){
     console.error(err);
-    if(showMsg) showToast('云端保存失败');
+    if(showMsg) showToast('云端保存失败：' + translateSupabaseError((err && err.message) || err));
     return false;
   }
 }
@@ -2887,26 +5415,37 @@ function scheduleCloudSave(reason){
 }
 
 async function loadCloudState(showMsg){
-  if(!supa || !authState.user) return false;
+  if(!supa){
+    if(showMsg) showToast('云端未配置');
+    return false;
+  }
+  if(!authState.user){
+    if(showMsg) showToast('请先登录后再拉取');
+    return false;
+  }
   try{
     const rowId = getCloudRowId();
-    const { data, error } = await supa.from('app_state_user').select('data').eq('id', rowId).maybeSingle();
+    const { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
     if(error) throw error;
     if(!data || !data.data){
       if(showMsg) showToast('云端暂无数据');
       return false;
     }
-    const payload = data.data;
-    if(payload.version === 'v2'){
-      saveBackupSnapshot('before-cloud-load', true);
-      applyCloudPayload(payload);
-      if(showMsg) showToast('已从云端拉取');
-      return true;
+    let payload = data.data;
+    if(payload && typeof payload === 'object' && payload.data && typeof payload.data === 'object'){
+      payload = payload.data;
     }
-    return false;
+    saveBackupSnapshot('before-cloud-load', true);
+    const ok = applyCloudPayload(payload);
+    if(!ok){
+      if(showMsg) showToast('云端数据格式不兼容');
+      return false;
+    }
+    if(showMsg) showToast('已从云端拉取');
+    return true;
   }catch(err){
     console.error(err);
-    if(showMsg) showToast('云端拉取失败');
+    if(showMsg) showToast('云端拉取失败：' + translateSupabaseError((err && err.message) || err));
     return false;
   }
 }
@@ -2930,6 +5469,15 @@ function restoreFromBackup(){
 window.saveCurrentAppStateToCloud = saveCurrentAppStateToCloud;
 window.loadCloudState = loadCloudState;
 window.restoreFromBackup = restoreFromBackup;
+window.toggleOrderSelection = toggleOrderSelection;
+window.toggleSelectAllOrders = toggleSelectAllOrders;
+window.toggleReportTradein = toggleReportTradein;
+window.openBatchTrackingModal = openBatchTrackingModal;
+window.openBatchSaleAmountModal = openBatchSaleAmountModal;
+window.openChangePasswordModal = openChangePasswordModal;
+window.closeAccountModal = closeAccountModal;
+window.runDataIntegrityCheck = runDataIntegrityCheck;
+window.toggleDataHealthVisible = toggleDataHealthVisible;
 
 async function loginSystem(){
   if(!supa){
@@ -2960,11 +5508,14 @@ async function loginSystem(){
       if(imported > 0) await saveCurrentAppStateToCloud(false);
       else render();
     }
+    recordLoginSuccess();
+    await saveCurrentAppStateToCloud(false);
+    await syncTodayLoginStatToDailyTable();
     render();
     if(authState.isAdmin) setTimeout(loadAdminList, 60);
     showNiceModal(authState.isAdmin ? '管理员登录成功' : '登录成功', authState.isAdmin ? '已进入当前正式版系统' : '欢迎回来', '✓');
   }catch(err){
-    setLoginMessage('登录失败：' + ((err && err.message) || err));
+    setLoginMessage('登录失败：' + translateSupabaseError((err && err.message) || err));
   }finally{
     if(submit){ submit.disabled = false; submit.textContent = '登录'; }
   }
@@ -2975,10 +5526,12 @@ async function logoutSystem(){
   authState.user = null;
   authState.isAdmin = false;
   authState.ready = true;
-  localStorage.removeItem('jxc_current_user');
-  openLoginLayer();
-  render();
-  showToast('已退出登录');
+  try{ localStorage.clear(); }catch(err){}
+  try{ sessionStorage.clear(); }catch(err){}
+  showToast('已退出登录，本地缓存已清除');
+  setTimeout(function(){
+    location.reload();
+  }, 600);
 }
 
 async function restoreLoginSession(){
@@ -3001,6 +5554,12 @@ async function restoreLoginSession(){
         const imported = await importLegacyOrdersIfNeeded(false);
         if(imported > 0) await saveCurrentAppStateToCloud(false);
       }
+      const recordedToday = ensureTodayLoginRecorded();
+      if(recordedToday){
+        await saveCurrentAppStateToCloud(false);
+      }else{
+        await syncTodayLoginStatToDailyTable();
+      }
     }else{
       openLoginLayer();
     }
@@ -3012,10 +5571,39 @@ async function restoreLoginSession(){
 }
 
 window.openLoginLayer = openLoginLayer;
+window.openAppDownload = openAppDownload;
 window.loginSystem = loginSystem;
 window.logoutSystem = logoutSystem;
 
 window.handleAccountTap = handleAccountTap;
+window.copyAdminVX = copyAdminVX;
+function copyAdminVX(){
+  const vx = 'pinking0000';
+  const done = function(){
+    showToast('微信号已复制，请打开微信添加管理员');
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(vx).then(done).catch(function(){
+      fallbackCopyText(vx, done);
+    });
+    return;
+  }
+  fallbackCopyText(vx, done);
+}
+function fallbackCopyText(text, onDone){
+  try{
+    const input = document.createElement('input');
+    input.value = text;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    if(typeof onDone === 'function') onDone();
+  }catch(err){
+    console.error(err);
+    showToast('复制失败，请手动添加：pinking0000');
+  }
+}
 
 function normalizeLegacyOrder(o){
   return {
@@ -3130,19 +5718,38 @@ function genStrongPw(n){
 
 async function loadAdminList(){
   if(!authState.isAdmin || !supa) return;
+  if(!state.adminListVisible){
+    renderAdminTable();
+    return;
+  }
+  const tb = document.getElementById('adminTbody');
+  if(tb) tb.innerHTML = '<tr><td colspan="3">加载中…</td></tr>';
+  const { data, error } = await supa.from('user_profiles').select('id,email,disabled,role,created_at,updated_at').order('created_at',{ascending:false}).limit(500);
+  if(error){
+    if(tb) tb.innerHTML = '<tr><td colspan="3">读取失败：' + escapeHtml(translateSupabaseError(error.message || error)) + '</td></tr>';
+    return;
+  }
+  state.adminUsers = Array.isArray(data) ? data : [];
+  renderAdminTable();
+}
+
+function renderAdminTable(){
   const tb = document.getElementById('adminTbody');
   if(!tb) return;
-  tb.innerHTML = '<tr><td colspan="3">加载中…</td></tr>';
-  const { data, error } = await supa.from('user_profiles').select('id,email,disabled,role,created_at,updated_at').order('created_at',{ascending:false}).limit(200);
-  if(error){
-    tb.innerHTML = '<tr><td colspan="3">读取失败：' + escapeHtml(error.message || error) + '</td></tr>';
+  if(!state.adminListVisible){
+    tb.innerHTML = '<tr><td colspan="3">账号列表当前已隐藏</td></tr>';
     return;
   }
-  if(!data || !data.length){
-    tb.innerHTML = '<tr><td colspan="3">暂无账号数据</td></tr>';
+  const keyword = String(state.adminAccountSearch || '').trim().toLowerCase();
+  const rows = (state.adminUsers || []).filter(function(r){
+    const email = String(r.email || r.id || '').toLowerCase();
+    return !keyword || email.includes(keyword);
+  });
+  if(!rows.length){
+    tb.innerHTML = `<tr><td colspan="3">${keyword ? '暂无匹配账号' : '暂无账号数据'}</td></tr>`;
     return;
   }
-  tb.innerHTML = data.map(function(r){
+  tb.innerHTML = rows.map(function(r){
     const email = r.email || r.id;
     const enabled = r.disabled !== true;
     const t = r.created_at ? String(r.created_at).replace('T',' ').slice(0,19) : '';
@@ -3158,53 +5765,203 @@ async function loadAdminList(){
       const cur = a.getAttribute('data-enabled') === '1';
       const next = !cur;
       const { error: upE } = await supa.from('user_profiles').update({ disabled: !next }).eq('id', uid);
-      if(upE){ showToast('更新失败：' + (upE.message || upE)); return; }
+      if(upE){ showToast('更新失败：' + translateSupabaseError(upE.message || upE)); return; }
       loadAdminList();
     };
   });
 }
 
+function toggleAdminListVisible(){
+  state.adminListVisible = !state.adminListVisible;
+  store.save('jxc_admin_list_visible', state.adminListVisible);
+  render();
+  if(state.adminListVisible){
+    if(state.adminUsers && state.adminUsers.length){
+      renderAdminTable();
+    }else{
+      loadAdminList();
+    }
+  }
+}
+
+function setAdminAccountSearch(value){
+  state.adminAccountSearch = value || '';
+  store.save('jxc_admin_account_search', state.adminAccountSearch);
+  renderAdminTable();
+}
+
+
+
+function closeAccountModal(){
+  const mask = document.getElementById('accountModalMask');
+  if(mask && mask.parentNode) mask.parentNode.removeChild(mask);
+}
+
+function openAccountModal(options){
+  const opts = options || {};
+  closeAccountModal();
+  const mask = document.createElement('div');
+  mask.id = 'accountModalMask';
+  mask.className = 'account-modal-mask';
+  const fields = Array.isArray(opts.fields) ? opts.fields : [];
+  const fieldHtml = fields.map(function(field, index){
+    const id = 'accountModalField_' + index;
+    const label = field.label ? '<label for="' + id + '">' + escapeHtml(field.label) + '</label>' : '';
+    const type = field.type || 'text';
+    const placeholder = field.placeholder ? ' placeholder="' + escapeHtml(field.placeholder) + '"' : '';
+    const value = field.value ? ' value="' + escapeHtml(field.value) + '"' : '';
+    const autocomplete = field.autocomplete ? ' autocomplete="' + escapeHtml(field.autocomplete) + '"' : '';
+    if(type === 'textarea'){
+      return '<div class="account-modal-field">' + label + '<textarea id="' + id + '" data-field-key="' + escapeHtml(field.key || '') + '"' + placeholder + ' style="width:100%;min-height:108px;border:1px solid #e6ebf1;background:#f8fbff;border-radius:14px;padding:12px 14px;font-size:14px;outline:none;resize:vertical;">' + escapeHtml(field.value || '') + '</textarea></div>';
+    }
+    return '<div class="account-modal-field">' + label + '<input id="' + id + '" data-field-key="' + escapeHtml(field.key || '') + '" type="' + escapeHtml(type) + '"' + placeholder + value + autocomplete + ' /></div>';
+  }).join('');
+  const primaryClass = opts.danger ? 'account-modal-btn delete' : 'account-modal-btn primary';
+  mask.innerHTML = `
+    <div class="account-modal-box">
+      <div class="account-modal-title">${opts.title || '操作'}</div>
+      <div class="account-modal-desc">${opts.desc || ''}</div>
+      ${fieldHtml}
+      <div id="accountModalMsg" class="account-modal-msg"></div>
+      <div class="account-modal-actions">
+        <button class="account-modal-btn cancel" type="button">取消</button>
+        <button class="${primaryClass}" type="button">${opts.confirmText || '确定'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(mask);
+  const close = function(){ closeAccountModal(); };
+  mask.addEventListener('click', function(e){ if(e.target === mask) close(); });
+  const cancelBtn = mask.querySelector('.account-modal-btn.cancel');
+  const okBtn = mask.querySelector('.account-modal-actions button:last-child');
+  const msgBox = mask.querySelector('#accountModalMsg');
+  const inputs = Array.from(mask.querySelectorAll('[data-field-key]'));
+  function setMsg(msg){ if(msgBox) msgBox.textContent = msg || ''; }
+  async function submit(){
+    try{
+      if(okBtn){ okBtn.disabled = true; okBtn.textContent = opts.loadingText || '处理中...'; }
+      setMsg('');
+      const values = {};
+      inputs.forEach(function(input){ values[input.getAttribute('data-field-key')] = (input.value || '').trim(); });
+      if(typeof opts.onSubmit === 'function') await opts.onSubmit(values, setMsg, close);
+    }catch(err){
+      setMsg(translateSupabaseError((err && err.message) || String(err)));
+    }finally{
+      if(okBtn){ okBtn.disabled = false; okBtn.textContent = opts.confirmText || '确定'; }
+    }
+  }
+  if(cancelBtn) cancelBtn.onclick = close;
+  if(okBtn) okBtn.onclick = submit;
+  inputs.forEach(function(input, index){
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        if(index < inputs.length - 1) inputs[index + 1].focus();
+        else submit();
+      }
+    });
+  });
+  setTimeout(function(){ if(inputs[0]) inputs[0].focus(); }, 30);
+}
+
+function openChangePasswordModal(){
+  if(!authState || !authState.user || !supa){
+    showToast('请先登录');
+    return;
+  }
+  openAccountModal({
+    title:'修改密码',
+    desc:'请输入新的登录密码，至少 6 位。',
+    confirmText:'确认修改',
+    loadingText:'修改中...',
+    fields:[
+      {key:'password', label:'新密码', type:'password', placeholder:'请输入新密码', autocomplete:'new-password'},
+      {key:'confirmPassword', label:'确认密码', type:'password', placeholder:'请再次输入新密码', autocomplete:'new-password'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const password = values.password || '';
+      const confirmPassword = values.confirmPassword || '';
+      if(!password){ setMsg('请输入新密码'); return; }
+      if(password.length < 6){ setMsg('新密码至少 6 位'); return; }
+      if(password !== confirmPassword){ setMsg('两次输入的密码不一致'); return; }
+      const res = await supa.auth.updateUser({ password: password });
+      if(res && res.error) throw res.error;
+      close();
+      showNiceModal('修改成功', '密码已更新，请牢记新密码', '✓');
+    }
+  });
+}
+
 async function adminCreateUser(){
-  try{
-    const email = (prompt('请输入要新建的用户邮箱：') || '').trim();
-    if(!email) return;
-    let pw = (prompt('请输入初始密码（留空自动生成强密码）：') || '').trim();
-    if(!pw) pw = genStrongPw(12);
-    if(pw.length < 8){ showToast('密码至少8位'); return; }
-    await callEdgeBodyToken('admin-create-user', { admin_email: getCurrentEmail(), target_email: email, target_password: pw });
-    showNiceModal('创建成功', '邮箱：' + email + '\n初始密码：' + pw, '✓');
-    loadAdminList();
-  }catch(e){ showToast('创建失败：' + ((e && e.message) || e)); }
+  openAccountModal({
+    title:'新建账号',
+    desc:'管理员可直接创建普通账号。密码留空时默认使用 12345678。',
+    confirmText:'立即创建',
+    loadingText:'创建中...',
+    fields:[
+      {key:'email', label:'用户邮箱', type:'email', placeholder:'请输入要新建的用户邮箱', autocomplete:'username'},
+      {key:'password', label:'初始密码', type:'password', placeholder:'留空默认使用 12345678', autocomplete:'new-password'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const email = (values.email || '').trim();
+      let pw = (values.password || '').trim();
+      if(!email){ setMsg('请输入用户邮箱'); return; }
+      if(!pw) pw = '12345678';
+      if(pw.length < 8){ setMsg('密码至少 8 位'); return; }
+      await callEdgeBodyToken('admin-create-user', { admin_email: getCurrentEmail(), target_email: email, target_password: pw });
+      close();
+      showNiceModal('创建成功', '邮箱：' + email + '<br>初始密码：' + pw, '✓');
+      loadAdminList();
+    }
+  });
 }
 
 async function adminResetPassword(){
-  try{
-    const email = (prompt('请输入要重置密码的用户邮箱：') || '').trim();
-    if(!email) return;
-    let pw = (prompt('请输入新密码（留空自动生成强密码）：') || '').trim();
-    if(!pw) pw = genStrongPw(12);
-    if(pw.length < 8){ showToast('密码至少8位'); return; }
-    await callEdgeBodyToken('reset-password', { admin_email: getCurrentEmail(), target_email: email, new_password: pw });
-    showNiceModal('重置成功', '邮箱：' + email + '\n新密码：' + pw, '✓');
-  }catch(e){ showToast('重置失败：' + ((e && e.message) || e)); }
+  openAccountModal({
+    title:'重置密码',
+    desc:'输入目标账号邮箱。新密码留空时自动生成强密码。',
+    confirmText:'确认重置',
+    loadingText:'重置中...',
+    fields:[
+      {key:'email', label:'账号邮箱', type:'email', placeholder:'请输入要重置密码的用户邮箱', autocomplete:'username'},
+      {key:'password', label:'新密码', type:'password', placeholder:'留空自动生成强密码', autocomplete:'new-password'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const email = (values.email || '').trim();
+      let pw = (values.password || '').trim();
+      if(!email){ setMsg('请输入账号邮箱'); return; }
+      if(!pw) pw = genStrongPw(12);
+      if(pw.length < 8){ setMsg('密码至少 8 位'); return; }
+      await callEdgeBodyToken('reset-password', { admin_email: getCurrentEmail(), target_email: email, new_password: pw });
+      close();
+      showNiceModal('重置成功', '邮箱：' + email + '<br>新密码：' + pw, '✓');
+    }
+  });
 }
 
 async function adminDeleteUser(){
-  try{
-    const email = (prompt('请输入要删除的账号邮箱：') || '').trim();
-    if(!email) return;
-    showConfirmModal('确定删除账号：' + email + ' ？', async function(){
-      try{
-        try {
-          await callEdgeBodyToken('admin-delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
-        } catch(e1) {
-          await callEdgeBodyToken('delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
-        }
-        showToast('删除成功：' + email);
-        loadAdminList();
-      }catch(e){ showToast('删除失败：' + ((e && e.message) || e)); }
-    });
-  }catch(e){ showToast('删除失败：' + ((e && e.message) || e)); }
+  openAccountModal({
+    title:'删除账号',
+    desc:'删除后不可恢复，请谨慎操作。',
+    confirmText:'确认删除',
+    loadingText:'删除中...',
+    danger:true,
+    fields:[
+      {key:'email', label:'账号邮箱', type:'email', placeholder:'请输入要删除的账号邮箱', autocomplete:'username'}
+    ],
+    onSubmit: async function(values, setMsg, close){
+      const email = (values.email || '').trim();
+      if(!email){ setMsg('请输入账号邮箱'); return; }
+      try {
+        await callEdgeBodyToken('admin-delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
+      } catch(e1) {
+        await callEdgeBodyToken('delete-user', { admin_email: getCurrentEmail(), target_email: email, email: email });
+      }
+      close();
+      showNiceModal('删除成功', '账号已删除：' + email, '✓');
+      loadAdminList();
+    }
+  });
 }
 
 window.loadAdminList = loadAdminList;
@@ -3212,7 +5969,12 @@ window.adminCreateUser = adminCreateUser;
 window.adminResetPassword = adminResetPassword;
 window.adminDeleteUser = adminDeleteUser;
 
-restoreLoginSession();
+window.bootApp = bootApp;
+bootApp();
 </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
