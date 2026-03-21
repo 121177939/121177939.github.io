@@ -797,7 +797,7 @@
   backdrop-filter:blur(8px);
 }
 .scan-viewfinder{
-  display:none;
+  display:none !important;
   position:absolute;
   left:50%;
   top:50%;
@@ -807,9 +807,6 @@
   border-radius:26px;
   z-index:2;
   pointer-events:none;
-}
-.scan-viewfinder.visible{
-  display:block;
 }
 .scan-viewfinder .corner{
   position:absolute;
@@ -842,7 +839,7 @@
 .scan-overlay-tip{
   position:absolute;
   left:50%;
-  bottom:146px;
+  bottom:106px;
   transform:translateX(-50%);
   z-index:3;
   color:rgba(255,255,255,.94);
@@ -854,37 +851,6 @@
   max-width:calc(100% - 34px);
   text-align:center;
   box-shadow:0 6px 20px rgba(0,0,0,.25);
-}
-.scan-mode-switch{
-  position:absolute;
-  left:50%;
-  bottom:86px;
-  transform:translateX(-50%);
-  z-index:3;
-  display:flex;
-  gap:8px;
-  padding:6px;
-  border-radius:999px;
-  background:rgba(18,18,18,.30);
-  backdrop-filter:blur(10px);
-  box-shadow:0 6px 20px rgba(0,0,0,.22);
-}
-.scan-mode-btn{
-  border:none;
-  height:36px;
-  min-width:92px;
-  padding:0 14px;
-  border-radius:999px;
-  background:transparent;
-  color:rgba(255,255,255,.9);
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer;
-}
-.scan-mode-btn.active{
-  background:rgba(255,255,255,.18);
-  color:#fff;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16);
 }
 .scan-bottom-actions{
   position:absolute;
@@ -4003,94 +3969,14 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 
-function detectorFormats(mode){
-  if(mode === 'qr') return ['qr_code'];
+function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
-function html5Formats(mode){
+function html5Formats(){
   if(!window.Html5QrcodeSupportedFormats) return [];
   const F = window.Html5QrcodeSupportedFormats;
-  if(mode === 'qr') return [F.QR_CODE].filter(Boolean);
   return [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.CODE_93, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
-}
-
-function getScanBoxSize(mode){
-  const width = Math.max(260, Math.min(Math.floor(window.innerWidth * 0.78), 340));
-  if(mode === 'qr'){
-    const size = Math.min(Math.floor(window.innerWidth * 0.70), 300);
-    return {width: Math.max(220, size), height: Math.max(220, size)};
-  }
-  const boxWidth = Math.max(260, Math.min(width, 340));
-  return {width: boxWidth, height: Math.max(120, Math.min(Math.round(boxWidth * 0.48), 160))};
-}
-
-function getCurrentScanMode(session){
-  return session && session.scanMode === 'qr' ? 'qr' : 'barcode';
-}
-
-function getScanTipByMode(mode){
-  return mode === 'qr' ? '二维码模式：将二维码完整放入框内' : '条形码模式：优先识别条形码，也兼容二维码';
-}
-
-function setScanModeUi(session){
-  if(!session) return;
-  const mode = getCurrentScanMode(session);
-  if(session.tipEl) session.tipEl.textContent = getScanTipByMode(mode);
-  (session.modeButtons || []).forEach(function(btn){
-    btn.classList.toggle('active', btn.getAttribute('data-scan-mode') === mode);
-  });
-  updateVisualScanFrame(session);
-}
-
-function updateVisualScanFrame(session){
-  if(!session || !session.viewfinder) return;
-  const mode = getCurrentScanMode(session);
-  const box = getScanBoxSize(mode);
-  session.viewfinder.style.width = Math.round(box.width) + 'px';
-  session.viewfinder.style.height = Math.round(box.height) + 'px';
-  session.viewfinder.style.borderRadius = mode === 'qr' ? '26px' : '22px';
-  const shouldShow = !!session.usingHtml5VisualFrame;
-  session.viewfinder.classList.toggle('visible', shouldShow);
-  session.viewfinder.style.display = shouldShow ? 'block' : 'none';
-}
-
-async function restartSessionEngine(session){
-  if(!session || !activeScanSession || activeScanSession !== session) return;
-  session.paused = false;
-  if(session.resultPanel) session.resultPanel.hidden = true;
-  if(session.timer){ clearInterval(session.timer); session.timer = null; }
-  try{
-    if(session.zxingControls && session.zxingControls.stop) await session.zxingControls.stop();
-  }catch(e){}
-  try{
-    if(session.zxingReader && session.zxingReader.reset) session.zxingReader.reset();
-  }catch(e){}
-  session.zxingControls = null;
-  session.zxingReader = null;
-  session.detector = null;
-  await stopHtml5Scanner(session);
-  try{
-    await startPreferredScanEngine(session, true);
-  }catch(err){
-    console.error(err);
-    showToast('切换模式失败，请重试');
-  }
-}
-
-function bindScanModeSwitch(session){
-  if(!session || !session.modeButtons || !session.modeButtons.length) return;
-  setScanModeUi(session);
-  session.modeButtons.forEach(function(btn){
-    btn.onclick = function(){
-      const nextMode = btn.getAttribute('data-scan-mode') === 'qr' ? 'qr' : 'barcode';
-      if(getCurrentScanMode(session) === nextMode) return;
-      session.scanMode = nextMode;
-      setScanModeUi(session);
-      showToast(nextMode === 'qr' ? '已切换到二维码模式' : '已切换到条形码优先模式');
-      restartSessionEngine(session);
-    };
-  });
 }
 
 function supportsHtml5Qrcode(){
@@ -4139,8 +4025,9 @@ function setScanUiMode(session, mode){
   if(session.video){
     session.video.style.display = usingHtml5 ? 'none' : '';
   }
-  session.usingHtml5VisualFrame = usingHtml5 && isIOSLike();
-  updateVisualScanFrame(session);
+  if(session.viewfinder){
+    session.viewfinder.style.display = 'none';
+  }
 }
 
 function getScanCropRect(session){
@@ -4152,10 +4039,10 @@ function getScanCropRect(session){
   const vw = video.videoWidth || 0;
   const vh = video.videoHeight || 0;
   if(!videoRect.width || !videoRect.height || !vw || !vh) return null;
-  const scanBox = getScanBoxSize(getCurrentScanMode(session));
-  const frameLeft = overlayRect.left + (overlayRect.width - scanBox.width) / 2;
-  const frameTop = overlayRect.top + (overlayRect.height - scanBox.height) / 2 - Math.min(overlayRect.width * 0.02, 12);
-  const frameRect = {left: frameLeft, top: frameTop, width: scanBox.width, height: scanBox.height};
+  const scanSize = getScanBoxSize();
+  const frameLeft = overlayRect.left + (overlayRect.width - scanSize) / 2;
+  const frameTop = overlayRect.top + (overlayRect.height - scanSize) / 2 - Math.min(overlayRect.width * 0.02, 12);
+  const frameRect = {left: frameLeft, top: frameTop, width: scanSize, height: scanSize};
   const scale = Math.max(videoRect.width / vw, videoRect.height / vh);
   const displayWidth = vw * scale;
   const displayHeight = vh * scale;
@@ -4399,11 +4286,7 @@ function ensureScanOverlay(){
         <span class="corner br"></span>
         <span class="scan-line"></span>
       </div>
-      <div class="scan-overlay-tip">默认条形码优先模式，也兼容二维码；微信码建议切到二维码</div>
-      <div class="scan-mode-switch">
-        <button class="scan-mode-btn active" type="button" data-scan-mode="barcode">条形码</button>
-        <button class="scan-mode-btn" type="button" data-scan-mode="qr">二维码</button>
-      </div>
+      <div class="scan-overlay-tip">将条形码或二维码放入框内，识别后点确定再继续扫码</div>
       <div class="scan-bottom-actions">
         <button class="scan-bottom-action scan-torch-btn" type="button">
           <span class="icon">🔦</span>
@@ -4492,8 +4375,6 @@ async function prepareOverlaySession(onDetected){
   const fileInput = overlay.querySelector('.scan-file-input');
   const readerEl = overlay.querySelector('#scan-reader');
   const viewfinder = overlay.querySelector('.scan-viewfinder');
-  const modeButtons = Array.from(overlay.querySelectorAll('.scan-mode-btn'));
-  const tipEl = overlay.querySelector('.scan-overlay-tip');
   setInlineVideoAttrs(video);
   setScanUiMode({video:video, readerEl:readerEl, viewfinder:viewfinder}, 'native');
   const nativeTorchSupported = canUseNativeTorch();
@@ -4523,16 +4404,12 @@ async function prepareOverlaySession(onDetected){
     html5Scanner:null,
     html5ScanFile:null,
     detector:null,
-    scanMode:'barcode',
-    modeButtons,
-    tipEl,
     zxingReader:null,
     zxingControls:null,
     scanCanvas:null
   };
   activeScanSession = session;
   bindOverlayEvents(session);
-  bindScanModeSwitch(session);
   return session;
 }
 
@@ -4549,8 +4426,7 @@ function createHtml5ScanSuccessHandler(session){
       candidate = raw;
       hitCount = 1;
     }
-    const needHits = getCurrentScanMode(session) === 'qr' ? 2 : 1;
-    if(hitCount < needHits) return;
+    if(hitCount < 2) return;
     candidate = '';
     hitCount = 0;
     showDetectedResult(session, raw);
@@ -4559,8 +4435,7 @@ function createHtml5ScanSuccessHandler(session){
 
 async function startHtml5ScanEngine(session){
   if(!supportsHtml5Qrcode()) throw new Error('html5-qrcode-not-available');
-  const mode = getCurrentScanMode(session);
-  const formatsToSupport = html5Formats(mode);
+  const formatsToSupport = html5Formats();
   setScanUiMode(session, 'html5');
   const scanner = new Html5Qrcode(session.readerEl.id || 'scan-reader');
   session.html5Scanner = scanner;
@@ -4569,13 +4444,14 @@ async function startHtml5ScanEngine(session){
     return String(text || '').trim();
   };
   const config = {
-    fps: mode === 'qr' ? (isIOSLike() ? 8 : 10) : (isIOSLike() ? 10 : 12),
-    qrbox: function(){ return getScanBoxSize(mode); },
+    fps: isIOSLike() ? 10 : 12,
+    qrbox: function(){ const size = getScanBoxSize(); return {width: size, height: size}; },
     rememberLastUsedCamera: true,
     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
+    aspectRatio: 1.0,
     videoConstraints: {
-      facingMode: {ideal: 'environment'},
+      facingMode: 'environment',
       width: {ideal: 1280},
       height: {ideal: 720}
     }
@@ -4598,11 +4474,9 @@ async function startBarcodeDetectorFallback(session){
   if(!supportsBarcodeDetector()) throw new Error('barcode-detector-not-available');
   setScanUiMode(session, 'native');
   await ensureVideoStream(session);
-  const mode = getCurrentScanMode(session);
-  const wantedFormats = detectorFormats(mode);
-  const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : wantedFormats;
-  const usableFormats = wantedFormats.filter(function(f){ return formats.includes(f); });
-  session.detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : wantedFormats});
+  const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+  const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
+  session.detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
   session.timer = setInterval(async function(){
     if(!activeScanSession || activeScanSession !== session) return;
     if(session.paused) return;
@@ -4628,28 +4502,16 @@ async function startBarcodeDetectorFallback(session){
     }catch(err){
       console.error(err);
     }
-  }, getCurrentScanMode(session) === 'qr' ? 220 : 140);
+  }, 300);
 }
-
 
 async function startZXingScanEngine(session){
   if(!supportsZXingBrowser()) throw new Error('zxing-browser-not-available');
   setScanUiMode(session, 'native');
   await ensureVideoStream(session);
-  const mode = getCurrentScanMode(session);
   const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
   if(!Reader) throw new Error('zxing-reader-not-available');
-  const hints = new Map();
-  if(window.ZXingBrowser && window.ZXingBrowser.ZXing && window.ZXingBrowser.ZXing.DecodeHintType && window.ZXingBrowser.ZXing.BarcodeFormat){
-    const DecodeHintType = window.ZXingBrowser.ZXing.DecodeHintType;
-    const BarcodeFormat = window.ZXingBrowser.ZXing.BarcodeFormat;
-    const formats = mode === 'qr'
-      ? [BarcodeFormat.QR_CODE]
-      : [BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.CODE_93, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.ITF, BarcodeFormat.CODABAR];
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, formats);
-    hints.set(DecodeHintType.TRY_HARDER, mode === 'qr');
-  }
-  const reader = new Reader(undefined, hints);
+  const reader = new Reader();
   session.zxingReader = reader;
   session.zxingControls = await reader.decodeFromVideoDevice(undefined, session.video, function(result, err){
     if(!activeScanSession || activeScanSession !== session) return;
@@ -4659,31 +4521,6 @@ async function startZXingScanEngine(session){
       if(raw) showDetectedResult(session, raw);
     }
   });
-}
-
-async function startPreferredScanEngine(session, silent){
-  try{
-    await startHtml5ScanEngine(session);
-    if(!silent) showToast(getCurrentScanMode(session) === 'qr' ? '已启用二维码模式' : '已启用条形码极速模式');
-    return 'html5';
-  }catch(err){
-    console.error(err);
-  }
-  try{
-    await startBarcodeDetectorFallback(session);
-    if(!silent) showToast('已自动切换到浏览器扫码模式');
-    return 'detector';
-  }catch(err){
-    console.error(err);
-  }
-  try{
-    await startZXingScanEngine(session);
-    if(!silent) showToast('已自动切换到 ZXing 兼容模式');
-    return 'zxing';
-  }catch(err){
-    console.error(err);
-  }
-  throw new Error('all-scan-engines-failed');
 }
 
 async function startGenericScan(onDetected){
@@ -4712,7 +4549,22 @@ async function startGenericScan(onDetected){
   try{
     const session = await prepareOverlaySession(onDetected);
     try{
-      await startPreferredScanEngine(session, false);
+      await startHtml5ScanEngine(session);
+      showToast('已启用兼容扫码模式');
+      return;
+    }catch(err){
+      console.error(err);
+    }
+    try{
+      await startBarcodeDetectorFallback(session);
+      showToast('已自动切换到浏览器扫码模式');
+      return;
+    }catch(err){
+      console.error(err);
+    }
+    try{
+      await startZXingScanEngine(session);
+      showToast('已自动切换到 ZXing 兼容模式');
       return;
     }catch(err){
       console.error(err);
