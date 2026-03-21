@@ -759,6 +759,32 @@
   border-radius:26px;
   box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2);
 }
+
+.scan-reader-host{
+  position:absolute;
+  inset:0;
+  background:#000;
+}
+.scan-reader-host > div{
+  border:none !important;
+}
+.scan-reader-host video{
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+}
+.scan-reader-host section{
+  background:transparent !important;
+  color:#fff !important;
+}
+.scan-reader-host section > div{
+  background:transparent !important;
+  box-shadow:none !important;
+}
+.scan-reader-host img{
+  display:none !important;
+}
+
 .scan-overlay video{
   width:100%;
   height:100%;
@@ -1482,6 +1508,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -4020,6 +4047,13 @@ async function createScanEngine(){
       detector:new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()})
     };
   }
+  const html5Ready = await ensureHtml5QrcodeReady();
+  if(html5Ready){
+    return {
+      mode:'html5-qrcode',
+      scanner:null
+    };
+  }
   const ready = await ensureJsQrReady();
   if(ready){
     return {
@@ -4049,6 +4083,59 @@ async function detectCodesFromCanvas(canvas, engine){
   return [];
 }
 
+async function ensureHtml5QrcodeReady(){
+  if(window.Html5Qrcode) return true;
+  const existing = document.querySelector('script[data-html5qrcode-fallback="1"]');
+  if(existing){
+    await new Promise(resolve => {
+      if(window.Html5Qrcode) return resolve();
+      existing.addEventListener('load', resolve, {once:true});
+      existing.addEventListener('error', resolve, {once:true});
+      setTimeout(resolve, 3000);
+    });
+    return !!window.Html5Qrcode;
+  }
+  const script = document.createElement('script');
+  script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+  script.async = true;
+  script.setAttribute('data-html5qrcode-fallback', '1');
+  document.head.appendChild(script);
+  await new Promise(resolve => {
+    script.addEventListener('load', resolve, {once:true});
+    script.addEventListener('error', resolve, {once:true});
+    setTimeout(resolve, 3000);
+  });
+  return !!window.Html5Qrcode;
+}
+
+function getHtml5QrcodeFormats(){
+  const F = window.Html5QrcodeSupportedFormats;
+  if(!F) return undefined;
+  return [
+    F.QR_CODE,
+    F.AZTEC,
+    F.CODABAR,
+    F.CODE_39,
+    F.CODE_93,
+    F.CODE_128,
+    F.DATA_MATRIX,
+    F.ITF,
+    F.EAN_13,
+    F.EAN_8,
+    F.PDF_417,
+    F.RSS_14,
+    F.RSS_EXPANDED,
+    F.UPC_A,
+    F.UPC_E,
+    F.UPC_EAN_EXTENSION
+  ].filter(v => typeof v !== 'undefined');
+}
+
+function getScanBoxSize(){
+  const side = Math.min(Math.floor(window.innerWidth * 0.72), 300);
+  return { width: side, height: side };
+}
+
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
@@ -4069,6 +4156,9 @@ function closeRemarkScan(){
   const session = activeScanSession;
   activeScanSession = null;
   try{
+    if(session.engine && session.engine.mode === 'html5-qrcode' && session.engine.scanner && typeof session.engine.scanner.stop === 'function'){
+      session.engine.scanner.stop().catch(function(){});
+    }
     if(session.usingNativeTorch && window.AndroidBridge && typeof AndroidBridge.forceTorchOff === 'function'){
       AndroidBridge.forceTorchOff();
     }else if(session.torchOn && session.track && session.track.applyConstraints){
@@ -4124,6 +4214,15 @@ async function toggleScanTorch(session){
 }
 
 async function recognizeCodeFromImage(file, engine){
+  if(!file) return '';
+  if(engine && engine.mode === 'html5-qrcode' && engine.scanner && typeof engine.scanner.scanFile === 'function'){
+    try{
+      const result = await engine.scanner.scanFile(file, true);
+      return String(result || '').trim();
+    }catch(err){
+      return '';
+    }
+  }
   const img = await loadImageFromFile(file);
   const maxSide = 1600;
   let {width, height} = img;
@@ -4204,6 +4303,7 @@ function startTradeinRemarkScan(form){
   startGenericScan(callback);
 }
 
+
 async function startGenericScan(onDetected){
   if(activeScanSession){
     showToast('请先关闭当前扫码窗口');
@@ -4218,24 +4318,17 @@ async function startGenericScan(onDetected){
     showToast('当前浏览器暂不支持扫码，请升级浏览器后重试');
     return;
   }
-  try{
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
-      audio:false
-    });
 
+  try{
     const overlay = document.createElement('div');
     overlay.className = 'scan-overlay';
+    const readerId = 'scanReaderMount_' + Date.now();
     overlay.innerHTML = `
       <div class="scan-overlay-top">
         <div class="scan-title">扫一扫</div>
         <button class="scan-close" type="button">×</button>
       </div>
-      <video playsinline autoplay muted></video>
+      <div class="scan-reader-host" id="${readerId}"></div>
       <div class="scan-viewfinder" aria-hidden="true">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
@@ -4245,10 +4338,6 @@ async function startGenericScan(onDetected){
       </div>
       <div class="scan-overlay-tip">将条形码或二维码放入框内，识别后点确定再继续扫码</div>
       <div class="scan-bottom-actions">
-        <button class="scan-bottom-action scan-torch-btn" type="button">
-          <span class="icon">🔦</span>
-          <span>手电筒</span>
-        </button>
         <button class="scan-bottom-action scan-photo-btn" type="button">
           <span class="icon">🖼️</span>
           <span>识别图片</span>
@@ -4266,57 +4355,42 @@ async function startGenericScan(onDetected){
     `;
     document.body.appendChild(overlay);
 
-    const video = overlay.querySelector('video');
     const closeBtn = overlay.querySelector('.scan-close');
     const resultPanel = overlay.querySelector('.scan-result-panel');
     const resultCode = overlay.querySelector('.scan-result-code');
     const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
     const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
-    const torchBtn = overlay.querySelector('.scan-torch-btn');
     const photoBtn = overlay.querySelector('.scan-photo-btn');
     const fileInput = overlay.querySelector('.scan-file-input');
 
-    video.setAttribute('playsinline', 'true');
-    video.setAttribute('webkit-playsinline', 'true');
-    video.muted = true;
-    video.srcObject = stream;
-    await video.play();
-
-    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-    const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
-    const nativeTorchSupported = canUseNativeTorch();
-    const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
-
     const session = {
       engine,
-      stream,
       overlay,
-      video,
       timer:null,
       lastCode:'',
       lastAt:0,
       paused:false,
       onDetected:onDetected,
-      track,
-      torchSupported,
-      usingNativeTorch:nativeTorchSupported,
+      torchSupported:false,
+      usingNativeTorch:false,
       torchOn:false,
-      torchBtn,
+      torchBtn:null,
       photoBtn,
       fileInput,
       scanCanvas: document.createElement('canvas')
     };
     activeScanSession = session;
-    updateTorchButtonState(session);
 
     closeBtn.onclick = closeRemarkScan;
     if(stopBtn) stopBtn.onclick = closeRemarkScan;
-    if(confirmBtn) confirmBtn.onclick = function(){
+    if(confirmBtn) confirmBtn.onclick = async function(){
       session.paused = false;
       if(resultPanel) resultPanel.hidden = true;
-    };
-    if(torchBtn) torchBtn.onclick = function(){
-      toggleScanTorch(session);
+      try{
+        if(session.engine && session.engine.mode === 'html5-qrcode' && session.engine.scanner && typeof session.engine.scanner.resume === 'function'){
+          session.engine.scanner.resume();
+        }
+      }catch(err){}
     };
     if(photoBtn) photoBtn.onclick = function(){
       if(fileInput) fileInput.click();
@@ -4348,6 +4422,57 @@ async function startGenericScan(onDetected){
       }
     };
 
+    if(engine.mode === 'html5-qrcode'){
+      const scanner = new Html5Qrcode(readerId, { formatsToSupport: getHtml5QrcodeFormats() });
+      engine.scanner = scanner;
+      await scanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: getScanBoxSize(), aspectRatio: 1.333334, disableFlip: false },
+        function(decodedText){
+          const raw = String(decodedText || '').trim();
+          if(!raw) return;
+          const now = Date.now();
+          if(session.lastCode === raw && now - session.lastAt < 1200) return;
+          session.lastCode = raw;
+          session.lastAt = now;
+          session.paused = true;
+          try{ scanner.pause(true); }catch(err){}
+          if(typeof session.onDetected === 'function'){
+            session.onDetected(raw);
+          }
+          if(resultCode) resultCode.textContent = raw;
+          if(resultPanel) resultPanel.hidden = false;
+        },
+        function(){ /* ignore frame errors */ }
+      );
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const video = document.createElement('video');
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;';
+    const host = overlay.querySelector('#' + readerId);
+    host.innerHTML = '';
+    host.appendChild(video);
+    video.srcObject = stream;
+    await video.play();
+
+    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+    session.stream = stream;
+    session.video = video;
+    session.track = track;
+
     session.timer = setInterval(async function(){
       if(!activeScanSession || activeScanSession !== session) return;
       if(session.paused) return;
@@ -4368,9 +4493,7 @@ async function startGenericScan(onDetected){
         const raw = String(codes[0].rawValue || '').trim();
         if(!raw) return;
         const now = Date.now();
-        if(session.lastCode === raw && now - session.lastAt < 1200){
-          return;
-        }
+        if(session.lastCode === raw && now - session.lastAt < 1200) return;
         session.lastCode = raw;
         session.lastAt = now;
         session.paused = true;
