@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <!--
-版本号: v2026.03.22-ios-scan-clarity-r6
+版本号: v2026.03.22-formal-r7
 更新内容:
 1. 优化苹果网页扫码清晰度，优先更高分辨率取流
 2. 苹果扫码默认启用方形扫码框，兼容二维码和常见条码
@@ -1531,6 +1531,7 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
+<div id="appVersionBadge" class="app-version-badge" title="点击查看版本"></div>
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4031,7 +4032,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.21-ios-merge-safe-r5";
+window.APP_HTML_VERSION="v2026.03.22-formal-r7";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4209,9 +4210,7 @@ function detectorFormats(){
 
 function getPreferredVideoConstraints(){
   return {
-    facingMode:{ideal:'environment'},
-    width:{ideal:isIOSWeb() ? 1920 : 1280},
-    height:{ideal:isIOSWeb() ? 1080 : 720}
+    facingMode:{ideal:'environment'}
   };
 }
 
@@ -4228,15 +4227,9 @@ async function enhanceVideoTrackForScan(track){
   if(!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') return;
   try{
     const caps = track.getCapabilities() || {};
-    const advanced = [];
     const zoom = getPreferredZoomValue(caps);
-    if(zoom) advanced.push({zoom});
-    if(Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) advanced.push({focusMode:'continuous'});
-    if(Array.isArray(caps.exposureMode) && caps.exposureMode.includes('continuous')) advanced.push({exposureMode:'continuous'});
-    if(Array.isArray(caps.whiteBalanceMode) && caps.whiteBalanceMode.includes('continuous')) advanced.push({whiteBalanceMode:'continuous'});
-    if(advanced.length){
-      await track.applyConstraints({advanced});
-    }
+    if(!zoom) return;
+    await track.applyConstraints({advanced:[{zoom}]});
   }catch(err){
     console.warn('enhanceVideoTrackForScan failed', err);
   }
@@ -5598,6 +5591,43 @@ bootApp();
 </script>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+
+<script>
+(function(){
+  function setBadge(){
+    var el = document.getElementById('appVersionBadge');
+    if(!el) return;
+    el.textContent = window.APP_HTML_VERSION || 'unknown';
+    el.onclick = function(){
+      try{
+        var build = window.APP_HTML_VERSION || 'unknown';
+        var msg = '当前版本：' + build + '\n\n更新内容：\n1. 苹果扫码改为保守取流，优先保证相机能打开\n2. 仅在支持时尝试 zoom，不再强上高风险约束\n3. 页面右下角常驻版本号，方便确认是否已部署新版本';
+        alert(msg);
+      }catch(err){}
+    };
+  }
+  function notifyUpdate(){
+    try{
+      var key = 'APP_HTML_VERSION_SEEN';
+      var cur = window.APP_HTML_VERSION || 'unknown';
+      var old = localStorage.getItem(key);
+      if(old !== cur){
+        localStorage.setItem(key, cur);
+        if(typeof showToast === 'function'){
+          showToast('已更新到 ' + cur);
+        }
+      }
+    }catch(err){}
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){ setBadge(); setTimeout(notifyUpdate, 600); });
+  }else{
+    setBadge();
+    setTimeout(notifyUpdate, 600);
+  }
+})();
+</script>
+
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
