@@ -941,6 +941,7 @@
   inset:0 !important;
   z-index:0 !important;
   background:transparent !important;
+  overflow:visible !important;
 }
 #scan-reader video{
   width:100% !important;
@@ -4091,6 +4092,21 @@ function updateViewfinderLayout(session){
   session.viewfinder.style.transform = 'translate(-50%,-52%)';
 }
 
+function updateReaderViewport(session, engine){
+  if(!session || !session.readerEl) return;
+  const box = getScanBoxRect();
+  const isBoxViewport = engine === 'quagga';
+  session.readerEl.style.inset = isBoxViewport ? 'auto' : '0';
+  session.readerEl.style.left = isBoxViewport ? '50%' : '0';
+  session.readerEl.style.top = isBoxViewport ? '50%' : '0';
+  session.readerEl.style.width = isBoxViewport ? (box.width + 'px') : '100%';
+  session.readerEl.style.height = isBoxViewport ? (box.height + 'px') : '100%';
+  session.readerEl.style.transform = isBoxViewport ? 'translate(-50%,-52%)' : 'none';
+  session.readerEl.style.overflow = isBoxViewport ? 'hidden' : 'visible';
+  session.readerEl.style.borderRadius = isBoxViewport ? '24px' : '0';
+  session.readerEl.style.background = 'transparent';
+}
+
 function updateScanModeButtons(session){
   const root = session && session.overlay ? session.overlay : document;
   const btns = root.querySelectorAll ? root.querySelectorAll('.scan-mode-btn') : [];
@@ -4117,17 +4133,18 @@ function setScanMode(nextMode){
 
 function setScanUiMode(session, mode){
   if(!session) return;
-  const usingHtml5 = mode === 'html5';
+  const usingReader = mode === 'html5' || mode === 'quagga';
   if(session.readerEl){
-    session.readerEl.style.opacity = usingHtml5 ? '1' : '0';
+    session.readerEl.style.opacity = usingReader ? '1' : '0';
     session.readerEl.style.pointerEvents = 'none';
+    updateReaderViewport(session, mode === 'quagga' ? 'quagga' : 'full');
   }
   if(session.video){
-    session.video.style.display = usingHtml5 ? 'none' : '';
+    session.video.style.display = usingReader ? 'none' : '';
   }
   if(session.viewfinder){
     updateViewfinderLayout(session);
-    session.viewfinder.style.display = usingHtml5 ? 'none' : 'block';
+    session.viewfinder.style.display = 'block';
   }
 }
 
@@ -4560,7 +4577,7 @@ function createHtml5ScanSuccessHandler(session){
 async function startQuaggaScanEngine(session){
   if(scanMode !== 'barcode') throw new Error('quagga-barcode-only');
   if(!supportsQuagga()) throw new Error('quagga-not-available');
-  setScanUiMode(session, 'html5');
+  setScanUiMode(session, 'quagga');
   session.readerEl.innerHTML = '';
   await new Promise(function(resolve, reject){
     window.Quagga.init({
@@ -4572,7 +4589,7 @@ async function startQuaggaScanEngine(session){
           width: {ideal: 1280},
           height: {ideal: 720}
         },
-        area: {top: '36%', right: '10%', left: '10%', bottom: '36%'}
+        area: {top: '0%', right: '0%', left: '0%', bottom: '0%'}
       },
       locator: {patchSize: 'medium', halfSample: false},
       numOfWorkers: 0,
