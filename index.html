@@ -4024,7 +4024,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.21-ios-fix-r1";
+window.APP_HTML_VERSION="v2026.03.21-ios-merge-safe-r1";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4142,6 +4142,47 @@ function getHtml5QrcodeFormats(){
     F.UPC_A,
     F.UPC_E,
     F.UPC_EAN_EXTENSION
+  ].filter(v => typeof v !== 'undefined');
+}
+
+
+function isIOSWeb(){
+  const ua = String(navigator.userAgent || '');
+  return /iPhone|iPad|iPod/i.test(ua);
+}
+
+function getSafeHtml5BarcodeConfig(){
+  return {
+    fps: 14,
+    qrbox: { width: 320, height: 140 },
+    aspectRatio: 2.3,
+    disableFlip: false,
+    experimentalFeatures: {
+      useBarCodeDetectorIfSupported: true
+    }
+  };
+}
+
+function getSafeHtml5DefaultConfig(){
+  return {
+    fps: 10,
+    qrbox: getScanBoxSize(),
+    aspectRatio: 1.333334,
+    disableFlip: false
+  };
+}
+
+function getSafeBarcodeFormats(){
+  const F = window.Html5QrcodeSupportedFormats || {};
+  return [
+    F.EAN_13,
+    F.EAN_8,
+    F.CODE_128,
+    F.UPC_A,
+    F.UPC_E,
+    F.CODE_39,
+    F.ITF,
+    F.CODABAR
   ].filter(v => typeof v !== 'undefined');
 }
 
@@ -4366,6 +4407,7 @@ async function startGenericScan(onDetected){
           <button class="scan-result-btn primary" type="button">确定，继续扫码</button>
         </div>
       </div>
+      <div class="app-version-badge">v2026.03.21-ios-merge-safe-r1</div>
     `;
     document.body.appendChild(overlay);
 
@@ -4437,28 +4479,60 @@ async function startGenericScan(onDetected){
     };
 
     if(engine.mode === 'html5-qrcode'){
-      const scanner = new Html5Qrcode(readerId, { formatsToSupport: getHtml5QrcodeFormats() });
-      engine.scanner = scanner;
-      await scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: getScanBoxSize(), aspectRatio: 1.333334, disableFlip: false },
-        function(decodedText){
-          const raw = String(decodedText || '').trim();
-          if(!raw) return;
-          const now = Date.now();
-          if(session.lastCode === raw && now - session.lastAt < 1200) return;
-          session.lastCode = raw;
-          session.lastAt = now;
-          session.paused = true;
-          try{ scanner.pause(true); }catch(err){}
-          if(typeof session.onDetected === 'function'){
-            session.onDetected(raw);
-          }
-          if(resultCode) resultCode.textContent = raw;
-          if(resultPanel) resultPanel.hidden = false;
-        },
-        function(){ /* ignore frame errors */ }
-      );
+      let scanner;
+      if(isIOSWeb()){
+        const barcodeFormats = getSafeBarcodeFormats();
+        scanner = new Html5Qrcode(
+          readerId,
+          barcodeFormats.length ? { formatsToSupport: barcodeFormats } : undefined
+        );
+        engine.scanner = scanner;
+        await scanner.start(
+          { facingMode: 'environment' },
+          getSafeHtml5BarcodeConfig(),
+          function(decodedText){
+            const raw = String(decodedText || '').trim();
+            if(!raw) return;
+            const now = Date.now();
+            if(session.lastCode === raw && now - session.lastAt < 1500) return;
+            session.lastCode = raw;
+            session.lastAt = now;
+            session.paused = true;
+            try{ scanner.pause(true); }catch(err){}
+            if(typeof session.onDetected === 'function'){
+              session.onDetected(raw);
+            }
+            if(resultCode) resultCode.textContent = raw;
+            if(resultPanel) resultPanel.hidden = false;
+          },
+          function(){}
+        );
+      }else{
+        scanner = new Html5Qrcode(readerId, {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+        });
+        engine.scanner = scanner;
+        await scanner.start(
+          { facingMode: 'environment' },
+          getSafeHtml5DefaultConfig(),
+          function(decodedText){
+            const raw = String(decodedText || '').trim();
+            if(!raw) return;
+            const now = Date.now();
+            if(session.lastCode === raw && now - session.lastAt < 1200) return;
+            session.lastCode = raw;
+            session.lastAt = now;
+            session.paused = true;
+            try{ scanner.pause(true); }catch(err){}
+            if(typeof session.onDetected === 'function'){
+              session.onDetected(raw);
+            }
+            if(resultCode) resultCode.textContent = raw;
+            if(resultPanel) resultPanel.hidden = false;
+          },
+          function(){}
+        );
+      }
       return;
     }
 
@@ -4522,7 +4596,7 @@ async function startGenericScan(onDetected){
     }, 280);
   }catch(err){
     console.error(err);
-    showToast('无法打开摄像头，请检查相机权限');
+    showToast('无法打开相机，请确认已允许 Safari 相机权限，并使用 HTTPS 页面访问。');
   }
 }
 window.startRemarkScan = startRemarkScan;
