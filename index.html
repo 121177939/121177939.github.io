@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
 <!--
-版本号: v2026.03.22-formal-r7
+版本号: v2026.03.21-ios-merge-safe-r5
 更新内容:
-1. 优化苹果网页扫码清晰度，优先更高分辨率取流
-2. 苹果扫码默认启用方形扫码框，兼容二维码和常见条码
-3. 扫码后尝试开启连续对焦/曝光/白平衡与适度缩放
-4. 保留安卓逻辑不变，通用浏览器兜底链路继续可用
+1. 修复顶部白条问题，移除文件头异常字符并整理注释位置
+2. 保留用户长按“更多”3秒显示版本号
+3. 保留管理员长按“管理员”3秒显示版本号
+4. 使用事件委托，适配页面重渲染
 5. 后续每次修改需同步更新顶部版本注释和 APP_HTML_VERSION
 -->
 
@@ -1531,7 +1531,6 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-<div id="appVersionBadge" class="app-version-badge" title="点击查看版本"></div>
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4032,7 +4031,8 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.22-formal-r7";
+window.APP_HTML_VERSION="v2026.03.22-ios-camera-safe-r8";
+window.APP_RELEASE_NOTES="苹果扫码回退到原始可打开相机链路，并按码主人方案优化格式与扫码框。";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4160,11 +4160,11 @@ function isIOSWeb(){
 }
 
 function getSafeHtml5BarcodeConfig(){
-  const side = Math.max(220, Math.min(Math.floor(window.innerWidth * 0.64), 280));
+  const side = Math.min(Math.max(Math.floor(window.innerWidth * 0.62), 220), 280);
   return {
-    fps: isIOSWeb() ? 16 : 14,
+    fps: 12,
     qrbox: { width: side, height: side },
-    aspectRatio: isIOSWeb() ? 1.333334 : 2.3,
+    aspectRatio: 1.333334,
     disableFlip: false,
     experimentalFeatures: {
       useBarCodeDetectorIfSupported: true
@@ -4185,17 +4185,19 @@ function getSafeBarcodeFormats(){
   const F = window.Html5QrcodeSupportedFormats || {};
   return [
     F.QR_CODE,
-    F.DATA_MATRIX,
-    F.PDF_417,
     F.AZTEC,
+    F.CODABAR,
+    F.CODE_39,
+    F.CODE_93,
+    F.CODE_128,
+    F.DATA_MATRIX,
+    F.ITF,
     F.EAN_13,
     F.EAN_8,
-    F.CODE_128,
+    F.PDF_417,
     F.UPC_A,
     F.UPC_E,
-    F.CODE_39,
-    F.ITF,
-    F.CODABAR
+    F.UPC_EAN_EXTENSION
   ].filter(v => typeof v !== 'undefined');
 }
 
@@ -4206,53 +4208,6 @@ function getScanBoxSize(){
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
-}
-
-function getPreferredVideoConstraints(){
-  return {
-    facingMode:{ideal:'environment'}
-  };
-}
-
-function getPreferredZoomValue(caps){
-  if(!caps || typeof caps.zoom === 'undefined') return null;
-  const min = Number(caps.zoom.min ?? 1);
-  const max = Number(caps.zoom.max ?? 1);
-  if(!Number.isFinite(min) || !Number.isFinite(max)) return null;
-  const target = isIOSWeb() ? 1.5 : 1.15;
-  return Math.min(Math.max(target, min), max);
-}
-
-async function enhanceVideoTrackForScan(track){
-  if(!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') return;
-  try{
-    const caps = track.getCapabilities() || {};
-    const zoom = getPreferredZoomValue(caps);
-    if(!zoom) return;
-    await track.applyConstraints({advanced:[{zoom}]});
-  }catch(err){
-    console.warn('enhanceVideoTrackForScan failed', err);
-  }
-}
-
-function getRunningVideoTrackFromOverlay(overlay){
-  try{
-    const video = overlay && overlay.querySelector ? overlay.querySelector('video') : null;
-    const stream = video && video.srcObject;
-    const tracks = stream && stream.getVideoTracks ? stream.getVideoTracks() : null;
-    return tracks && tracks[0] ? tracks[0] : null;
-  }catch(err){
-    return null;
-  }
-}
-
-async function enhanceOverlayVideoTrack(session){
-  if(!session || !session.overlay) return;
-  const track = getRunningVideoTrackFromOverlay(session.overlay);
-  if(track){
-    session.track = track;
-    await enhanceVideoTrackForScan(track);
-  }
 }
 
 async function startRemarkScan(orderId){
@@ -4548,7 +4503,7 @@ async function startGenericScan(onDetected){
         );
         engine.scanner = scanner;
         await scanner.start(
-          getPreferredVideoConstraints(),
+          { facingMode: 'environment' },
           getSafeHtml5BarcodeConfig(),
           function(decodedText){
             const raw = String(decodedText || '').trim();
@@ -4567,14 +4522,13 @@ async function startGenericScan(onDetected){
           },
           function(){}
         );
-        await enhanceOverlayVideoTrack(session);
       }else{
         scanner = new Html5Qrcode(readerId, {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
         });
         engine.scanner = scanner;
         await scanner.start(
-          getPreferredVideoConstraints(),
+          { facingMode: 'environment' },
           getSafeHtml5DefaultConfig(),
           function(decodedText){
             const raw = String(decodedText || '').trim();
@@ -4593,13 +4547,16 @@ async function startGenericScan(onDetected){
           },
           function(){}
         );
-        await enhanceOverlayVideoTrack(session);
       }
       return;
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({
-      video:getPreferredVideoConstraints(),
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
       audio:false
     });
 
@@ -4618,7 +4575,6 @@ async function startGenericScan(onDetected){
     session.stream = stream;
     session.video = video;
     session.track = track;
-    await enhanceVideoTrackForScan(track);
 
     session.timer = setInterval(async function(){
       if(!activeScanSession || activeScanSession !== session) return;
@@ -4662,6 +4618,27 @@ window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
+
+function mountVersionBadge(){
+  if(document.getElementById('appVersionBadge')) return;
+  const badge = document.createElement('button');
+  badge.id = 'appVersionBadge';
+  badge.type = 'button';
+  badge.textContent = window.APP_HTML_VERSION || 'unknown';
+  badge.style.cssText = 'position:fixed;right:10px;bottom:82px;z-index:99999;border:none;border-radius:999px;padding:7px 10px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);';
+  badge.onclick = function(){
+    alert('当前版本：' + (window.APP_HTML_VERSION || 'unknown') + '
+
+' + (window.APP_RELEASE_NOTES || ''));
+  };
+  (document.body || document.documentElement).appendChild(badge);
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', mountVersionBadge, {once:true});
+}else{
+  setTimeout(mountVersionBadge, 0);
+}
 
 const authState = {
   ready:false,
@@ -5591,43 +5568,6 @@ bootApp();
 </script>
 
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-
-<script>
-(function(){
-  function setBadge(){
-    var el = document.getElementById('appVersionBadge');
-    if(!el) return;
-    el.textContent = window.APP_HTML_VERSION || 'unknown';
-    el.onclick = function(){
-      try{
-        var build = window.APP_HTML_VERSION || 'unknown';
-        var msg = '当前版本：' + build + '\n\n更新内容：\n1. 苹果扫码改为保守取流，优先保证相机能打开\n2. 仅在支持时尝试 zoom，不再强上高风险约束\n3. 页面右下角常驻版本号，方便确认是否已部署新版本';
-        alert(msg);
-      }catch(err){}
-    };
-  }
-  function notifyUpdate(){
-    try{
-      var key = 'APP_HTML_VERSION_SEEN';
-      var cur = window.APP_HTML_VERSION || 'unknown';
-      var old = localStorage.getItem(key);
-      if(old !== cur){
-        localStorage.setItem(key, cur);
-        if(typeof showToast === 'function'){
-          showToast('已更新到 ' + cur);
-        }
-      }
-    }catch(err){}
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', function(){ setBadge(); setTimeout(notifyUpdate, 600); });
-  }else{
-    setBadge();
-    setTimeout(notifyUpdate, 600);
-  }
-})();
-</script>
-
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
