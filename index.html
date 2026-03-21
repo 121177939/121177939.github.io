@@ -1,9 +1,16 @@
-﻿
-
 <!doctype html>
-
 <html lang="zh-CN">
 <head>
+<!--
+版本号: v2026.03.22-ios-scan-clarity-r6
+更新内容:
+1. 优化苹果网页扫码清晰度，优先更高分辨率取流
+2. 苹果扫码默认启用方形扫码框，兼容二维码和常见条码
+3. 扫码后尝试开启连续对焦/曝光/白平衡与适度缩放
+4. 保留安卓逻辑不变，通用浏览器兜底链路继续可用
+5. 后续每次修改需同步更新顶部版本注释和 APP_HTML_VERSION
+-->
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <title>不砍不盾</title>
@@ -4024,7 +4031,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.21-ios-merge-safe-r1";
+window.APP_HTML_VERSION="v2026.03.21-ios-merge-safe-r5";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4152,10 +4159,11 @@ function isIOSWeb(){
 }
 
 function getSafeHtml5BarcodeConfig(){
+  const side = Math.max(220, Math.min(Math.floor(window.innerWidth * 0.64), 280));
   return {
-    fps: 14,
-    qrbox: { width: 320, height: 140 },
-    aspectRatio: 2.3,
+    fps: isIOSWeb() ? 16 : 14,
+    qrbox: { width: side, height: side },
+    aspectRatio: isIOSWeb() ? 1.333334 : 2.3,
     disableFlip: false,
     experimentalFeatures: {
       useBarCodeDetectorIfSupported: true
@@ -4175,6 +4183,10 @@ function getSafeHtml5DefaultConfig(){
 function getSafeBarcodeFormats(){
   const F = window.Html5QrcodeSupportedFormats || {};
   return [
+    F.QR_CODE,
+    F.DATA_MATRIX,
+    F.PDF_417,
+    F.AZTEC,
     F.EAN_13,
     F.EAN_8,
     F.CODE_128,
@@ -4193,6 +4205,61 @@ function getScanBoxSize(){
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+}
+
+function getPreferredVideoConstraints(){
+  return {
+    facingMode:{ideal:'environment'},
+    width:{ideal:isIOSWeb() ? 1920 : 1280},
+    height:{ideal:isIOSWeb() ? 1080 : 720}
+  };
+}
+
+function getPreferredZoomValue(caps){
+  if(!caps || typeof caps.zoom === 'undefined') return null;
+  const min = Number(caps.zoom.min ?? 1);
+  const max = Number(caps.zoom.max ?? 1);
+  if(!Number.isFinite(min) || !Number.isFinite(max)) return null;
+  const target = isIOSWeb() ? 1.5 : 1.15;
+  return Math.min(Math.max(target, min), max);
+}
+
+async function enhanceVideoTrackForScan(track){
+  if(!track || typeof track.getCapabilities !== 'function' || typeof track.applyConstraints !== 'function') return;
+  try{
+    const caps = track.getCapabilities() || {};
+    const advanced = [];
+    const zoom = getPreferredZoomValue(caps);
+    if(zoom) advanced.push({zoom});
+    if(Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) advanced.push({focusMode:'continuous'});
+    if(Array.isArray(caps.exposureMode) && caps.exposureMode.includes('continuous')) advanced.push({exposureMode:'continuous'});
+    if(Array.isArray(caps.whiteBalanceMode) && caps.whiteBalanceMode.includes('continuous')) advanced.push({whiteBalanceMode:'continuous'});
+    if(advanced.length){
+      await track.applyConstraints({advanced});
+    }
+  }catch(err){
+    console.warn('enhanceVideoTrackForScan failed', err);
+  }
+}
+
+function getRunningVideoTrackFromOverlay(overlay){
+  try{
+    const video = overlay && overlay.querySelector ? overlay.querySelector('video') : null;
+    const stream = video && video.srcObject;
+    const tracks = stream && stream.getVideoTracks ? stream.getVideoTracks() : null;
+    return tracks && tracks[0] ? tracks[0] : null;
+  }catch(err){
+    return null;
+  }
+}
+
+async function enhanceOverlayVideoTrack(session){
+  if(!session || !session.overlay) return;
+  const track = getRunningVideoTrackFromOverlay(session.overlay);
+  if(track){
+    session.track = track;
+    await enhanceVideoTrackForScan(track);
+  }
 }
 
 async function startRemarkScan(orderId){
@@ -4407,7 +4474,7 @@ async function startGenericScan(onDetected){
           <button class="scan-result-btn primary" type="button">确定，继续扫码</button>
         </div>
       </div>
-      <div class="app-version-badge">v2026.03.21-ios-merge-safe-r1</div>
+      
     `;
     document.body.appendChild(overlay);
 
@@ -4488,7 +4555,7 @@ async function startGenericScan(onDetected){
         );
         engine.scanner = scanner;
         await scanner.start(
-          { facingMode: 'environment' },
+          getPreferredVideoConstraints(),
           getSafeHtml5BarcodeConfig(),
           function(decodedText){
             const raw = String(decodedText || '').trim();
@@ -4507,13 +4574,14 @@ async function startGenericScan(onDetected){
           },
           function(){}
         );
+        await enhanceOverlayVideoTrack(session);
       }else{
         scanner = new Html5Qrcode(readerId, {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
         });
         engine.scanner = scanner;
         await scanner.start(
-          { facingMode: 'environment' },
+          getPreferredVideoConstraints(),
           getSafeHtml5DefaultConfig(),
           function(decodedText){
             const raw = String(decodedText || '').trim();
@@ -4532,16 +4600,13 @@ async function startGenericScan(onDetected){
           },
           function(){}
         );
+        await enhanceOverlayVideoTrack(session);
       }
       return;
     }
 
     const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
+      video:getPreferredVideoConstraints(),
       audio:false
     });
 
@@ -4560,6 +4625,7 @@ async function startGenericScan(onDetected){
     session.stream = stream;
     session.video = video;
     session.track = track;
+    await enhanceVideoTrackForScan(track);
 
     session.timer = setInterval(async function(){
       if(!activeScanSession || activeScanSession !== session) return;
@@ -5462,7 +5528,76 @@ bootApp();
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<div class="app-version-badge">v2026.03.21-ios-fix-r1</div>
+
+
+
+<script>
+// long press version
+(function(){
+  var timer = null;
+  var activeCard = null;
+
+  function getCardKeyword(el){
+    if(!el) return '';
+    var txt = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+    if(txt.indexOf('管理员') !== -1) return '管理员';
+    if(txt.indexOf('更多') !== -1) return '更多';
+    return '';
+  }
+
+  function clearPress(){
+    if(timer){
+      clearTimeout(timer);
+      timer = null;
+    }
+    activeCard = null;
+  }
+
+  function startPress(card){
+    clearPress();
+    var keyword = getCardKeyword(card);
+    if(!keyword) return;
+    activeCard = card;
+    timer = setTimeout(function(){
+      if(activeCard === card){
+        alert('当前版本: ' + (window.APP_HTML_VERSION || 'unknown'));
+      }
+      clearPress();
+    }, 3000);
+  }
+
+  function findCardFromEventTarget(target){
+    if(!target || !target.closest) return null;
+    var card = target.closest('.item');
+    if(!card) return null;
+    return getCardKeyword(card) ? card : null;
+  }
+
+  document.addEventListener('touchstart', function(e){
+    var card = findCardFromEventTarget(e.target);
+    if(card) startPress(card);
+  }, {passive:true});
+
+  document.addEventListener('touchend', clearPress, {passive:true});
+  document.addEventListener('touchcancel', clearPress, {passive:true});
+  document.addEventListener('touchmove', clearPress, {passive:true});
+
+  document.addEventListener('mousedown', function(e){
+    var card = findCardFromEventTarget(e.target);
+    if(card) startPress(card);
+  });
+
+  document.addEventListener('mouseup', clearPress);
+  document.addEventListener('mouseleave', clearPress);
+  document.addEventListener('mousemove', function(e){
+    if(!activeCard) return;
+    var card = findCardFromEventTarget(e.target);
+    if(card !== activeCard) clearPress();
+  });
+})();
+</script>
+
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
