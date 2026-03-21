@@ -766,6 +766,14 @@
   flex:1;
   background:#000;
 }
+.scan-reader-host{
+  width:100%;
+  height:100%;
+  flex:1;
+  background:#000;
+}
+.scan-reader-host[hidden]{display:none;}
+.scan-reader-host > div{height:100%;}
 .scan-overlay-top{
   position:absolute;
   top:18px;
@@ -1487,6 +1495,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
 const store = {
   load(key, fallback){
@@ -3936,29 +3945,54 @@ document.addEventListener('keydown', function(e){
 });
 
 let activeScanSession = null;
-let activeNativeScanHandler = null;
-
-window.__handleNativeScan = function(code){
-  const raw = String(code || '').trim();
-  if(!raw) return;
-  const handler = activeNativeScanHandler;
-  activeNativeScanHandler = null;
-  if(typeof handler === 'function') handler(raw);
-};
-
-function canUseNativeScan(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function' && (!window.AndroidBridge.nativeScanAvailable || AndroidBridge.nativeScanAvailable()));
-}
-
+window.__pendingNativeScanHandler = null;
 
 function detectorFormats(){
   return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
+window.onNativeScanResult = function(code){
+  const handler = window.__pendingNativeScanHandler;
+  window.__pendingNativeScanHandler = null;
+  const value = String(code || '').trim();
+  if(!value){
+    if(typeof handler === 'function') handler('');
+    return;
+  }
+  if(typeof handler === 'function'){
+    handler(value);
+    return;
+  }
+  showToast('扫码成功：' + value);
+};
+
 async function startRemarkScan(orderId){
   startGenericScan(function(code){
     appendRemarkCode(orderId, code);
   });
+}
+
+async function stopHtml5Reader(session){
+  if(!session || !session.html5Reader) return;
+  try{
+    if(session.html5ReaderPause && typeof session.html5Reader.resume === 'function'){
+      try{ session.html5Reader.resume(); }catch(e){}
+    }
+    if(typeof session.html5Reader.stop === 'function'){
+      await session.html5Reader.stop();
+    }
+  }catch(err){
+    console.error(err);
+  }
+  try{
+    if(typeof session.html5Reader.clear === 'function'){
+      await session.html5Reader.clear();
+    }
+  }catch(err){
+    console.error(err);
+  }
+  session.html5Reader = null;
+  session.html5ReaderPause = false;
 }
 
 function closeRemarkScan(){
@@ -3976,6 +4010,7 @@ function closeRemarkScan(){
   if(session.stream){
     session.stream.getTracks().forEach(track => track.stop());
   }
+  stopHtml5Reader(session);
   if(session.overlay && session.overlay.parentNode){
     session.overlay.parentNode.removeChild(session.overlay);
   }
@@ -4019,21 +4054,80 @@ async function toggleScanTorch(session){
   }
 }
 
-async function recognizeCodeFromImage(file, detector){
-  if(!file || !detector) return '';
-  const img = new Image();
-  const url = URL.createObjectURL(file);
+async function recognizeCodeFromImage(file, detector, session){
+  if(!file) return '';
+  if(detector){
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    try{
+      await new Promise(function(resolve, reject){
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
+      const results = await detector.detect(img);
+      if(!results || !results.length) return '';
+      return String(results[0].rawValue || '').trim();
+    }finally{
+      URL.revokeObjectURL(url);
+    }
+  }
+  if(session && session.html5Reader && typeof session.html5Reader.scanFile === 'function'){
+    try{
+      const raw = await session.html5Reader.scanFile(file, true);
+      return String(raw || '').trim();
+    }catch(err){
+      console.error(err);
+      return '';
+    }
+  }
+  return '';
+}
+
+async function startHtml5Fallback(session){
+  if(typeof Html5Qrcode === 'undefined') throw new Error('html5-qrcode not loaded');
+  const host = session.readerHost;
+  if(!host) throw new Error('reader host missing');
+  const hostId = 'scan-reader-' + Date.now();
+  host.id = hostId;
+  host.hidden = false;
+  const reader = new Html5Qrcode(hostId);
+  session.html5Reader = reader;
+  const onDecoded = async function(decodedText){
+    const raw = String(decodedText || '').trim();
+    if(!raw || session.paused) return;
+    const now = Date.now();
+    if(raw === session.lastCode && now - session.lastAt < 1200) return;
+    session.lastCode = raw;
+    session.lastAt = now;
+    session.paused = true;
+    if(reader && typeof reader.pause === 'function'){
+      try{
+        reader.pause(true);
+        session.html5ReaderPause = true;
+      }catch(e){}
+    }
+    if(typeof session.onDetected === 'function') session.onDetected(raw);
+    if(session.resultCode) session.resultCode.textContent = raw;
+    if(session.resultPanel) session.resultPanel.hidden = false;
+  };
   try{
-    await new Promise(function(resolve, reject){
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = url;
-    });
-    const results = await detector.detect(img);
-    if(!results || !results.length) return '';
-    return String(results[0].rawValue || '').trim();
-  }finally{
-    URL.revokeObjectURL(url);
+    await reader.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.3333333 },
+      onDecoded,
+      function(){}
+    );
+  }catch(err){
+    const cameras = typeof Html5Qrcode.getCameras === 'function' ? await Html5Qrcode.getCameras() : [];
+    if(!cameras || !cameras.length) throw err;
+    const back = cameras.find(function(cam){ return /back|rear|environment/i.test(String(cam.label || '')); }) || cameras[cameras.length - 1];
+    await reader.start(
+      back.id,
+      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.3333333 },
+      onDecoded,
+      function(){}
+    );
   }
 }
 
@@ -4046,7 +4140,6 @@ function appendRemarkCode(orderId, code){
   order.remark = items.join(',');
   persist();
 
-  const activeInput = document.activeElement;
   render();
 
   const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
@@ -4097,36 +4190,59 @@ async function startGenericScan(onDetected){
     showToast('请先关闭当前扫码窗口');
     return;
   }
-  if(canUseNativeScan()){
-    activeNativeScanHandler = onDetected;
+
+  if(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function'){
+    window.__pendingNativeScanHandler = function(code){
+      const value = String(code || '').trim();
+      if(!value) return;
+      if(typeof onDetected === 'function') onDetected(value);
+    };
     try{
       AndroidBridge.startNativeScan();
       return;
     }catch(err){
       console.error(err);
-      activeNativeScanHandler = null;
+      window.__pendingNativeScanHandler = null;
     }
   }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+
+  const hasMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  const hasBarcodeDetector = typeof BarcodeDetector !== 'undefined';
+  const hasHtml5Qrcode = typeof Html5Qrcode !== 'undefined';
+
+  if(!hasMedia){
     showToast('当前设备不支持打开摄像头');
     return;
   }
-  if(typeof BarcodeDetector === 'undefined'){
-    showToast('当前浏览器暂不支持扫码，请在APP内使用原生扫码或换新版浏览器打开');
+  if(!hasBarcodeDetector && !hasHtml5Qrcode){
+    showToast('当前浏览器扫码能力较弱，请用新版 Safari / Chrome 打开');
     return;
   }
+
   try{
-    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-    const usableFormats = detectorFormats().filter(f => formats.includes(f));
-    const detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:{
-        facingMode:{ideal:'environment'},
-        width:{ideal:1280},
-        height:{ideal:720}
-      },
-      audio:false
-    });
+    let detector = null;
+    let stream = null;
+    let track = null;
+    let usingHtml5Fallback = !hasBarcodeDetector;
+
+    if(hasBarcodeDetector){
+      const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+      const usableFormats = detectorFormats().filter(f => formats.includes(f));
+      detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
+      try{
+        stream = await navigator.mediaDevices.getUserMedia({
+          video:{ facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} },
+          audio:false
+        });
+        track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+      }catch(cameraErr){
+        if(hasHtml5Qrcode){
+          usingHtml5Fallback = true;
+        }else{
+          throw cameraErr;
+        }
+      }
+    }
 
     const overlay = document.createElement('div');
     overlay.className = 'scan-overlay';
@@ -4135,7 +4251,8 @@ async function startGenericScan(onDetected){
         <div class="scan-title">扫一扫</div>
         <button class="scan-close" type="button">×</button>
       </div>
-      <video playsinline autoplay muted></video>
+      <video playsinline autoplay muted ${usingHtml5Fallback ? 'hidden' : ''}></video>
+      <div class="scan-reader-host" ${usingHtml5Fallback ? '' : 'hidden'}></div>
       <div class="scan-viewfinder" aria-hidden="true">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
@@ -4167,6 +4284,7 @@ async function startGenericScan(onDetected){
     document.body.appendChild(overlay);
 
     const video = overlay.querySelector('video');
+    const readerHost = overlay.querySelector('.scan-reader-host');
     const closeBtn = overlay.querySelector('.scan-close');
     const resultPanel = overlay.querySelector('.scan-result-panel');
     const resultCode = overlay.querySelector('.scan-result-code');
@@ -4175,18 +4293,17 @@ async function startGenericScan(onDetected){
     const torchBtn = overlay.querySelector('.scan-torch-btn');
     const photoBtn = overlay.querySelector('.scan-photo-btn');
     const fileInput = overlay.querySelector('.scan-file-input');
-    video.srcObject = stream;
-    await video.play();
-    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+
     const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
     const nativeTorchSupported = canUseNativeTorch();
-    const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
+    const torchSupported = !usingHtml5Fallback && (nativeTorchSupported || !!(capabilities && capabilities.torch));
 
     const session = {
       detector,
       stream,
       overlay,
       video,
+      readerHost,
       timer:null,
       lastCode:'',
       lastAt:0,
@@ -4198,28 +4315,37 @@ async function startGenericScan(onDetected){
       torchOn:false,
       torchBtn,
       photoBtn,
-      fileInput
+      fileInput,
+      resultPanel,
+      resultCode,
+      usingHtml5Fallback,
+      html5Reader:null,
+      html5ReaderPause:false
     };
     activeScanSession = session;
     updateTorchButtonState(session);
     closeBtn.onclick = closeRemarkScan;
     if(stopBtn) stopBtn.onclick = closeRemarkScan;
-    if(confirmBtn) confirmBtn.onclick = function(){
+    if(confirmBtn) confirmBtn.onclick = async function(){
       session.paused = false;
       if(resultPanel) resultPanel.hidden = true;
+      if(session.html5Reader && session.html5ReaderPause && typeof session.html5Reader.resume === 'function'){
+        try{
+          session.html5Reader.resume();
+          session.html5ReaderPause = false;
+        }catch(err){
+          console.error(err);
+        }
+      }
     };
-    if(torchBtn) torchBtn.onclick = function(){
-      toggleScanTorch(session);
-    };
-    if(photoBtn) photoBtn.onclick = function(){
-      if(fileInput) fileInput.click();
-    };
+    if(torchBtn) torchBtn.onclick = function(){ toggleScanTorch(session); };
+    if(photoBtn) photoBtn.onclick = function(){ if(fileInput) fileInput.click(); };
     if(fileInput) fileInput.onchange = async function(){
       const file = fileInput.files && fileInput.files[0];
       if(!file) return;
       try{
         session.paused = true;
-        const raw = await recognizeCodeFromImage(file, detector);
+        const raw = await recognizeCodeFromImage(file, detector, session);
         if(!raw){
           showToast('这张图片里没有识别到条码或二维码');
           session.paused = false;
@@ -4227,9 +4353,7 @@ async function startGenericScan(onDetected){
         }
         session.lastCode = raw;
         session.lastAt = Date.now();
-        if(typeof session.onDetected === 'function'){
-          session.onDetected(raw);
-        }
+        if(typeof session.onDetected === 'function') session.onDetected(raw);
         if(resultCode) resultCode.textContent = raw;
         if(resultPanel) resultPanel.hidden = false;
       }catch(err){
@@ -4241,29 +4365,33 @@ async function startGenericScan(onDetected){
       }
     };
 
-    session.timer = setInterval(async function(){
-      if(!activeScanSession || activeScanSession !== session) return;
-      if(session.paused) return;
-      if(video.readyState < 2) return;
-      try{
-        const results = await detector.detect(video);
-        if(!results || !results.length) return;
-        const raw = String(results[0].rawValue || '').trim();
-        if(!raw) return;
-        const now = Date.now();
-        if(raw === session.lastCode && now - session.lastAt < 1200) return;
-        session.lastCode = raw;
-        session.lastAt = now;
-        session.paused = true;
-        if(typeof session.onDetected === 'function'){
-          session.onDetected(raw);
+    if(usingHtml5Fallback){
+      await startHtml5Fallback(session);
+    }else{
+      video.srcObject = stream;
+      await video.play();
+      session.timer = setInterval(async function(){
+        if(!activeScanSession || activeScanSession !== session) return;
+        if(session.paused) return;
+        if(video.readyState < 2) return;
+        try{
+          const results = await detector.detect(video);
+          if(!results || !results.length) return;
+          const raw = String(results[0].rawValue || '').trim();
+          if(!raw) return;
+          const now = Date.now();
+          if(raw === session.lastCode && now - session.lastAt < 1200) return;
+          session.lastCode = raw;
+          session.lastAt = now;
+          session.paused = true;
+          if(typeof session.onDetected === 'function') session.onDetected(raw);
+          if(resultCode) resultCode.textContent = raw;
+          if(resultPanel) resultPanel.hidden = false;
+        }catch(err){
+          console.error(err);
         }
-        if(resultCode) resultCode.textContent = raw;
-        if(resultPanel) resultPanel.hidden = false;
-      }catch(err){
-        console.error(err);
-      }
-    }, 450);
+      }, 450);
+    }
   }catch(err){
     console.error(err);
     showToast('打开扫码失败，请检查摄像头权限');
