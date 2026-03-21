@@ -740,7 +740,6 @@
 }
 .scan-overlay::before,
 .scan-overlay::after{
-  display:none;
   content:"";
   position:absolute;
   left:50%;
@@ -758,7 +757,7 @@
 .scan-overlay::after{
   top:calc(50% - min(36vw,150px));
   border-radius:26px;
-  box-shadow:none;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.2);
 }
 .scan-overlay video{
   width:100%;
@@ -797,7 +796,6 @@
   backdrop-filter:blur(8px);
 }
 .scan-viewfinder{
-  display:block !important;
   position:absolute;
   left:50%;
   top:50%;
@@ -820,17 +818,6 @@
 .scan-viewfinder .corner.tr{right:0;top:0;border-width:4px 4px 0 0;border-top-right-radius:18px;}
 .scan-viewfinder .corner.bl{left:0;bottom:0;border-width:0 0 4px 4px;border-bottom-left-radius:18px;}
 .scan-viewfinder .corner.br{right:0;bottom:0;border-width:0 4px 4px 0;border-bottom-right-radius:18px;}
-
-.scan-viewfinder.qr-mode{
-  width:min(72vw,300px);
-  height:min(72vw,300px);
-  transform:translate(-50%,-52%);
-}
-.scan-viewfinder.barcode-mode{
-  width:min(84vw,340px);
-  height:min(36vw,140px);
-  transform:translate(-50%,-10%);
-}
 .scan-viewfinder .scan-line{
   position:absolute;
   left:14px;
@@ -846,38 +833,6 @@
   0%{transform:translateY(0);opacity:.9;}
   50%{transform:translateY(calc(min(72vw,300px) - 40px));opacity:1;}
   100%{transform:translateY(0);opacity:.9;}
-}
-.scan-mode-switch{
-  position:absolute;
-  left:50%;
-  bottom:158px;
-  transform:translateX(-50%);
-  z-index:3;
-  display:flex;
-  gap:8px;
-  background:rgba(18,18,18,.28);
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
-  padding:6px;
-  border-radius:999px;
-  box-shadow:0 6px 20px rgba(0,0,0,.22);
-}
-.scan-mode-btn{
-  border:none;
-  border-radius:999px;
-  min-width:86px;
-  height:34px;
-  padding:0 14px;
-  background:transparent;
-  color:rgba(255,255,255,.86);
-  font-size:13px;
-  font-weight:700;
-  cursor:pointer;
-}
-.scan-mode-btn.active{
-  background:rgba(255,255,255,.18);
-  color:#fff;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
 }
 .scan-overlay-tip{
   position:absolute;
@@ -941,97 +896,6 @@
 }
 .scan-file-input{
   display:none;
-}
-
-/* 隐藏 html5-qrcode 自带可见框，只保留视频与我们自己的覆盖层 */
-#scan-reader__scan_region{
-  border:none !important;
-  box-shadow:none !important;
-  background:transparent !important;
-}
-#scan-reader__scan_region img,
-#scan-reader__scan_region canvas{
-  display:none !important;
-}
-#scan-reader__dashboard,
-#scan-reader__header_message{
-  display:none !important;
-}
-
-.scan-overlay #scan-reader,
-.scan-overlay #scan-reader *{
-  box-sizing:border-box;
-}
-.scan-overlay #scan-reader > div{
-  background:transparent !important;
-}
-
-/* 强力隐藏二维码库自带可见框，仅保留视频和自定义框 */
-#scan-reader,
-#scan-reader > div,
-#scan-reader > div > div,
-#scan-reader__scan_region,
-#scan-reader__scan_region > div,
-#scan-reader__scan_region > span{
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-#scan-reader__scan_region img,
-#scan-reader__scan_region canvas,
-#scan-reader [class*="qr-shaded-region"]{
-  display:none !important;
-}
-#scan-reader video{
-  object-fit: cover !important;
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* 二维码模式隐藏 html5-qrcode 自带框，保留自定义框 */
-#scan-reader__scan_region,
-#scan-reader__scan_region > *{
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
-  background: transparent !important;
-}
-#scan-reader__scan_region img{
-  display:none !important;
-}
-#scan-reader video{
-  object-fit: cover !important;
-}
-
-#scan-reader,
-#scan-reader *{
-  box-sizing:border-box;
-}
-#scan-reader{
-  position:absolute !important;
-  inset:0 !important;
-  z-index:0 !important;
-  background:transparent !important;
-  overflow:visible !important;
-}
-#scan-reader video{
-  width:100% !important;
-  height:100% !important;
-  object-fit:contain !important;
-  background:#000 !important;
-}
-#scan-reader__dashboard,
-#scan-reader__header_message{
-  display:none !important;
-}
-#scan-reader__scan_region{
-  background:transparent !important;
-}
-#scan-reader__scan_region img,
-#scan-reader__scan_region canvas{
-  display:none !important;
 }
 
 .scan-result-panel{
@@ -1617,15 +1481,13 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
 
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
-<script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script>
 const store = {
   load(key, fallback){
@@ -4074,281 +3936,132 @@ document.addEventListener('keydown', function(e){
   }
 });
 
-let activeScanSession = null;
 
-let scanMode = 'barcode';
-
-function barcodeDetectorFormats(){
-  return ['ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+function hasAndroidNativeScan(){
+  const bridgeNames = ['AndroidBridge','NativeAndroid','AppBridge','android'];
+  for(const name of bridgeNames){
+    const bridge = window[name];
+    if(bridge && typeof bridge.startNativeScan === 'function') return bridge;
+  }
+  return null;
 }
 
-function qrDetectorFormats(){
-  return ['qr_code'];
+function isAndroidAppEnv(){
+  if(window.__IS_ANDROID_APP__ === true) return true;
+  if(hasAndroidNativeScan()) return true;
+  const ua = String(navigator.userAgent || '');
+  return /AndroidBridge\/1\.0|JXCNativeApp\/1\.0/i.test(ua);
 }
 
-function detectorFormats(){
-  return scanMode === 'qr' ? qrDetectorFormats() : barcodeDetectorFormats();
-}
-
-function barcodeHtml5Formats(){
-  if(!window.Html5QrcodeSupportedFormats) return [];
-  const F = window.Html5QrcodeSupportedFormats;
-  return [F.CODE_128, F.CODE_39, F.CODE_93, F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
-}
-
-function qrHtml5Formats(){
-  if(!window.Html5QrcodeSupportedFormats) return [];
-  const F = window.Html5QrcodeSupportedFormats;
-  return [F.QR_CODE].filter(Boolean);
-}
-
-function html5Formats(){
-  return scanMode === 'qr' ? qrHtml5Formats() : barcodeHtml5Formats();
-}
-
-function supportsQuagga(){
-  return !!(window.Quagga && window.Quagga.init);
-}
-
-function supportsHtml5Qrcode(){
-  return !!(window.Html5Qrcode && window.Html5QrcodeSupportedFormats);
-}
-
-function supportsBarcodeDetector(){
-  return typeof BarcodeDetector !== 'undefined';
-}
-
-function supportsZXingBrowser(){
-  return !!(window.ZXingBrowser && (window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader));
-}
-
-function canStartNativeScan(){
-  return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
-}
-
-
-function isHuaweiDevice(){
+function startNativeScanWithBridge(){
+  const bridge = hasAndroidNativeScan();
+  if(!bridge) return false;
   try{
-    const ua = String(navigator.userAgent || '').toLowerCase();
-    const vendor = String(navigator.vendor || '').toLowerCase();
-    return ua.includes('huawei') || ua.includes('honor') || vendor.includes('huawei') || vendor.includes('honor');
-  }catch(e){
+    const ok = bridge.startNativeScan();
+    return ok !== false;
+  }catch(err){
+    console.error(err);
     return false;
   }
 }
 
-function isIOSLike(){
-  const ua = String(navigator.userAgent || '');
-  return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-}
-
-function isHuaweiLike(){
-  const ua = String(navigator.userAgent || '');
-  return /Huawei|HUAWEI|HONOR|HarmonyOS|HMOS/i.test(ua);
-}
-
-function setInlineVideoAttrs(video){
-  if(!video) return;
-  try{ video.setAttribute('playsinline', 'true'); }catch(e){}
-  try{ video.setAttribute('webkit-playsinline', 'true'); }catch(e){}
-  try{ video.setAttribute('muted', 'true'); }catch(e){}
-  video.playsInline = true;
-  video.muted = true;
-  video.autoplay = true;
-}
-
-function getScanBoxSize(){
-  const size = Math.min(Math.floor(window.innerWidth * 0.72), 300);
-  return Math.max(220, size);
-}
-
-function getScanBoxRect(){
-  if(scanMode === 'qr'){
-    const size = getScanBoxSize();
-    return {width:size, height:size};
+function handleNativeScanResult(raw){
+  const code = String(raw || '').trim();
+  if(!code) return;
+  if(activeScanSession){
+    closeRemarkScan();
   }
-  const width = Math.min(Math.floor(window.innerWidth * 0.84), 340);
-  const height = Math.max(120, Math.min(Math.floor(width * 0.42), 150));
-  return {width: Math.max(260, width), height: height};
+  const handler = window.__nativeScanCallback;
+  if(typeof handler === 'function'){
+    handler(code);
+  }else{
+    showToast('已识别：' + code);
+  }
+  window.__nativeScanCallback = null;
 }
 
-function getQuaggaArea(){
-  const box = getScanBoxRect();
-  const overlayW = Math.max(window.innerWidth || 360, 1);
-  const overlayH = Math.max(window.innerHeight || 640, 1);
-  const left = Math.max(0, ((overlayW - box.width) / 2) / overlayW * 100);
-  const right = Math.max(0, left);
-  const topPx = (overlayH - box.height) / 2 - Math.min(overlayW * 0.02, 12);
-  const top = Math.max(0, topPx / overlayH * 100);
-  const bottom = Math.max(0, 100 - top - (box.height / overlayH * 100));
-  return {
-    top: top.toFixed(2) + '%',
-    right: right.toFixed(2) + '%',
-    bottom: bottom.toFixed(2) + '%',
-    left: left.toFixed(2) + '%'
-  };
-}
+window.onNativeScanResult = handleNativeScanResult;
+window.onAppScanResult = handleNativeScanResult;
 
 
-function updateViewfinderLayout(session){
-  if(!session || !session.viewfinder) return;
-  const box = getScanBoxRect();
-  session.viewfinder.style.width = box.width + 'px';
-  session.viewfinder.style.height = box.height + 'px';
-  session.viewfinder.style.transform = 'translate(-50%,-52%)';
-}
+let activeScanSession = null;
 
-function updateReaderViewport(session, engine){
-  if(!session || !session.readerEl) return;
-  session.readerEl.style.inset = '0';
-  session.readerEl.style.left = '0';
-  session.readerEl.style.top = '0';
-  session.readerEl.style.width = '100%';
-  session.readerEl.style.height = '100%';
-  session.readerEl.style.transform = 'none';
-  session.readerEl.style.overflow = 'hidden';
-  session.readerEl.style.borderRadius = '0';
-  session.readerEl.style.background = 'transparent';
-}
-
-function updateScanModeButtons(session){
-  const root = session && session.overlay ? session.overlay : document;
-  const btns = root.querySelectorAll ? root.querySelectorAll('.scan-mode-btn') : [];
-  btns.forEach(function(btn){
-    btn.classList.toggle('active', btn.getAttribute('data-mode') === scanMode);
+async function ensureJsQrReady(){
+  if(window.jsQR) return true;
+  const existing = document.querySelector('script[data-jsqr-fallback="1"]');
+  if(existing){
+    await new Promise(resolve => {
+      if(window.jsQR) return resolve();
+      existing.addEventListener('load', resolve, {once:true});
+      existing.addEventListener('error', resolve, {once:true});
+      setTimeout(resolve, 2500);
+    });
+    return !!window.jsQR;
+  }
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+  script.async = true;
+  script.setAttribute('data-jsqr-fallback', '1');
+  document.head.appendChild(script);
+  await new Promise(resolve => {
+    script.addEventListener('load', resolve, {once:true});
+    script.addEventListener('error', resolve, {once:true});
+    setTimeout(resolve, 2500);
   });
-  const tip = root.querySelector ? root.querySelector('.scan-overlay-tip') : null;
-  if(tip){
-    tip.textContent = scanMode === 'qr' ? '将二维码放入框内，识别后点确定再继续扫码' : '将条形码横向对准中间区域，识别后点确定再继续扫码';
+  return !!window.jsQR;
+}
+
+async function createScanEngine(){
+  if(typeof BarcodeDetector !== 'undefined'){
+    const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
+    const usableFormats = detectorFormats().filter(f => formats.includes(f));
+    return {
+      mode:'barcode-detector',
+      detector:new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()})
+    };
   }
-  if(session) updateViewfinderLayout(session);
-  if(session && session.photoBtn){
-    const label = session.photoBtn.parentNode && session.photoBtn.parentNode.querySelector('.scan-photo-label');
-    if(label){
-      label.textContent = (scanMode === 'barcode' && isIOSLike()) ? '图片识别' : '识别图片';
+  const ready = await ensureJsQrReady();
+  if(ready){
+    return {
+      mode:'jsqr',
+      detector:null
+    };
+  }
+  return null;
+}
+
+async function detectCodesFromCanvas(canvas, engine){
+  if(!canvas || !engine) return [];
+  if(engine.mode === 'barcode-detector'){
+    return await engine.detector.detect(canvas);
+  }
+  if(engine.mode === 'jsqr' && window.jsQR){
+    const ctx = canvas.getContext('2d', { willReadFrequently:true });
+    if(!ctx) return [];
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = window.jsQR(imageData.data, canvas.width, canvas.height, {
+      inversionAttempts:'attemptBoth'
+    });
+    if(result && result.data){
+      return [{ rawValue: result.data }];
     }
   }
+  return [];
 }
 
-function setScanMode(nextMode){
-  scanMode = nextMode === 'qr' ? 'qr' : 'barcode';
-  if(activeScanSession){
-    updateScanModeButtons(activeScanSession);
-    const cb = activeScanSession.onDetected;
-    closeRemarkScan();
-    setTimeout(function(){ startGenericScan(cb); }, 80);
-  }
-}
-
-
-function setScanUiMode(session, mode){
-  if(!session) return;
-  const usingReader = mode === 'html5' || mode === 'quagga';
-  if(session.readerEl){
-    session.readerEl.style.opacity = usingReader ? '1' : '0';
-    session.readerEl.style.pointerEvents = 'none';
-    updateReaderViewport(session, mode === 'quagga' ? 'quagga' : 'full');
-  }
-  if(session.video){
-    session.video.style.display = usingReader ? 'none' : '';
-  }
-  if(session.viewfinder){
-    updateViewfinderLayout(session);
-    session.viewfinder.style.display = 'block';
-  }
-}
-
-function getScanCropRect(session){
-  if(!session || !session.video || !session.overlay) return null;
-  const video = session.video;
-  const overlay = session.overlay;
-  const videoRect = video.getBoundingClientRect();
-  const overlayRect = overlay.getBoundingClientRect();
-  const vw = video.videoWidth || 0;
-  const vh = video.videoHeight || 0;
-  if(!videoRect.width || !videoRect.height || !vw || !vh) return null;
-  const box = getScanBoxRect();
-  const frameLeft = overlayRect.left + (overlayRect.width - box.width) / 2;
-  const frameTop = overlayRect.top + (overlayRect.height - box.height) / 2 - Math.min(overlayRect.width * 0.02, 12);
-  const frameRect = {left: frameLeft, top: frameTop, width: box.width, height: box.height};
-  const scale = Math.max(videoRect.width / vw, videoRect.height / vh);
-  const displayWidth = vw * scale;
-  const displayHeight = vh * scale;
-  const offsetX = (displayWidth - videoRect.width) / 2;
-  const offsetY = (displayHeight - videoRect.height) / 2;
-  let sx = ((frameRect.left - videoRect.left) + offsetX) / scale;
-  let sy = ((frameRect.top - videoRect.top) + offsetY) / scale;
-  let sw = frameRect.width / scale;
-  let sh = frameRect.height / scale;
-  sx = Math.max(0, sx);
-  sy = Math.max(0, sy);
-  sw = Math.min(vw - sx, sw);
-  sh = Math.min(vh - sy, sh);
-  if(sw <= 0 || sh <= 0) return null;
-  return {sx, sy, sw, sh};
-}
-
-function getOrCreateScanCanvas(session){
-  if(!session) return null;
-  if(!session.scanCanvas){
-    session.scanCanvas = document.createElement('canvas');
-  }
-  return session.scanCanvas;
-}
-
-async function ensureVideoStream(session){
-  if(!session) throw new Error('scan-session-missing');
-  if(session.stream && session.video && session.video.srcObject) return session;
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:1280},
-      height:{ideal:720}
-    },
-    audio:false
-  });
-  session.stream = stream;
-  const video = session.video;
-  setInlineVideoAttrs(video);
-  video.srcObject = stream;
-  await new Promise(function(resolve){
-    if(video.readyState >= 1) return resolve();
-    const onReady = function(){
-      video.removeEventListener('loadedmetadata', onReady);
-      resolve();
-    };
-    video.addEventListener('loadedmetadata', onReady, {once:true});
-    setTimeout(resolve, 1200);
-  });
-  try{ await video.play(); }catch(e){}
-  const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-  const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
-  const nativeTorchSupported = canUseNativeTorch();
-  session.track = track;
-  session.torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
-  session.usingNativeTorch = nativeTorchSupported;
-  updateTorchButtonState(session);
-  return session;
+function detectorFormats(){
+  return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
 async function startRemarkScan(orderId){
-  startGenericScan(function(code){
+  const callback = function(code){
     appendRemarkCode(orderId, code);
-  });
-}
-
-function stopHtml5Scanner(session){
-  if(!session || !session.html5Scanner) return Promise.resolve();
-  try{
-    const scanner = session.html5Scanner;
-    session.html5Scanner = null;
-    return Promise.resolve(scanner.stop()).catch(function(){})
-      .then(function(){
-        try{ return scanner.clear(); }catch(e){}
-      }).catch(function(){});
-  }catch(e){
-    return Promise.resolve();
+  };
+  if(isAndroidAppEnv() && startNativeScanWithBridge()){
+    window.__nativeScanCallback = callback;
+    return;
   }
+  startGenericScan(callback);
 }
 
 function closeRemarkScan(){
@@ -4363,23 +4076,13 @@ function closeRemarkScan(){
     }
   }catch(e){}
   if(session.timer) clearInterval(session.timer);
-  stopHtml5Scanner(session);
-  try{
-    if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
-    if(session.zxingReader && session.zxingReader.reset) session.zxingReader.reset();
-  }catch(e){}
-  try{
-    if(session.quaggaActive && window.Quagga){
-      window.Quagga.stop();
-      if(window.Quagga.offDetected) window.Quagga.offDetected();
-    }
-  }catch(e){}
   if(session.stream){
-    session.stream.getTracks().forEach(function(track){ track.stop(); });
+    session.stream.getTracks().forEach(track => track.stop());
   }
   if(session.overlay && session.overlay.parentNode){
     session.overlay.parentNode.removeChild(session.overlay);
   }
+  window.__nativeScanCallback = null;
 }
 
 function canUseNativeTorch(){
@@ -4420,177 +4123,20 @@ async function toggleScanTorch(session){
   }
 }
 
-async function fileToDataUrl(file){
-  return await new Promise(function(resolve, reject){
-    const reader = new FileReader();
-    reader.onload = function(){ resolve(String(reader.result || '')); };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function tryQuaggaDecodeSingle(dataUrl, readers, locate, patchSize, halfSample){
-  return await new Promise(function(resolve){
-    if(!window.Quagga || !window.Quagga.decodeSingle){
-      resolve('');
-      return;
-    }
-    window.Quagga.decodeSingle({
-      src: dataUrl,
-      numOfWorkers: 0,
-      locate: !!locate,
-      inputStream: {
-        size: 1280,
-        singleChannel: false
-      },
-      locator: {
-        patchSize: patchSize || 'medium',
-        halfSample: !!halfSample
-      },
-      decoder: {
-        readers: readers
-      }
-    }, function(result){
-      const raw = String(result && result.codeResult && result.codeResult.code || '').trim();
-      resolve(raw || '');
-    });
-  });
-}
-
-async function recognizeBarcodeFromImageWithQuagga(file){
-  if(!supportsQuagga()) return '';
-  const dataUrl = await fileToDataUrl(file);
-  const readers = ['code_128_reader','ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_39_reader','code_93_reader','codabar_reader','i2of5_reader'];
-  const attempts = [
-    {locate:true, patchSize:'medium', halfSample:false},
-    {locate:true, patchSize:'large', halfSample:false},
-    {locate:true, patchSize:'x-large', halfSample:false},
-    {locate:true, patchSize:'medium', halfSample:true},
-    {locate:false, patchSize:'medium', halfSample:false}
-  ];
-  for(const attempt of attempts){
-    try{
-      const raw = await tryQuaggaDecodeSingle(dataUrl, readers, attempt.locate, attempt.patchSize, attempt.halfSample);
-      if(raw) return raw;
-    }catch(err){
-      console.error(err);
-    }
-  }
-  return '';
-}
-
-async function recognizeImageWithZXing(file){
-  if(!supportsZXingBrowser()) return '';
-  const dataUrl = await fileToDataUrl(file);
-  try{
-    const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
-    if(!Reader) return '';
-    const reader = new Reader();
-    const result = await reader.decodeFromImageUrl(dataUrl);
-    const raw = String((result && (result.getText ? result.getText() : result.text)) || '').trim();
-    return raw || '';
-  }catch(err){
-    console.error(err);
-    return '';
-  }
-}
-
-async function recognizeImageWithDetector(file, session){
-  if(!session || !session.detector) return '';
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  try{
-    await new Promise(function(resolve, reject){
-      img.onload = resolve;
-      img.onerror = reject;
-      img.src = url;
-    });
-    const results = await session.detector.detect(img);
-    if(!results || !results.length) return '';
-    return String(results[0].rawValue || '').trim();
-  }catch(err){
-    console.error(err);
-    return '';
-  }finally{
-    URL.revokeObjectURL(url);
-  }
-}
-
-async function recognizeCodeFromImage(file, session){
-  if(!file || !session) return '';
-  if(scanMode === 'barcode'){
-    if(isHuaweiDevice()){
-      try{
-        const raw = await recognizeImageWithZXing(file);
-        if(raw) return raw;
-      }catch(err){
-        console.error(err);
-      }
-      try{
-        const raw = await recognizeBarcodeFromImageWithQuagga(file);
-        if(raw) return raw;
-      }catch(err){
-        console.error(err);
-      }
-      try{
-        const raw = await recognizeImageWithDetector(file, session);
-        if(raw) return raw;
-      }catch(err){
-        console.error(err);
-      }
-      return '';
-    }
-
-    try{
-      const raw = await recognizeBarcodeFromImageWithQuagga(file);
-      if(raw) return raw;
-    }catch(err){
-      console.error(err);
-    }
-    if(session.html5ScanFile){
-      try{
-        const raw = await session.html5ScanFile(file);
-        if(raw) return String(raw).trim();
-      }catch(err){
-        console.error(err);
-      }
-    }
-    try{
-      const raw = await recognizeImageWithZXing(file);
-      if(raw) return raw;
-    }catch(err){
-      console.error(err);
-    }
-    try{
-      const raw = await recognizeImageWithDetector(file, session);
-      if(raw) return raw;
-    }catch(err){
-      console.error(err);
-    }
-    return '';
-  }
-
-  if(session.html5ScanFile){
-    try{
-      const raw = await session.html5ScanFile(file);
-      if(raw) return String(raw).trim();
-    }catch(err){
-      console.error(err);
-    }
-  }
-  try{
-    const raw = await recognizeImageWithZXing(file);
-    if(raw) return raw;
-  }catch(err){
-    console.error(err);
-  }
-  try{
-    const raw = await recognizeImageWithDetector(file, session);
-    if(raw) return raw;
-  }catch(err){
-    console.error(err);
-  }
-  return '';
+async function recognizeCodeFromImage(file, engine){
+  const img = await loadImageFromFile(file);
+  const maxSide = 1600;
+  let {width, height} = img;
+  const scale = Math.min(1, maxSide / Math.max(width, height));
+  width = Math.round(width * scale);
+  height = Math.round(height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+  const codes = await detectCodesFromCanvas(canvas, engine);
+  return codes && codes.length ? codes[0].rawValue : '';
 }
 
 function appendRemarkCode(orderId, code){
@@ -4602,6 +4148,7 @@ function appendRemarkCode(orderId, code){
   order.remark = items.join(',');
   persist();
 
+  const activeInput = document.activeElement;
   render();
 
   const targetButtons = Array.from(document.querySelectorAll('.scan-icon-btn'));
@@ -4622,7 +4169,7 @@ function appendCodeToText(current, code){
 
 function startDraftRemarkScan(form){
   if(!form) return;
-  startGenericScan(function(code){
+  const callback = function(code){
     const input = form.querySelector('[name="remark"]');
     if(!input) return;
     input.value = appendCodeToText(input.value, code);
@@ -4631,12 +4178,17 @@ function startDraftRemarkScan(form){
     input.focus();
     const len = input.value.length;
     try{ input.setSelectionRange(len, len); }catch(e){}
-  });
+  };
+  if(isAndroidAppEnv() && startNativeScanWithBridge()){
+    window.__nativeScanCallback = callback;
+    return;
+  }
+  startGenericScan(callback);
 }
 
 function startTradeinRemarkScan(form){
   if(!form) return;
-  startGenericScan(function(code){
+  const callback = function(code){
     const input = form.querySelector('[name="remark"]');
     if(!input) return;
     input.value = appendCodeToText(input.value, code);
@@ -4644,23 +4196,46 @@ function startTradeinRemarkScan(form){
     input.focus();
     const len = input.value.length;
     try{ input.setSelectionRange(len, len); }catch(e){}
-  });
+  };
+  if(isAndroidAppEnv() && startNativeScanWithBridge()){
+    window.__nativeScanCallback = callback;
+    return;
+  }
+  startGenericScan(callback);
 }
 
-function ensureScanOverlay(){
-  const overlay = document.createElement('div');
-  overlay.className = 'scan-overlay';
-  overlay.innerHTML = `
+async function startGenericScan(onDetected){
+  if(activeScanSession){
+    showToast('请先关闭当前扫码窗口');
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showToast('当前设备不支持打开摄像头');
+    return;
+  }
+  const engine = await createScanEngine();
+  if(!engine){
+    showToast('当前浏览器暂不支持扫码，请升级浏览器后重试');
+    return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:{ideal:'environment'},
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
+      audio:false
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'scan-overlay';
+    overlay.innerHTML = `
       <div class="scan-overlay-top">
         <div class="scan-title">扫一扫</div>
         <button class="scan-close" type="button">×</button>
       </div>
-      <video playsinline webkit-playsinline autoplay muted></video>
-      <div id="scan-reader"></div>
-      <div class="scan-mode-switch">
-        <button class="scan-mode-btn active" type="button" data-mode="barcode">条形码</button>
-        <button class="scan-mode-btn" type="button" data-mode="qr">二维码</button>
-      </div>
+      <video playsinline autoplay muted></video>
       <div class="scan-viewfinder" aria-hidden="true">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
@@ -4676,7 +4251,7 @@ function ensureScanOverlay(){
         </button>
         <button class="scan-bottom-action scan-photo-btn" type="button">
           <span class="icon">🖼️</span>
-          <span class="scan-photo-label">识别图片</span>
+          <span>识别图片</span>
         </button>
         <input class="scan-file-input" type="file" accept="image/*" />
       </div>
@@ -4689,364 +4264,134 @@ function ensureScanOverlay(){
         </div>
       </div>
     `;
-  document.body.appendChild(overlay);
-  return overlay;
-}
+    document.body.appendChild(overlay);
 
-function showDetectedResult(session, raw){
-  if(!session || !raw) return;
-  const now = Date.now();
-  if(raw === session.lastCode && now - session.lastAt < 1200) return;
-  session.lastCode = raw;
-  session.lastAt = now;
-  session.paused = true;
-  if(typeof session.onDetected === 'function'){
-    session.onDetected(raw);
-  }
-  if(session.resultCode) session.resultCode.textContent = raw;
-  if(session.resultPanel) session.resultPanel.hidden = false;
-}
+    const video = overlay.querySelector('video');
+    const closeBtn = overlay.querySelector('.scan-close');
+    const resultPanel = overlay.querySelector('.scan-result-panel');
+    const resultCode = overlay.querySelector('.scan-result-code');
+    const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
+    const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
+    const torchBtn = overlay.querySelector('.scan-torch-btn');
+    const photoBtn = overlay.querySelector('.scan-photo-btn');
+    const fileInput = overlay.querySelector('.scan-file-input');
 
-function bindOverlayEvents(session){
-  if(!session) return;
-  updateTorchButtonState(session);
-  session.closeBtn.onclick = closeRemarkScan;
-  if(session.stopBtn) session.stopBtn.onclick = closeRemarkScan;
-  if(session.confirmBtn) session.confirmBtn.onclick = function(){
-    session.paused = false;
-    if(session.resultPanel) session.resultPanel.hidden = true;
-  };
-  if(session.torchBtn) session.torchBtn.onclick = function(){
-    toggleScanTorch(session);
-  };
-  if(session.photoBtn) session.photoBtn.onclick = function(){
-    if(session.fileInput) session.fileInput.click();
-  };
-  if(session.modeButtons && session.modeButtons.length){
-    session.modeButtons.forEach(function(btn){
-      btn.onclick = function(){
-        const nextMode = btn.getAttribute('data-mode') === 'qr' ? 'qr' : 'barcode';
-        if(nextMode === scanMode) return;
-        setScanMode(nextMode);
-      };
-    });
-  }
-  if(session.fileInput) session.fileInput.onchange = async function(){
-    const file = session.fileInput.files && session.fileInput.files[0];
-    if(!file) return;
-    try{
-      session.paused = true;
-      const raw = await recognizeCodeFromImage(file, session);
-      if(!raw){
-        showToast(scanMode === 'barcode' ? '没有识别到图片条形码，请尽量裁掉背景、让条码横向铺满图片' : '这张图片里没有识别到二维码');
-        session.paused = false;
-        return;
-      }
-      showDetectedResult(session, raw);
-    }catch(err){
-      console.error(err);
-      showToast(scanMode === 'barcode' ? '图片条形码识别失败，请尽量上传只包含条码主体的清晰图片' : '图片二维码识别失败，请换一张更清晰的图片');
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.srcObject = stream;
+    await video.play();
+
+    const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+    const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
+    const nativeTorchSupported = canUseNativeTorch();
+    const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
+
+    const session = {
+      engine,
+      stream,
+      overlay,
+      video,
+      timer:null,
+      lastCode:'',
+      lastAt:0,
+      paused:false,
+      onDetected:onDetected,
+      track,
+      torchSupported,
+      usingNativeTorch:nativeTorchSupported,
+      torchOn:false,
+      torchBtn,
+      photoBtn,
+      fileInput,
+      scanCanvas: document.createElement('canvas')
+    };
+    activeScanSession = session;
+    updateTorchButtonState(session);
+
+    closeBtn.onclick = closeRemarkScan;
+    if(stopBtn) stopBtn.onclick = closeRemarkScan;
+    if(confirmBtn) confirmBtn.onclick = function(){
       session.paused = false;
-    }finally{
-      session.fileInput.value = '';
-    }
-  };
-}
-
-async function prepareOverlaySession(onDetected){
-  const overlay = ensureScanOverlay();
-  const video = overlay.querySelector('video');
-  const closeBtn = overlay.querySelector('.scan-close');
-  const resultPanel = overlay.querySelector('.scan-result-panel');
-  const resultCode = overlay.querySelector('.scan-result-code');
-  const stopBtn = overlay.querySelector('.scan-result-btn.secondary');
-  const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
-  const torchBtn = overlay.querySelector('.scan-torch-btn');
-  const photoBtn = overlay.querySelector('.scan-photo-btn');
-  const fileInput = overlay.querySelector('.scan-file-input');
-  const readerEl = overlay.querySelector('#scan-reader');
-  const viewfinder = overlay.querySelector('.scan-viewfinder');
-  const modeButtons = Array.from(overlay.querySelectorAll('.scan-mode-btn'));
-  setInlineVideoAttrs(video);
-  setScanUiMode({video:video, readerEl:readerEl, viewfinder:viewfinder}, 'native');
-  const nativeTorchSupported = canUseNativeTorch();
-  const session = {
-    stream:null,
-    overlay,
-    video,
-    readerEl,
-    viewfinder,
-    modeButtons,
-    timer:null,
-    lastCode:'',
-    lastAt:0,
-    paused:false,
-    onDetected:onDetected,
-    track:null,
-    torchSupported:nativeTorchSupported,
-    usingNativeTorch:nativeTorchSupported,
-    torchOn:false,
-    torchBtn,
-    photoBtn,
-    fileInput,
-    resultPanel,
-    resultCode,
-    closeBtn,
-    stopBtn,
-    confirmBtn,
-    html5Scanner:null,
-    html5ScanFile:null,
-    detector:null,
-    zxingReader:null,
-    zxingControls:null,
-    quaggaActive:false,
-    scanCanvas:null
-  };
-  activeScanSession = session;
-  bindOverlayEvents(session);
-  updateScanModeButtons(session);
-  return session;
-}
-
-function createHtml5ScanSuccessHandler(session){
-  let candidate = '';
-  let hitCount = 0;
-  return function(decodedText){
-    if(!activeScanSession || activeScanSession !== session) return;
-    if(session.paused) return;
-    const raw = String(decodedText || '').trim();
-    if(!raw) return;
-    if(raw === candidate) hitCount += 1;
-    else {
-      candidate = raw;
-      hitCount = 1;
-    }
-    if(hitCount < 2) return;
-    candidate = '';
-    hitCount = 0;
-    showDetectedResult(session, raw);
-  };
-}
-
-async function startQuaggaScanEngine(session){
-  if(scanMode !== 'barcode') throw new Error('quagga-barcode-only');
-  if(!supportsQuagga()) throw new Error('quagga-not-available');
-  setScanUiMode(session, 'quagga');
-  session.readerEl.innerHTML = '';
-  await new Promise(function(resolve, reject){
-    window.Quagga.init({
-      inputStream: {
-        type: 'LiveStream',
-        target: session.readerEl,
-        constraints: {
-          facingMode: 'environment',
-          width: {ideal: 1280},
-          height: {ideal: 720}
-        },
-        area: getQuaggaArea()
-      },
-      locator: {patchSize: 'medium', halfSample: false},
-      numOfWorkers: 0,
-      decoder: {readers: ['code_128_reader','ean_reader','ean_8_reader','upc_reader','upc_e_reader','codabar_reader','i2of5_reader','code_39_reader','code_93_reader']},
-      locate: true,
-      frequency: 12
-    }, function(err){
-      if(err) return reject(err);
-      try{ window.Quagga.start(); session.quaggaActive = true; }catch(e){ return reject(e); }
-      const qv = session.readerEl.querySelector('video');
-      setInlineVideoAttrs(qv);
-      if(qv){
-        qv.style.width = '100%';
-        qv.style.height = '100%';
-        qv.style.objectFit = 'cover';
-        qv.style.background = '#000';
-      }
-      let last=''; let count=0;
-      window.Quagga.offDetected && window.Quagga.offDetected();
-      window.Quagga.onDetected(function(result){
-        if(!activeScanSession || activeScanSession !== session || session.paused) return;
-        const raw = String(result && result.codeResult && result.codeResult.code || '').trim();
-        if(!raw) return;
-        if(raw === last) count += 1; else { last = raw; count = 1; }
-        if(count < 2) return;
-        last=''; count=0;
-        showDetectedResult(session, raw);
-      });
-      resolve();
-    });
-  });
-}
-
-async function startHtml5ScanEngine(session){
-  if(!supportsHtml5Qrcode()) throw new Error('html5-qrcode-not-available');
-  const formatsToSupport = html5Formats();
-  setScanUiMode(session, 'html5');
-  const scanner = new Html5Qrcode(session.readerEl.id || 'scan-reader');
-  session.html5Scanner = scanner;
-  session.html5ScanFile = async function(file){
-    const text = await scanner.scanFile(file, true);
-    return String(text || '').trim();
-  };
-  const config = {
-    fps: scanMode === 'qr' ? (isIOSLike() ? 10 : 12) : (isIOSLike() ? 12 : 14),
-    qrbox: function(){ const box = getScanBoxRect(); return {width: box.width, height: box.height}; },
-    rememberLastUsedCamera: true,
-    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-    formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
-    aspectRatio: scanMode === 'qr' ? 1.0 : 1.7777778,
-    videoConstraints: {
-      facingMode: 'environment',
-      width: {ideal: 1280},
-      height: {ideal: 720}
-    }
-  };
-  await scanner.start({facingMode: 'environment'}, config, createHtml5ScanSuccessHandler(session), function(){});
-  setTimeout(function(){
-    const html5Video = session.readerEl.querySelector('video');
-    setInlineVideoAttrs(html5Video);
-    if(html5Video){
-      html5Video.style.width = '100%';
-      html5Video.style.height = '100%';
-      html5Video.style.objectFit = 'cover';
-      html5Video.style.background = '#000';
-      html5Video.play && html5Video.play().catch(function(){});
-    }
-  }, 80);
-}
-
-async function startBarcodeDetectorFallback(session){
-  if(!supportsBarcodeDetector()) throw new Error('barcode-detector-not-available');
-  setScanUiMode(session, 'native');
-  await ensureVideoStream(session);
-  const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
-  const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
-  session.detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
-  session.timer = setInterval(async function(){
-    if(!activeScanSession || activeScanSession !== session) return;
-    if(session.paused) return;
-    if(session.video.readyState < 2) return;
-    try{
-      let source = session.video;
-      const crop = getScanCropRect(session);
-      if(crop){
-        const canvas = getOrCreateScanCanvas(session);
-        canvas.width = Math.max(1, Math.round(crop.sw));
-        canvas.height = Math.max(1, Math.round(crop.sh));
-        const ctx = canvas.getContext('2d', {willReadFrequently:true});
-        if(ctx){
-          ctx.drawImage(session.video, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, canvas.width, canvas.height);
-          source = canvas;
-        }
-      }
-      const results = await session.detector.detect(source);
-      if(!results || !results.length) return;
-      const raw = String(results[0].rawValue || '').trim();
-      if(!raw) return;
-      showDetectedResult(session, raw);
-    }catch(err){
-      console.error(err);
-    }
-  }, 300);
-}
-
-async function startZXingScanEngine(session){
-  if(!supportsZXingBrowser()) throw new Error('zxing-browser-not-available');
-  setScanUiMode(session, 'native');
-  await ensureVideoStream(session);
-  const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
-  if(!Reader) throw new Error('zxing-reader-not-available');
-  const reader = new Reader();
-  session.zxingReader = reader;
-  session.zxingControls = await reader.decodeFromVideoDevice(undefined, session.video, function(result, err){
-    if(!activeScanSession || activeScanSession !== session) return;
-    if(session.paused) return;
-    if(result){
-      const raw = String((result.getText ? result.getText() : result.text) || '').trim();
-      if(raw) showDetectedResult(session, raw);
-    }
-  });
-}
-
-async function startGenericScan(onDetected){
-  if(activeScanSession){
-    showToast('请先关闭当前扫码窗口');
-    return;
-  }
-  if(canStartNativeScan()){
-    try{
-      window.__scanCallback = typeof onDetected === 'function' ? onDetected : function(){};
-      window.onNativeScanResult = function(code){
-        const raw = String(code || '').trim();
-        if(!raw) return;
-        if(typeof window.__scanCallback === 'function') window.__scanCallback(raw);
-      };
-      AndroidBridge.startNativeScan();
-      return;
-    }catch(err){
-      console.error(err);
-    }
-  }
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    showToast('当前设备不支持打开摄像头');
-    return;
-  }
-  try{
-    const session = await prepareOverlaySession(onDetected);
-    if(scanMode === 'barcode' && isIOSLike()){
-      showToast('iOS 网页实时条形码识别较弱，建议优先点“识别图片”');
-    }
-    if(scanMode === 'barcode'){
-      if(isHuaweiLike()){
-        try{
-          await startZXingScanEngine(session);
-          showToast('已启用华为兼容条形码模式');
-          return;
-        }catch(err){
-          console.error(err);
-        }
-      }
+      if(resultPanel) resultPanel.hidden = true;
+    };
+    if(torchBtn) torchBtn.onclick = function(){
+      toggleScanTorch(session);
+    };
+    if(photoBtn) photoBtn.onclick = function(){
+      if(fileInput) fileInput.click();
+    };
+    if(fileInput) fileInput.onchange = async function(){
+      const file = fileInput.files && fileInput.files[0];
+      if(!file) return;
       try{
-        await startQuaggaScanEngine(session);
-        showToast('已启用条形码快扫模式');
-        return;
+        session.paused = true;
+        const raw = await recognizeCodeFromImage(file, engine);
+        if(!raw){
+          showToast('这张图片里没有识别到条码或二维码');
+          session.paused = false;
+          return;
+        }
+        session.lastCode = raw;
+        session.lastAt = Date.now();
+        if(typeof session.onDetected === 'function'){
+          session.onDetected(raw);
+        }
+        if(resultCode) resultCode.textContent = raw;
+        if(resultPanel) resultPanel.hidden = false;
+      }catch(err){
+        console.error(err);
+        showToast('图片识别失败，请换一张更清晰的图片');
+        session.paused = false;
+      }finally{
+        fileInput.value = '';
+      }
+    };
+
+    session.timer = setInterval(async function(){
+      if(!activeScanSession || activeScanSession !== session) return;
+      if(session.paused) return;
+      if(video.readyState < 2) return;
+      try{
+        const vw = video.videoWidth || 0;
+        const vh = video.videoHeight || 0;
+        if(!vw || !vh) return;
+        const canvas = session.scanCanvas;
+        if(canvas.width !== vw || canvas.height !== vh){
+          canvas.width = vw;
+          canvas.height = vh;
+        }
+        const ctx = canvas.getContext('2d', { willReadFrequently:true });
+        ctx.drawImage(video, 0, 0, vw, vh);
+        const codes = await detectCodesFromCanvas(canvas, engine);
+        if(!codes || !codes.length) return;
+        const raw = String(codes[0].rawValue || '').trim();
+        if(!raw) return;
+        const now = Date.now();
+        if(session.lastCode === raw && now - session.lastAt < 1200){
+          return;
+        }
+        session.lastCode = raw;
+        session.lastAt = now;
+        session.paused = true;
+        if(typeof session.onDetected === 'function'){
+          session.onDetected(raw);
+        }
+        if(resultCode) resultCode.textContent = raw;
+        if(resultPanel) resultPanel.hidden = false;
       }catch(err){
         console.error(err);
       }
-    }
-    try{
-      await startHtml5ScanEngine(session);
-      showToast(scanMode === 'qr' ? '已启用二维码扫码模式' : '已启用兼容扫码模式');
-      return;
-    }catch(err){
-      console.error(err);
-    }
-    try{
-      await startBarcodeDetectorFallback(session);
-      showToast('已自动切换到浏览器扫码模式');
-      return;
-    }catch(err){
-      console.error(err);
-    }
-    try{
-      await startZXingScanEngine(session);
-      showToast('已自动切换到 ZXing 兼容模式');
-      return;
-    }catch(err){
-      console.error(err);
-    }
-    showToast('当前浏览器扫码能力较弱，建议用系统浏览器或 App 打开');
-    closeRemarkScan();
+    }, 280);
   }catch(err){
     console.error(err);
-    showToast('打开扫码失败，请检查摄像头权限');
-    closeRemarkScan();
+    showToast('无法打开摄像头，请检查相机权限');
   }
 }
 window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
-window.setScanMode = setScanMode;
 
 const authState = {
   ready:false,
