@@ -932,6 +932,29 @@
   display:none;
 }
 
+/* 隐藏 html5-qrcode 自带可见框，只保留视频与我们自己的覆盖层 */
+#scan-reader__scan_region{
+  border:none !important;
+  box-shadow:none !important;
+  background:transparent !important;
+}
+#scan-reader__scan_region img,
+#scan-reader__scan_region canvas{
+  display:none !important;
+}
+#scan-reader__dashboard,
+#scan-reader__header_message{
+  display:none !important;
+}
+
+.scan-overlay #scan-reader,
+.scan-overlay #scan-reader *{
+  box-sizing:border-box;
+}
+.scan-overlay #scan-reader > div{
+  background:transparent !important;
+}
+
 #scan-reader,
 #scan-reader *{
   box-sizing:border-box;
