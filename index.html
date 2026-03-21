@@ -4031,8 +4031,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.22-ios-camera-safe-r8";
-window.APP_RELEASE_NOTES="苹果扫码回退到原始可打开相机链路，并按码主人方案优化格式与扫码框。";
+window.APP_HTML_VERSION="v2026.03.22-ios-html5qrcode-final-r6";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4061,6 +4060,15 @@ async function ensureJsQrReady(){
 }
 
 async function createScanEngine(){
+  if(isIOSWeb()){
+    const html5Ready = await ensureHtml5QrcodeReady();
+    if(html5Ready){
+      return {
+        mode:'html5-qrcode',
+        scanner:null
+      };
+    }
+  }
   if(typeof BarcodeDetector !== 'undefined'){
     const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
     const usableFormats = detectorFormats().filter(f => formats.includes(f));
@@ -4160,7 +4168,7 @@ function isIOSWeb(){
 }
 
 function getSafeHtml5BarcodeConfig(){
-  const side = Math.min(Math.max(Math.floor(window.innerWidth * 0.62), 220), 280);
+  const side = Math.min(Math.floor(window.innerWidth * 0.7), 260);
   return {
     fps: 12,
     qrbox: { width: side, height: side },
@@ -4185,25 +4193,52 @@ function getSafeBarcodeFormats(){
   const F = window.Html5QrcodeSupportedFormats || {};
   return [
     F.QR_CODE,
-    F.AZTEC,
-    F.CODABAR,
-    F.CODE_39,
-    F.CODE_93,
-    F.CODE_128,
     F.DATA_MATRIX,
-    F.ITF,
+    F.PDF_417,
+    F.AZTEC,
     F.EAN_13,
     F.EAN_8,
-    F.PDF_417,
+    F.CODE_128,
     F.UPC_A,
     F.UPC_E,
-    F.UPC_EAN_EXTENSION
+    F.CODE_39,
+    F.ITF,
+    F.CODABAR
   ].filter(v => typeof v !== 'undefined');
 }
 
 function getScanBoxSize(){
   const side = Math.min(Math.floor(window.innerWidth * 0.72), 300);
   return { width: side, height: side };
+}
+
+function getPreferredRearCameraId(devices){
+  const list = Array.isArray(devices) ? devices : [];
+  if(!list.length) return null;
+  const score = function(device){
+    const label = String(device && device.label || '').toLowerCase();
+    let value = 0;
+    if(/back|rear|environment|后置|广角|wide/i.test(label)) value += 5;
+    if(/front|user|face|前置/i.test(label)) value -= 5;
+    return value;
+  };
+  return list.slice().sort(function(a,b){ return score(b) - score(a); })[0].id;
+}
+
+async function startHtml5QrcodeSafely(scanner, config, onSuccess, onError){
+  if(isIOSWeb() && typeof Html5Qrcode.getCameras === 'function'){
+    try{
+      const devices = await Html5Qrcode.getCameras();
+      const cameraId = getPreferredRearCameraId(devices);
+      if(cameraId){
+        await scanner.start(cameraId, config, onSuccess, onError);
+        return;
+      }
+    }catch(err){
+      console.warn('camera enum failed', err);
+    }
+  }
+  await scanner.start({ facingMode: 'environment' }, config, onSuccess, onError);
 }
 
 function detectorFormats(){
@@ -4502,8 +4537,8 @@ async function startGenericScan(onDetected){
           barcodeFormats.length ? { formatsToSupport: barcodeFormats } : undefined
         );
         engine.scanner = scanner;
-        await scanner.start(
-          { facingMode: 'environment' },
+        await startHtml5QrcodeSafely(
+          scanner,
           getSafeHtml5BarcodeConfig(),
           function(decodedText){
             const raw = String(decodedText || '').trim();
@@ -4618,27 +4653,6 @@ window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
-
-function mountVersionBadge(){
-  if(document.getElementById('appVersionBadge')) return;
-  const badge = document.createElement('button');
-  badge.id = 'appVersionBadge';
-  badge.type = 'button';
-  badge.textContent = window.APP_HTML_VERSION || 'unknown';
-  badge.style.cssText = 'position:fixed;right:10px;bottom:82px;z-index:99999;border:none;border-radius:999px;padding:7px 10px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);';
-  badge.onclick = function(){
-    alert('当前版本：' + (window.APP_HTML_VERSION || 'unknown') + '
-
-' + (window.APP_RELEASE_NOTES || ''));
-  };
-  (document.body || document.documentElement).appendChild(badge);
-}
-
-if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', mountVersionBadge, {once:true});
-}else{
-  setTimeout(mountVersionBadge, 0);
-}
 
 const authState = {
   ready:false,
@@ -5495,11 +5509,6 @@ window.adminDeleteUser = adminDeleteUser;
 window.bootApp = bootApp;
 bootApp();
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
-
-
 
 <script>
 // long press version
@@ -5564,6 +5573,33 @@ bootApp();
     var card = findCardFromEventTarget(e.target);
     if(card !== activeCard) clearPress();
   });
+})();
+</script>
+
+<script>
+(function(){
+  var version = window.APP_HTML_VERSION || 'unknown';
+  try{
+    var last = localStorage.getItem('jxc_seen_html_version') || '';
+    if(last !== version){
+      setTimeout(function(){
+        try{ showToast('已更新到 ' + version); }catch(e){}
+      }, 900);
+      localStorage.setItem('jxc_seen_html_version', version);
+    }
+  }catch(e){}
+  if(document.getElementById('appVersionBadge')) return;
+  var badge = document.createElement('button');
+  badge.id = 'appVersionBadge';
+  badge.type = 'button';
+  badge.textContent = version;
+  badge.style.cssText = 'position:fixed;right:10px;bottom:12px;z-index:99999;padding:6px 10px;border:none;border-radius:999px;background:rgba(0,0,0,.58);color:#fff;font-size:11px;line-height:1;box-shadow:0 2px 10px rgba(0,0,0,.18);';
+  badge.onclick = function(){ alert('当前版本：' + version + '\n本版说明：苹果扫码整合最终版，保留安卓原生桥接。'); };
+  document.addEventListener('DOMContentLoaded', function(){
+    if(!document.body) return;
+    document.body.appendChild(badge);
+  });
+  if(document.body) document.body.appendChild(badge);
 })();
 </script>
 
