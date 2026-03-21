@@ -4005,14 +4005,14 @@ let activeScanSession = null;
 
 function detectorFormats(mode){
   if(mode === 'qr') return ['qr_code'];
-  return ['ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+  return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
 }
 
 function html5Formats(mode){
   if(!window.Html5QrcodeSupportedFormats) return [];
   const F = window.Html5QrcodeSupportedFormats;
   if(mode === 'qr') return [F.QR_CODE].filter(Boolean);
-  return [F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.CODE_93, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
+  return [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.CODE_93, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
 }
 
 function getScanBoxSize(mode){
@@ -4022,7 +4022,7 @@ function getScanBoxSize(mode){
     return {width: Math.max(220, size), height: Math.max(220, size)};
   }
   const boxWidth = Math.max(260, Math.min(width, 340));
-  return {width: boxWidth, height: Math.max(110, Math.min(Math.round(boxWidth * 0.42), 140))};
+  return {width: boxWidth, height: Math.max(120, Math.min(Math.round(boxWidth * 0.48), 160))};
 }
 
 function getCurrentScanMode(session){
@@ -4030,7 +4030,7 @@ function getCurrentScanMode(session){
 }
 
 function getScanTipByMode(mode){
-  return mode === 'qr' ? '二维码模式：将二维码完整放入框内' : '条形码模式：将条码横向放入框内';
+  return mode === 'qr' ? '二维码模式：将二维码完整放入框内' : '条形码模式：优先识别条形码，也兼容二维码';
 }
 
 function setScanModeUi(session){
@@ -4087,7 +4087,7 @@ function bindScanModeSwitch(session){
       if(getCurrentScanMode(session) === nextMode) return;
       session.scanMode = nextMode;
       setScanModeUi(session);
-      showToast(nextMode === 'qr' ? '已切换到二维码模式' : '已切换到条形码模式');
+      showToast(nextMode === 'qr' ? '已切换到二维码模式' : '已切换到条形码优先模式');
       restartSessionEngine(session);
     };
   });
@@ -4399,7 +4399,7 @@ function ensureScanOverlay(){
         <span class="corner br"></span>
         <span class="scan-line"></span>
       </div>
-      <div class="scan-overlay-tip">默认条形码模式，切到二维码会更适合微信码/付款码</div>
+      <div class="scan-overlay-tip">默认条形码优先模式，也兼容二维码；微信码建议切到二维码</div>
       <div class="scan-mode-switch">
         <button class="scan-mode-btn active" type="button" data-scan-mode="barcode">条形码</button>
         <button class="scan-mode-btn" type="button" data-scan-mode="qr">二维码</button>
@@ -4569,16 +4569,15 @@ async function startHtml5ScanEngine(session){
     return String(text || '').trim();
   };
   const config = {
-    fps: mode === 'qr' ? (isIOSLike() ? 10 : 12) : (isIOSLike() ? 14 : 18),
+    fps: mode === 'qr' ? (isIOSLike() ? 8 : 10) : (isIOSLike() ? 10 : 12),
     qrbox: function(){ return getScanBoxSize(mode); },
     rememberLastUsedCamera: true,
     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
-    aspectRatio: mode === 'qr' ? 1.0 : 1.7777778,
     videoConstraints: {
-      facingMode: 'environment',
-      width: {ideal: mode === 'qr' ? 1280 : 1920},
-      height: {ideal: mode === 'qr' ? 720 : 1080}
+      facingMode: {ideal: 'environment'},
+      width: {ideal: 1280},
+      height: {ideal: 720}
     }
   };
   await scanner.start({facingMode: 'environment'}, config, createHtml5ScanSuccessHandler(session), function(){});
