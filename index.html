@@ -4126,6 +4126,17 @@ function canStartNativeScan(){
   return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
 }
 
+
+function isHuaweiDevice(){
+  try{
+    const ua = String(navigator.userAgent || '').toLowerCase();
+    const vendor = String(navigator.vendor || '').toLowerCase();
+    return ua.includes('huawei') || ua.includes('honor') || vendor.includes('huawei') || vendor.includes('honor');
+  }catch(e){
+    return false;
+  }
+}
+
 function isIOSLike(){
   const ua = String(navigator.userAgent || '');
   return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -4508,6 +4519,28 @@ async function recognizeImageWithDetector(file, session){
 async function recognizeCodeFromImage(file, session){
   if(!file || !session) return '';
   if(scanMode === 'barcode'){
+    if(isHuaweiDevice()){
+      try{
+        const raw = await recognizeImageWithZXing(file);
+        if(raw) return raw;
+      }catch(err){
+        console.error(err);
+      }
+      try{
+        const raw = await recognizeBarcodeFromImageWithQuagga(file);
+        if(raw) return raw;
+      }catch(err){
+        console.error(err);
+      }
+      try{
+        const raw = await recognizeImageWithDetector(file, session);
+        if(raw) return raw;
+      }catch(err){
+        console.error(err);
+      }
+      return '';
+    }
+
     try{
       const raw = await recognizeBarcodeFromImageWithQuagga(file);
       if(raw) return raw;
