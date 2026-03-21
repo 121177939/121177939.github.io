@@ -883,37 +883,6 @@
   text-align:center;
   box-shadow:0 6px 20px rgba(0,0,0,.25);
 }
-.scan-mode-switch{
-  position:absolute;
-  left:50%;
-  bottom:154px;
-  transform:translateX(-50%);
-  z-index:3;
-  display:flex;
-  gap:10px;
-  padding:6px;
-  border-radius:999px;
-  background:rgba(18,18,18,.28);
-  backdrop-filter:blur(10px);
-  box-shadow:0 6px 20px rgba(0,0,0,.25);
-}
-.scan-mode-btn{
-  min-width:84px;
-  height:34px;
-  padding:0 14px;
-  border:none;
-  border-radius:999px;
-  background:transparent;
-  color:rgba(255,255,255,.92);
-  font-size:13px;
-  font-weight:600;
-}
-.scan-mode-btn.active{
-  background:linear-gradient(135deg,#18c37e,#15a86c);
-  color:#fff;
-  box-shadow:0 6px 16px rgba(7,193,96,.28);
-}
-.scan-mode-switch[hidden]{display:none !important;}
 .scan-bottom-actions{
   position:absolute;
   left:16px;
@@ -4062,7 +4031,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.22-dual-mode-r7";
+window.APP_HTML_VERSION="v2026.03.22-ios-fix-r8";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4091,6 +4060,16 @@ async function ensureJsQrReady(){
 }
 
 async function createScanEngine(){
+  const preferHtml5 = isIOSWeb();
+  if(preferHtml5){
+    const html5Ready = await ensureHtml5QrcodeReady();
+    if(html5Ready){
+      return {
+        mode:'html5-qrcode',
+        scanner:null
+      };
+    }
+  }
   if(typeof BarcodeDetector !== 'undefined'){
     const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
     const usableFormats = detectorFormats().filter(f => formats.includes(f));
@@ -4189,33 +4168,8 @@ function isIOSWeb(){
   return /iPhone|iPad|iPod/i.test(ua);
 }
 
-function getIOSScanMode(){
-  try{
-    const mode = localStorage.getItem('jxc_ios_scan_mode');
-    return mode === 'barcode' ? 'barcode' : 'qr';
-  }catch(err){
-    return 'qr';
-  }
-}
-
-function setIOSScanMode(mode){
-  try{ localStorage.setItem('jxc_ios_scan_mode', mode === 'barcode' ? 'barcode' : 'qr'); }catch(err){}
-}
-
-function getSafeHtml5BarcodeConfig(mode){
-  const currentMode = mode === 'barcode' ? 'barcode' : 'qr';
-  if(currentMode === 'barcode'){
-    return {
-      fps: 14,
-      qrbox: { width: 320, height: 140 },
-      aspectRatio: 2.3,
-      disableFlip: false,
-      experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-      }
-    };
-  }
-  const side = Math.min(Math.floor(window.innerWidth * 0.62), 260);
+function getSafeHtml5BarcodeConfig(){
+  const side = Math.min(Math.floor(window.innerWidth * 0.68), 260);
   return {
     fps: 12,
     qrbox: { width: side, height: side },
@@ -4236,34 +4190,22 @@ function getSafeHtml5DefaultConfig(){
   };
 }
 
-function getSafeBarcodeFormats(mode){
-  const currentMode = mode === 'barcode' ? 'barcode' : 'qr';
+function getSafeBarcodeFormats(){
   const F = window.Html5QrcodeSupportedFormats || {};
-  const mixed = [
+  return [
     F.QR_CODE,
+    F.EAN_13,
+    F.EAN_8,
+    F.CODE_128,
+    F.UPC_A,
+    F.UPC_E,
+    F.CODE_39,
+    F.ITF,
+    F.CODABAR,
     F.DATA_MATRIX,
     F.PDF_417,
-    F.AZTEC,
-    F.EAN_13,
-    F.EAN_8,
-    F.CODE_128,
-    F.UPC_A,
-    F.UPC_E,
-    F.CODE_39,
-    F.ITF,
-    F.CODABAR
-  ];
-  const barcodeOnly = [
-    F.EAN_13,
-    F.EAN_8,
-    F.CODE_128,
-    F.UPC_A,
-    F.UPC_E,
-    F.CODE_39,
-    F.ITF,
-    F.CODABAR
-  ];
-  return (currentMode === 'barcode' ? barcodeOnly : mixed).filter(v => typeof v !== 'undefined');
+    F.AZTEC
+  ].filter(v => typeof v !== 'undefined');
 }
 
 function getScanBoxSize(){
@@ -4471,10 +4413,6 @@ async function startGenericScan(onDetected){
         <span class="corner br"></span>
         <span class="scan-line"></span>
       </div>
-      <div class="scan-mode-switch" ${isIOSWeb() ? '' : 'hidden'}>
-        <button class="scan-mode-btn active" type="button" data-scan-mode="qr">二维码</button>
-        <button class="scan-mode-btn" type="button" data-scan-mode="barcode">条码</button>
-      </div>
       <div class="scan-overlay-tip">将条形码或二维码放入框内，识别后点确定再继续扫码</div>
       <div class="scan-bottom-actions">
         <button class="scan-bottom-action scan-photo-btn" type="button">
@@ -4502,10 +4440,6 @@ async function startGenericScan(onDetected){
     const confirmBtn = overlay.querySelector('.scan-result-btn.primary');
     const photoBtn = overlay.querySelector('.scan-photo-btn');
     const fileInput = overlay.querySelector('.scan-file-input');
-    const host = overlay.querySelector('#' + readerId);
-    const modeSwitch = overlay.querySelector('.scan-mode-switch');
-    const modeButtons = Array.from(overlay.querySelectorAll('.scan-mode-btn'));
-    const tipBox = overlay.querySelector('.scan-overlay-tip');
 
     const session = {
       engine,
@@ -4521,32 +4455,9 @@ async function startGenericScan(onDetected){
       torchBtn:null,
       photoBtn,
       fileInput,
-      scanCanvas: document.createElement('canvas'),
-      scanMode: isIOSWeb() ? getIOSScanMode() : 'qr',
-      host,
-      resultPanel,
-      resultCode,
-      modeSwitch,
-      modeButtons,
-      tipBox,
-      restarting:false
+      scanCanvas: document.createElement('canvas')
     };
     activeScanSession = session;
-
-    function updateScanModeUI(){
-      if(!session.modeButtons || !session.modeButtons.length) return;
-      session.modeButtons.forEach(function(btn){
-        const active = btn.getAttribute('data-scan-mode') === session.scanMode;
-        btn.classList.toggle('active', active);
-      });
-      if(session.tipBox){
-        session.tipBox.textContent = session.scanMode === 'barcode'
-          ? '将条形码放入框内，识别后点确定再继续扫码'
-          : '将二维码放入框内，识别后点确定再继续扫码';
-      }
-    }
-
-    updateScanModeUI();
 
     closeBtn.onclick = closeRemarkScan;
     if(stopBtn) stopBtn.onclick = closeRemarkScan;
@@ -4590,83 +4501,60 @@ async function startGenericScan(onDetected){
     };
 
     if(engine.mode === 'html5-qrcode'){
-      const handleDecoded = function(decodedText){
-        const raw = String(decodedText || '').trim();
-        if(!raw) return;
-        const now = Date.now();
-        const dedupe = isIOSWeb() ? 1500 : 1200;
-        if(session.lastCode === raw && now - session.lastAt < dedupe) return;
-        session.lastCode = raw;
-        session.lastAt = now;
-        session.paused = true;
-        try{ if(session.engine && session.engine.scanner) session.engine.scanner.pause(true); }catch(err){}
-        if(typeof session.onDetected === 'function'){
-          session.onDetected(raw);
-        }
-        if(resultCode) resultCode.textContent = raw;
-        if(resultPanel) resultPanel.hidden = false;
-      };
-
-      session.restartScanner = async function(mode){
-        if(session.restarting) return;
-        session.restarting = true;
-        const nextMode = mode === 'barcode' ? 'barcode' : 'qr';
-        session.scanMode = nextMode;
-        setIOSScanMode(nextMode);
-        updateScanModeUI();
-        try{
-          if(session.engine && session.engine.scanner && typeof session.engine.scanner.stop === 'function'){
-            try{ await session.engine.scanner.stop(); }catch(err){}
-          }
-          if(session.host) session.host.innerHTML = '';
-          let scanner;
-          if(isIOSWeb()){
-            const supported = getSafeBarcodeFormats(nextMode);
-            scanner = new Html5Qrcode(
-              readerId,
-              supported.length ? { formatsToSupport: supported } : undefined
-            );
-            engine.scanner = scanner;
-            await scanner.start(
-              { facingMode: 'environment' },
-              getSafeHtml5BarcodeConfig(nextMode),
-              handleDecoded,
-              function(){}
-            );
-          }else{
-            scanner = new Html5Qrcode(readerId, {
-              formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-            });
-            engine.scanner = scanner;
-            await scanner.start(
-              { facingMode: 'environment' },
-              getSafeHtml5DefaultConfig(),
-              handleDecoded,
-              function(){}
-            );
-          }
-          session.paused = false;
-          if(resultPanel) resultPanel.hidden = true;
-        }catch(err){
-          console.error(err);
-          showToast('无法打开相机，请确认已允许 Safari 相机权限，并使用 HTTPS 页面访问。');
-          throw err;
-        }finally{
-          session.restarting = false;
-        }
-      };
-
-      if(isIOSWeb() && session.modeButtons && session.modeButtons.length){
-        session.modeButtons.forEach(function(btn){
-          btn.onclick = async function(){
-            const mode = btn.getAttribute('data-scan-mode') || 'qr';
-            if(mode === session.scanMode) return;
-            try{ await session.restartScanner(mode); }catch(err){}
-          };
+      let scanner;
+      if(isIOSWeb()){
+        const barcodeFormats = getSafeBarcodeFormats();
+        scanner = new Html5Qrcode(
+          readerId,
+          barcodeFormats.length ? { formatsToSupport: barcodeFormats } : undefined
+        );
+        engine.scanner = scanner;
+        await scanner.start(
+          { facingMode: 'environment' },
+          getSafeHtml5BarcodeConfig(),
+          function(decodedText){
+            const raw = String(decodedText || '').trim();
+            if(!raw) return;
+            const now = Date.now();
+            if(session.lastCode === raw && now - session.lastAt < 1500) return;
+            session.lastCode = raw;
+            session.lastAt = now;
+            session.paused = true;
+            try{ scanner.pause(true); }catch(err){}
+            if(typeof session.onDetected === 'function'){
+              session.onDetected(raw);
+            }
+            if(resultCode) resultCode.textContent = raw;
+            if(resultPanel) resultPanel.hidden = false;
+          },
+          function(){}
+        );
+      }else{
+        scanner = new Html5Qrcode(readerId, {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
         });
+        engine.scanner = scanner;
+        await scanner.start(
+          { facingMode: 'environment' },
+          getSafeHtml5DefaultConfig(),
+          function(decodedText){
+            const raw = String(decodedText || '').trim();
+            if(!raw) return;
+            const now = Date.now();
+            if(session.lastCode === raw && now - session.lastAt < 1200) return;
+            session.lastCode = raw;
+            session.lastAt = now;
+            session.paused = true;
+            try{ scanner.pause(true); }catch(err){}
+            if(typeof session.onDetected === 'function'){
+              session.onDetected(raw);
+            }
+            if(resultCode) resultCode.textContent = raw;
+            if(resultPanel) resultPanel.hidden = false;
+          },
+          function(){}
+        );
       }
-
-      await session.restartScanner(session.scanMode);
       return;
     }
 
@@ -4684,6 +4572,7 @@ async function startGenericScan(onDetected){
     video.setAttribute('webkit-playsinline', 'true');
     video.muted = true;
     video.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;';
+    const host = overlay.querySelector('#' + readerId);
     host.innerHTML = '';
     host.appendChild(video);
     video.srcObject = stream;
@@ -4736,6 +4625,30 @@ window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
+
+
+(function(){
+  function renderVersionBadge(){
+    try{
+      if(document.querySelector('.app-version-badge[data-fixed-version="1"]')) return;
+      var badge = document.createElement('button');
+      badge.type = 'button';
+      badge.className = 'app-version-badge';
+      badge.setAttribute('data-fixed-version','1');
+      badge.textContent = window.APP_HTML_VERSION || 'unknown';
+      badge.onclick = function(){
+        alert('当前版本: ' + (window.APP_HTML_VERSION || 'unknown') + '
+本版修复：苹果可开相机但扫码无效、右下角版本号不显示');
+      };
+      document.body.appendChild(badge);
+    }catch(e){}
+  }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', renderVersionBadge, {once:true});
+  }else{
+    renderVersionBadge();
+  }
+})();
 
 const authState = {
   ready:false,
