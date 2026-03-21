@@ -3965,6 +3965,56 @@ function canStartNativeScan(){
   return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
 }
 
+function isIOSLike(){
+  const ua = String(navigator.userAgent || '');
+  return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function setInlineVideoAttrs(video){
+  if(!video) return;
+  try{ video.setAttribute('playsinline', 'true'); }catch(e){}
+  try{ video.setAttribute('webkit-playsinline', 'true'); }catch(e){}
+  try{ video.setAttribute('muted', 'true'); }catch(e){}
+  video.playsInline = true;
+  video.muted = true;
+  video.autoplay = true;
+}
+
+async function ensureVideoStream(session){
+  if(!session) throw new Error('scan-session-missing');
+  if(session.stream && session.video && session.video.srcObject) return session;
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video:{
+      facingMode:{ideal:'environment'},
+      width:{ideal:1280},
+      height:{ideal:720}
+    },
+    audio:false
+  });
+  session.stream = stream;
+  const video = session.video;
+  setInlineVideoAttrs(video);
+  video.srcObject = stream;
+  await new Promise(function(resolve){
+    if(video.readyState >= 1) return resolve();
+    const onReady = function(){
+      video.removeEventListener('loadedmetadata', onReady);
+      resolve();
+    };
+    video.addEventListener('loadedmetadata', onReady, {once:true});
+    setTimeout(resolve, 1200);
+  });
+  try{ await video.play(); }catch(e){}
+  const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+  const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
+  const nativeTorchSupported = canUseNativeTorch();
+  session.track = track;
+  session.torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
+  session.usingNativeTorch = nativeTorchSupported;
+  updateTorchButtonState(session);
+  return session;
+}
+
 async function startRemarkScan(orderId){
   startGenericScan(function(code){
     appendRemarkCode(orderId, code);
@@ -4139,7 +4189,7 @@ function ensureScanOverlay(){
         <div class="scan-title">扫一扫</div>
         <button class="scan-close" type="button">×</button>
       </div>
-      <video playsinline autoplay muted></video>
+      <video playsinline webkit-playsinline autoplay muted></video>
       <div id="scan-reader" style="position:absolute;inset:0;z-index:0;opacity:0;pointer-events:none"></div>
       <div class="scan-viewfinder" aria-hidden="true">
         <span class="corner tl"></span>
@@ -4236,24 +4286,13 @@ async function prepareOverlaySession(onDetected){
   const photoBtn = overlay.querySelector('.scan-photo-btn');
   const fileInput = overlay.querySelector('.scan-file-input');
   const readerEl = overlay.querySelector('#scan-reader');
-
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:1280},
-      height:{ideal:720}
-    },
-    audio:false
-  });
-  video.srcObject = stream;
-  await video.play();
-  const track = stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-  const capabilities = track && track.getCapabilities ? track.getCapabilities() : null;
+  setInlineVideoAttrs(video);
+  readerEl.style.opacity = '0';
+  readerEl.style.pointerEvents = 'none';
+  video.style.display = '';
   const nativeTorchSupported = canUseNativeTorch();
-  const torchSupported = nativeTorchSupported || !!(capabilities && capabilities.torch);
-
   const session = {
-    stream,
+    stream:null,
     overlay,
     video,
     readerEl,
@@ -4262,8 +4301,8 @@ async function prepareOverlaySession(onDetected){
     lastAt:0,
     paused:false,
     onDetected:onDetected,
-    track,
-    torchSupported,
+    track:null,
+    torchSupported:nativeTorchSupported,
     usingNativeTorch:nativeTorchSupported,
     torchOn:false,
     torchBtn,
@@ -4276,7 +4315,9 @@ async function prepareOverlaySession(onDetected){
     confirmBtn,
     html5Scanner:null,
     html5ScanFile:null,
-    detector:null
+    detector:null,
+    zxingReader:null,
+    zxingControls:null
   };
   activeScanSession = session;
   bindOverlayEvents(session);
@@ -4306,6 +4347,9 @@ function createHtml5ScanSuccessHandler(session){
 async function startHtml5ScanEngine(session){
   if(!supportsHtml5Qrcode()) throw new Error('html5-qrcode-not-available');
   const formatsToSupport = html5Formats();
+  session.video.style.display = 'none';
+  session.readerEl.style.opacity = '1';
+  session.readerEl.style.pointerEvents = 'none';
   const scanner = new Html5Qrcode(session.readerEl.id || 'scan-reader');
   session.html5Scanner = scanner;
   session.html5ScanFile = async function(file){
@@ -4313,23 +4357,38 @@ async function startHtml5ScanEngine(session){
     return String(text || '').trim();
   };
   const config = {
-    fps: 12,
+    fps: isIOSLike() ? 10 : 12,
     qrbox: {width: 250, height: 250},
     rememberLastUsedCamera: true,
     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
     aspectRatio: 1.0,
     videoConstraints: {
-      facingMode: {ideal:'environment'},
+      facingMode: 'environment',
       width: {ideal: 1280},
       height: {ideal: 720}
     }
   };
   await scanner.start({facingMode: 'environment'}, config, createHtml5ScanSuccessHandler(session), function(){});
+  setTimeout(function(){
+    const html5Video = session.readerEl.querySelector('video');
+    setInlineVideoAttrs(html5Video);
+    if(html5Video){
+      html5Video.style.width = '100%';
+      html5Video.style.height = '100%';
+      html5Video.style.objectFit = 'cover';
+      html5Video.style.background = '#000';
+      html5Video.play && html5Video.play().catch(function(){});
+    }
+  }, 80);
 }
 
 async function startBarcodeDetectorFallback(session){
   if(!supportsBarcodeDetector()) throw new Error('barcode-detector-not-available');
+  session.readerEl.style.opacity = '0';
+  session.readerEl.style.pointerEvents = 'none';
+  session.video.style.display = '';
+  await ensureVideoStream(session);
   const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
   const usableFormats = detectorFormats().filter(function(f){ return formats.includes(f); });
   session.detector = new BarcodeDetector({formats: usableFormats.length ? usableFormats : detectorFormats()});
@@ -4351,6 +4410,10 @@ async function startBarcodeDetectorFallback(session){
 
 async function startZXingScanEngine(session){
   if(!supportsZXingBrowser()) throw new Error('zxing-browser-not-available');
+  session.readerEl.style.opacity = '0';
+  session.readerEl.style.pointerEvents = 'none';
+  session.video.style.display = '';
+  await ensureVideoStream(session);
   const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
   if(!Reader) throw new Error('zxing-reader-not-available');
   const reader = new Reader();
