@@ -4206,6 +4206,12 @@ function updateScanModeButtons(session){
     tip.textContent = scanMode === 'qr' ? '将二维码放入框内，识别后点确定再继续扫码' : '将条形码横向对准中间区域，识别后点确定再继续扫码';
   }
   if(session) updateViewfinderLayout(session);
+  if(session && session.photoBtn){
+    const label = session.photoBtn.parentNode && session.photoBtn.parentNode.querySelector('.scan-photo-label');
+    if(label){
+      label.textContent = (scanMode === 'barcode' && isIOSLike()) ? '图片识别' : '识别图片';
+    }
+  }
 }
 
 function setScanMode(nextMode){
@@ -4398,8 +4404,134 @@ async function toggleScanTorch(session){
   }
 }
 
+async function fileToDataUrl(file){
+  return await new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(){ resolve(String(reader.result || '')); };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function tryQuaggaDecodeSingle(dataUrl, readers, locate, patchSize, halfSample){
+  return await new Promise(function(resolve){
+    if(!window.Quagga || !window.Quagga.decodeSingle){
+      resolve('');
+      return;
+    }
+    window.Quagga.decodeSingle({
+      src: dataUrl,
+      numOfWorkers: 0,
+      locate: !!locate,
+      inputStream: {
+        size: 1280,
+        singleChannel: false
+      },
+      locator: {
+        patchSize: patchSize || 'medium',
+        halfSample: !!halfSample
+      },
+      decoder: {
+        readers: readers
+      }
+    }, function(result){
+      const raw = String(result && result.codeResult && result.codeResult.code || '').trim();
+      resolve(raw || '');
+    });
+  });
+}
+
+async function recognizeBarcodeFromImageWithQuagga(file){
+  if(!supportsQuagga()) return '';
+  const dataUrl = await fileToDataUrl(file);
+  const readers = ['code_128_reader','ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_39_reader','code_93_reader','codabar_reader','i2of5_reader'];
+  const attempts = [
+    {locate:true, patchSize:'medium', halfSample:false},
+    {locate:true, patchSize:'large', halfSample:false},
+    {locate:true, patchSize:'x-large', halfSample:false},
+    {locate:true, patchSize:'medium', halfSample:true},
+    {locate:false, patchSize:'medium', halfSample:false}
+  ];
+  for(const attempt of attempts){
+    try{
+      const raw = await tryQuaggaDecodeSingle(dataUrl, readers, attempt.locate, attempt.patchSize, attempt.halfSample);
+      if(raw) return raw;
+    }catch(err){
+      console.error(err);
+    }
+  }
+  return '';
+}
+
+async function recognizeImageWithZXing(file){
+  if(!supportsZXingBrowser()) return '';
+  const dataUrl = await fileToDataUrl(file);
+  try{
+    const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
+    if(!Reader) return '';
+    const reader = new Reader();
+    const result = await reader.decodeFromImageUrl(dataUrl);
+    const raw = String((result && (result.getText ? result.getText() : result.text)) || '').trim();
+    return raw || '';
+  }catch(err){
+    console.error(err);
+    return '';
+  }
+}
+
+async function recognizeImageWithDetector(file, session){
+  if(!session || !session.detector) return '';
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  try{
+    await new Promise(function(resolve, reject){
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+    const results = await session.detector.detect(img);
+    if(!results || !results.length) return '';
+    return String(results[0].rawValue || '').trim();
+  }catch(err){
+    console.error(err);
+    return '';
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function recognizeCodeFromImage(file, session){
   if(!file || !session) return '';
+  if(scanMode === 'barcode'){
+    try{
+      const raw = await recognizeBarcodeFromImageWithQuagga(file);
+      if(raw) return raw;
+    }catch(err){
+      console.error(err);
+    }
+    if(session.html5ScanFile){
+      try{
+        const raw = await session.html5ScanFile(file);
+        if(raw) return String(raw).trim();
+      }catch(err){
+        console.error(err);
+      }
+    }
+    try{
+      const raw = await recognizeImageWithZXing(file);
+      if(raw) return raw;
+    }catch(err){
+      console.error(err);
+    }
+    try{
+      const raw = await recognizeImageWithDetector(file, session);
+      if(raw) return raw;
+    }catch(err){
+      console.error(err);
+    }
+    return '';
+  }
+
   if(session.html5ScanFile){
     try{
       const raw = await session.html5ScanFile(file);
@@ -4408,21 +4540,17 @@ async function recognizeCodeFromImage(file, session){
       console.error(err);
     }
   }
-  if(session.detector){
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    try{
-      await new Promise(function(resolve, reject){
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
-      });
-      const results = await session.detector.detect(img);
-      if(!results || !results.length) return '';
-      return String(results[0].rawValue || '').trim();
-    }finally{
-      URL.revokeObjectURL(url);
-    }
+  try{
+    const raw = await recognizeImageWithZXing(file);
+    if(raw) return raw;
+  }catch(err){
+    console.error(err);
+  }
+  try{
+    const raw = await recognizeImageWithDetector(file, session);
+    if(raw) return raw;
+  }catch(err){
+    console.error(err);
   }
   return '';
 }
@@ -4510,7 +4638,7 @@ function ensureScanOverlay(){
         </button>
         <button class="scan-bottom-action scan-photo-btn" type="button">
           <span class="icon">🖼️</span>
-          <span>识别图片</span>
+          <span class="scan-photo-label">识别图片</span>
         </button>
         <input class="scan-file-input" type="file" accept="image/*" />
       </div>
@@ -4572,14 +4700,14 @@ function bindOverlayEvents(session){
       session.paused = true;
       const raw = await recognizeCodeFromImage(file, session);
       if(!raw){
-        showToast('这张图片里没有识别到条码或二维码');
+        showToast(scanMode === 'barcode' ? '没有识别到图片条形码，请尽量裁掉背景、让条码横向铺满图片' : '这张图片里没有识别到二维码');
         session.paused = false;
         return;
       }
       showDetectedResult(session, raw);
     }catch(err){
       console.error(err);
-      showToast('图片识别失败，请换一张更清晰的图片');
+      showToast(scanMode === 'barcode' ? '图片条形码识别失败，请尽量上传只包含条码主体的清晰图片' : '图片二维码识别失败，请换一张更清晰的图片');
       session.paused = false;
     }finally{
       session.fileInput.value = '';
@@ -4826,6 +4954,9 @@ async function startGenericScan(onDetected){
   }
   try{
     const session = await prepareOverlaySession(onDetected);
+    if(scanMode === 'barcode' && isIOSLike()){
+      showToast('iOS 网页实时条形码识别较弱，建议优先点“识别图片”');
+    }
     if(scanMode === 'barcode'){
       try{
         await startQuaggaScanEngine(session);
