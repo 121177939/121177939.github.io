@@ -797,7 +797,7 @@
   backdrop-filter:blur(8px);
 }
 .scan-viewfinder{
-  display:none !important;
+  display:block !important;
   position:absolute;
   left:50%;
   top:50%;
@@ -4083,6 +4083,23 @@ function getScanBoxRect(){
   return {width: Math.max(260, width), height: height};
 }
 
+function getQuaggaArea(){
+  const box = getScanBoxRect();
+  const overlayW = Math.max(window.innerWidth || 360, 1);
+  const overlayH = Math.max(window.innerHeight || 640, 1);
+  const left = Math.max(0, ((overlayW - box.width) / 2) / overlayW * 100);
+  const right = Math.max(0, left);
+  const topPx = (overlayH - box.height) / 2 - Math.min(overlayW * 0.02, 12);
+  const top = Math.max(0, topPx / overlayH * 100);
+  const bottom = Math.max(0, 100 - top - (box.height / overlayH * 100));
+  return {
+    top: top.toFixed(2) + '%',
+    right: right.toFixed(2) + '%',
+    bottom: bottom.toFixed(2) + '%',
+    left: left.toFixed(2) + '%'
+  };
+}
+
 
 function updateViewfinderLayout(session){
   if(!session || !session.viewfinder) return;
@@ -4094,16 +4111,14 @@ function updateViewfinderLayout(session){
 
 function updateReaderViewport(session, engine){
   if(!session || !session.readerEl) return;
-  const box = getScanBoxRect();
-  const isBoxViewport = engine === 'quagga';
-  session.readerEl.style.inset = isBoxViewport ? 'auto' : '0';
-  session.readerEl.style.left = isBoxViewport ? '50%' : '0';
-  session.readerEl.style.top = isBoxViewport ? '50%' : '0';
-  session.readerEl.style.width = isBoxViewport ? (box.width + 'px') : '100%';
-  session.readerEl.style.height = isBoxViewport ? (box.height + 'px') : '100%';
-  session.readerEl.style.transform = isBoxViewport ? 'translate(-50%,-52%)' : 'none';
-  session.readerEl.style.overflow = isBoxViewport ? 'hidden' : 'visible';
-  session.readerEl.style.borderRadius = isBoxViewport ? '24px' : '0';
+  session.readerEl.style.inset = '0';
+  session.readerEl.style.left = '0';
+  session.readerEl.style.top = '0';
+  session.readerEl.style.width = '100%';
+  session.readerEl.style.height = '100%';
+  session.readerEl.style.transform = 'none';
+  session.readerEl.style.overflow = 'hidden';
+  session.readerEl.style.borderRadius = '0';
   session.readerEl.style.background = 'transparent';
 }
 
@@ -4589,7 +4604,7 @@ async function startQuaggaScanEngine(session){
           width: {ideal: 1280},
           height: {ideal: 720}
         },
-        area: {top: '0%', right: '0%', left: '0%', bottom: '0%'}
+        area: getQuaggaArea()
       },
       locator: {patchSize: 'medium', halfSample: false},
       numOfWorkers: 0,
