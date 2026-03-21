@@ -797,7 +797,7 @@
   backdrop-filter:blur(8px);
 }
 .scan-viewfinder{
-  display:none !important;
+  display:none;
   position:absolute;
   left:50%;
   top:50%;
@@ -807,6 +807,9 @@
   border-radius:26px;
   z-index:2;
   pointer-events:none;
+}
+.scan-viewfinder.visible{
+  display:block;
 }
 .scan-viewfinder .corner{
   position:absolute;
@@ -4037,6 +4040,19 @@ function setScanModeUi(session){
   (session.modeButtons || []).forEach(function(btn){
     btn.classList.toggle('active', btn.getAttribute('data-scan-mode') === mode);
   });
+  updateVisualScanFrame(session);
+}
+
+function updateVisualScanFrame(session){
+  if(!session || !session.viewfinder) return;
+  const mode = getCurrentScanMode(session);
+  const box = getScanBoxSize(mode);
+  session.viewfinder.style.width = Math.round(box.width) + 'px';
+  session.viewfinder.style.height = Math.round(box.height) + 'px';
+  session.viewfinder.style.borderRadius = mode === 'qr' ? '26px' : '22px';
+  const shouldShow = !!session.usingHtml5VisualFrame;
+  session.viewfinder.classList.toggle('visible', shouldShow);
+  session.viewfinder.style.display = shouldShow ? 'block' : 'none';
 }
 
 async function restartSessionEngine(session){
@@ -4123,9 +4139,8 @@ function setScanUiMode(session, mode){
   if(session.video){
     session.video.style.display = usingHtml5 ? 'none' : '';
   }
-  if(session.viewfinder){
-    session.viewfinder.style.display = 'none';
-  }
+  session.usingHtml5VisualFrame = usingHtml5 && isIOSLike();
+  updateVisualScanFrame(session);
 }
 
 function getScanCropRect(session){
