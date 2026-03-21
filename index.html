@@ -836,6 +836,38 @@
   50%{transform:translateY(calc(min(72vw,300px) - 40px));opacity:1;}
   100%{transform:translateY(0);opacity:.9;}
 }
+.scan-mode-switch{
+  position:absolute;
+  left:50%;
+  bottom:158px;
+  transform:translateX(-50%);
+  z-index:3;
+  display:flex;
+  gap:8px;
+  background:rgba(18,18,18,.28);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  padding:6px;
+  border-radius:999px;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);
+}
+.scan-mode-btn{
+  border:none;
+  border-radius:999px;
+  min-width:86px;
+  height:34px;
+  padding:0 14px;
+  background:transparent;
+  color:rgba(255,255,255,.86);
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.scan-mode-btn.active{
+  background:rgba(255,255,255,.18);
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+}
 .scan-overlay-tip{
   position:absolute;
   left:50%;
@@ -1518,6 +1550,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
 <script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script>
 const store = {
@@ -3969,14 +4002,38 @@ document.addEventListener('keydown', function(e){
 
 let activeScanSession = null;
 
+let scanMode = 'barcode';
+
+function barcodeDetectorFormats(){
+  return ['ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+}
+
+function qrDetectorFormats(){
+  return ['qr_code'];
+}
+
 function detectorFormats(){
-  return ['qr_code','ean_13','ean_8','code_128','code_39','code_93','upc_a','upc_e','itf','codabar'];
+  return scanMode === 'qr' ? qrDetectorFormats() : barcodeDetectorFormats();
+}
+
+function barcodeHtml5Formats(){
+  if(!window.Html5QrcodeSupportedFormats) return [];
+  const F = window.Html5QrcodeSupportedFormats;
+  return [F.CODE_128, F.CODE_39, F.CODE_93, F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
+}
+
+function qrHtml5Formats(){
+  if(!window.Html5QrcodeSupportedFormats) return [];
+  const F = window.Html5QrcodeSupportedFormats;
+  return [F.QR_CODE].filter(Boolean);
 }
 
 function html5Formats(){
-  if(!window.Html5QrcodeSupportedFormats) return [];
-  const F = window.Html5QrcodeSupportedFormats;
-  return [F.QR_CODE, F.EAN_13, F.EAN_8, F.CODE_128, F.CODE_39, F.CODE_93, F.UPC_A, F.UPC_E, F.ITF, F.CODABAR].filter(Boolean);
+  return scanMode === 'qr' ? qrHtml5Formats() : barcodeHtml5Formats();
+}
+
+function supportsQuagga(){
+  return !!(window.Quagga && window.Quagga.init);
 }
 
 function supportsHtml5Qrcode(){
@@ -4015,6 +4072,39 @@ function getScanBoxSize(){
   return Math.max(220, size);
 }
 
+function getScanBoxRect(){
+  if(scanMode === 'qr'){
+    const size = getScanBoxSize();
+    return {width:size, height:size};
+  }
+  const width = Math.min(Math.floor(window.innerWidth * 0.84), 340);
+  const height = Math.max(120, Math.min(Math.floor(width * 0.42), 150));
+  return {width: Math.max(260, width), height: height};
+}
+
+function updateScanModeButtons(session){
+  const root = session && session.overlay ? session.overlay : document;
+  const btns = root.querySelectorAll ? root.querySelectorAll('.scan-mode-btn') : [];
+  btns.forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-mode') === scanMode);
+  });
+  const tip = root.querySelector ? root.querySelector('.scan-overlay-tip') : null;
+  if(tip){
+    tip.textContent = scanMode === 'qr' ? '将二维码放入框内，识别后点确定再继续扫码' : '将条形码横向对准中间区域，识别后点确定再继续扫码';
+  }
+}
+
+function setScanMode(nextMode){
+  scanMode = nextMode === 'qr' ? 'qr' : 'barcode';
+  if(activeScanSession){
+    updateScanModeButtons(activeScanSession);
+    const cb = activeScanSession.onDetected;
+    closeRemarkScan();
+    setTimeout(function(){ startGenericScan(cb); }, 80);
+  }
+}
+
+
 function setScanUiMode(session, mode){
   if(!session) return;
   const usingHtml5 = mode === 'html5';
@@ -4039,10 +4129,10 @@ function getScanCropRect(session){
   const vw = video.videoWidth || 0;
   const vh = video.videoHeight || 0;
   if(!videoRect.width || !videoRect.height || !vw || !vh) return null;
-  const scanSize = getScanBoxSize();
-  const frameLeft = overlayRect.left + (overlayRect.width - scanSize) / 2;
-  const frameTop = overlayRect.top + (overlayRect.height - scanSize) / 2 - Math.min(overlayRect.width * 0.02, 12);
-  const frameRect = {left: frameLeft, top: frameTop, width: scanSize, height: scanSize};
+  const box = getScanBoxRect();
+  const frameLeft = overlayRect.left + (overlayRect.width - box.width) / 2;
+  const frameTop = overlayRect.top + (overlayRect.height - box.height) / 2 - Math.min(overlayRect.width * 0.02, 12);
+  const frameRect = {left: frameLeft, top: frameTop, width: box.width, height: box.height};
   const scale = Math.max(videoRect.width / vw, videoRect.height / vh);
   const displayWidth = vw * scale;
   const displayHeight = vh * scale;
@@ -4139,6 +4229,12 @@ function closeRemarkScan(){
   try{
     if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
     if(session.zxingReader && session.zxingReader.reset) session.zxingReader.reset();
+  }catch(e){}
+  try{
+    if(session.quaggaActive && window.Quagga){
+      window.Quagga.stop();
+      if(window.Quagga.offDetected) window.Quagga.offDetected();
+    }
   }catch(e){}
   if(session.stream){
     session.stream.getTracks().forEach(function(track){ track.stop(); });
@@ -4279,6 +4375,10 @@ function ensureScanOverlay(){
       </div>
       <video playsinline webkit-playsinline autoplay muted></video>
       <div id="scan-reader"></div>
+      <div class="scan-mode-switch">
+        <button class="scan-mode-btn active" type="button" data-mode="barcode">条形码</button>
+        <button class="scan-mode-btn" type="button" data-mode="qr">二维码</button>
+      </div>
       <div class="scan-viewfinder" aria-hidden="true">
         <span class="corner tl"></span>
         <span class="corner tr"></span>
@@ -4340,6 +4440,15 @@ function bindOverlayEvents(session){
   if(session.photoBtn) session.photoBtn.onclick = function(){
     if(session.fileInput) session.fileInput.click();
   };
+  if(session.modeButtons && session.modeButtons.length){
+    session.modeButtons.forEach(function(btn){
+      btn.onclick = function(){
+        const nextMode = btn.getAttribute('data-mode') === 'qr' ? 'qr' : 'barcode';
+        if(nextMode === scanMode) return;
+        setScanMode(nextMode);
+      };
+    });
+  }
   if(session.fileInput) session.fileInput.onchange = async function(){
     const file = session.fileInput.files && session.fileInput.files[0];
     if(!file) return;
@@ -4375,6 +4484,7 @@ async function prepareOverlaySession(onDetected){
   const fileInput = overlay.querySelector('.scan-file-input');
   const readerEl = overlay.querySelector('#scan-reader');
   const viewfinder = overlay.querySelector('.scan-viewfinder');
+  const modeButtons = Array.from(overlay.querySelectorAll('.scan-mode-btn'));
   setInlineVideoAttrs(video);
   setScanUiMode({video:video, readerEl:readerEl, viewfinder:viewfinder}, 'native');
   const nativeTorchSupported = canUseNativeTorch();
@@ -4384,6 +4494,7 @@ async function prepareOverlaySession(onDetected){
     video,
     readerEl,
     viewfinder,
+    modeButtons,
     timer:null,
     lastCode:'',
     lastAt:0,
@@ -4406,10 +4517,12 @@ async function prepareOverlaySession(onDetected){
     detector:null,
     zxingReader:null,
     zxingControls:null,
+    quaggaActive:false,
     scanCanvas:null
   };
   activeScanSession = session;
   bindOverlayEvents(session);
+  updateScanModeButtons(session);
   return session;
 }
 
@@ -4433,6 +4546,55 @@ function createHtml5ScanSuccessHandler(session){
   };
 }
 
+async function startQuaggaScanEngine(session){
+  if(scanMode !== 'barcode') throw new Error('quagga-barcode-only');
+  if(!supportsQuagga()) throw new Error('quagga-not-available');
+  setScanUiMode(session, 'html5');
+  session.readerEl.innerHTML = '';
+  await new Promise(function(resolve, reject){
+    window.Quagga.init({
+      inputStream: {
+        type: 'LiveStream',
+        target: session.readerEl,
+        constraints: {
+          facingMode: 'environment',
+          width: {ideal: 1280},
+          height: {ideal: 720}
+        },
+        area: {top: '36%', right: '10%', left: '10%', bottom: '36%'}
+      },
+      locator: {patchSize: 'medium', halfSample: false},
+      numOfWorkers: 0,
+      decoder: {readers: ['code_128_reader','ean_reader','ean_8_reader','upc_reader','upc_e_reader','codabar_reader','i2of5_reader','code_39_reader','code_93_reader']},
+      locate: true,
+      frequency: 12
+    }, function(err){
+      if(err) return reject(err);
+      try{ window.Quagga.start(); session.quaggaActive = true; }catch(e){ return reject(e); }
+      const qv = session.readerEl.querySelector('video');
+      setInlineVideoAttrs(qv);
+      if(qv){
+        qv.style.width = '100%';
+        qv.style.height = '100%';
+        qv.style.objectFit = 'cover';
+        qv.style.background = '#000';
+      }
+      let last=''; let count=0;
+      window.Quagga.offDetected && window.Quagga.offDetected();
+      window.Quagga.onDetected(function(result){
+        if(!activeScanSession || activeScanSession !== session || session.paused) return;
+        const raw = String(result && result.codeResult && result.codeResult.code || '').trim();
+        if(!raw) return;
+        if(raw === last) count += 1; else { last = raw; count = 1; }
+        if(count < 2) return;
+        last=''; count=0;
+        showDetectedResult(session, raw);
+      });
+      resolve();
+    });
+  });
+}
+
 async function startHtml5ScanEngine(session){
   if(!supportsHtml5Qrcode()) throw new Error('html5-qrcode-not-available');
   const formatsToSupport = html5Formats();
@@ -4444,12 +4606,12 @@ async function startHtml5ScanEngine(session){
     return String(text || '').trim();
   };
   const config = {
-    fps: isIOSLike() ? 10 : 12,
-    qrbox: function(){ const size = getScanBoxSize(); return {width: size, height: size}; },
+    fps: scanMode === 'qr' ? (isIOSLike() ? 10 : 12) : (isIOSLike() ? 12 : 14),
+    qrbox: function(){ const box = getScanBoxRect(); return {width: box.width, height: box.height}; },
     rememberLastUsedCamera: true,
     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
-    aspectRatio: 1.0,
+    aspectRatio: scanMode === 'qr' ? 1.0 : 1.7777778,
     videoConstraints: {
       facingMode: 'environment',
       width: {ideal: 1280},
@@ -4548,9 +4710,18 @@ async function startGenericScan(onDetected){
   }
   try{
     const session = await prepareOverlaySession(onDetected);
+    if(scanMode === 'barcode'){
+      try{
+        await startQuaggaScanEngine(session);
+        showToast('已启用条形码快扫模式');
+        return;
+      }catch(err){
+        console.error(err);
+      }
+    }
     try{
       await startHtml5ScanEngine(session);
-      showToast('已启用兼容扫码模式');
+      showToast(scanMode === 'qr' ? '已启用二维码扫码模式' : '已启用兼容扫码模式');
       return;
     }catch(err){
       console.error(err);
@@ -4581,6 +4752,7 @@ window.startRemarkScan = startRemarkScan;
 window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
+window.setScanMode = setScanMode;
 
 const authState = {
   ready:false,
