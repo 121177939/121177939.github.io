@@ -4082,6 +4082,15 @@ function getScanBoxRect(){
   return {width: Math.max(260, width), height: height};
 }
 
+
+function updateViewfinderLayout(session){
+  if(!session || !session.viewfinder) return;
+  const box = getScanBoxRect();
+  session.viewfinder.style.width = box.width + 'px';
+  session.viewfinder.style.height = box.height + 'px';
+  session.viewfinder.style.transform = 'translate(-50%,-52%)';
+}
+
 function updateScanModeButtons(session){
   const root = session && session.overlay ? session.overlay : document;
   const btns = root.querySelectorAll ? root.querySelectorAll('.scan-mode-btn') : [];
@@ -4092,6 +4101,7 @@ function updateScanModeButtons(session){
   if(tip){
     tip.textContent = scanMode === 'qr' ? '将二维码放入框内，识别后点确定再继续扫码' : '将条形码横向对准中间区域，识别后点确定再继续扫码';
   }
+  if(session) updateViewfinderLayout(session);
 }
 
 function setScanMode(nextMode){
@@ -4116,7 +4126,8 @@ function setScanUiMode(session, mode){
     session.video.style.display = usingHtml5 ? 'none' : '';
   }
   if(session.viewfinder){
-    session.viewfinder.style.display = 'none';
+    updateViewfinderLayout(session);
+    session.viewfinder.style.display = usingHtml5 ? 'none' : 'block';
   }
 }
 
