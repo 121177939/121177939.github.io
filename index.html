@@ -760,10 +760,10 @@
   border-radius:26px;
   box-shadow:none;
 }
- .scan-overlay video{
+.scan-overlay video{
   width:100%;
   height:100%;
-  object-fit:contain;
+  object-fit:cover;
   flex:1;
   background:#000;
 }
@@ -1019,7 +1019,7 @@
 #scan-reader video{
   width:100% !important;
   height:100% !important;
-  object-fit:cover !important;
+  object-fit:contain !important;
   background:#000 !important;
 }
 #scan-reader__dashboard,
@@ -4131,6 +4131,11 @@ function isIOSLike(){
   return /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 }
 
+function isHuaweiLike(){
+  const ua = String(navigator.userAgent || '');
+  return /Huawei|HUAWEI|HONOR|HarmonyOS|HMOS/i.test(ua);
+}
+
 function setInlineVideoAttrs(video){
   if(!video) return;
   try{ video.setAttribute('playsinline', 'true'); }catch(e){}
@@ -4855,37 +4860,23 @@ async function startHtml5ScanEngine(session){
     rememberLastUsedCamera: true,
     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
     formatsToSupport: formatsToSupport.length ? formatsToSupport : undefined,
+    aspectRatio: scanMode === 'qr' ? 1.0 : 1.7777778,
     videoConstraints: {
-      facingMode: { ideal: 'environment' },
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+      facingMode: 'environment',
+      width: {ideal: 1280},
+      height: {ideal: 720}
     }
   };
-  await scanner.start({facingMode: { ideal: 'environment' }}, config, createHtml5ScanSuccessHandler(session), function(){});
-  setTimeout(async function(){
+  await scanner.start({facingMode: 'environment'}, config, createHtml5ScanSuccessHandler(session), function(){});
+  setTimeout(function(){
     const html5Video = session.readerEl.querySelector('video');
     setInlineVideoAttrs(html5Video);
     if(html5Video){
       html5Video.style.width = '100%';
       html5Video.style.height = '100%';
-      html5Video.style.objectFit = 'contain';
+      html5Video.style.objectFit = 'cover';
       html5Video.style.background = '#000';
-      try{ await html5Video.play(); }catch(e){}
-      try{
-        const stream = html5Video.srcObject;
-        const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
-        if(track && track.applyConstraints){
-          const caps = track.getCapabilities ? track.getCapabilities() : {};
-          const advanced = [];
-          if(caps && caps.focusMode && caps.focusMode.includes('continuous')) advanced.push({focusMode:'continuous'});
-          if(caps && caps.zoom){
-            const minZoom = typeof caps.zoom.min === 'number' ? caps.zoom.min : 1;
-            advanced.push({zoom:minZoom});
-          }
-          if(advanced.length) await track.applyConstraints({advanced: advanced});
-          session.track = track;
-        }
-      }catch(e){}
+      html5Video.play && html5Video.play().catch(function(){});
     }
   }, 80);
 }
@@ -4972,6 +4963,15 @@ async function startGenericScan(onDetected){
       showToast('iOS 网页实时条形码识别较弱，建议优先点“识别图片”');
     }
     if(scanMode === 'barcode'){
+      if(isHuaweiLike()){
+        try{
+          await startZXingScanEngine(session);
+          showToast('已启用华为兼容条形码模式');
+          return;
+        }catch(err){
+          console.error(err);
+        }
+      }
       try{
         await startQuaggaScanEngine(session);
         showToast('已启用条形码快扫模式');
