@@ -1488,6 +1488,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
 <script>
 const store = {
   load(key, fallback){
@@ -3956,6 +3957,10 @@ function supportsBarcodeDetector(){
   return typeof BarcodeDetector !== 'undefined';
 }
 
+function supportsZXingBrowser(){
+  return !!(window.ZXingBrowser && (window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader));
+}
+
 function canStartNativeScan(){
   return !!(window.AndroidBridge && typeof AndroidBridge.startNativeScan === 'function');
 }
@@ -3993,6 +3998,10 @@ function closeRemarkScan(){
   }catch(e){}
   if(session.timer) clearInterval(session.timer);
   stopHtml5Scanner(session);
+  try{
+    if(session.zxingControls && session.zxingControls.stop) session.zxingControls.stop();
+    if(session.zxingReader && session.zxingReader.reset) session.zxingReader.reset();
+  }catch(e){}
   if(session.stream){
     session.stream.getTracks().forEach(function(track){ track.stop(); });
   }
@@ -4340,6 +4349,22 @@ async function startBarcodeDetectorFallback(session){
   }, 300);
 }
 
+async function startZXingScanEngine(session){
+  if(!supportsZXingBrowser()) throw new Error('zxing-browser-not-available');
+  const Reader = window.ZXingBrowser.BrowserMultiFormatReader || window.ZXingBrowser.BrowserQRCodeReader;
+  if(!Reader) throw new Error('zxing-reader-not-available');
+  const reader = new Reader();
+  session.zxingReader = reader;
+  session.zxingControls = await reader.decodeFromVideoDevice(undefined, session.video, function(result, err){
+    if(!activeScanSession || activeScanSession !== session) return;
+    if(session.paused) return;
+    if(result){
+      const raw = String((result.getText ? result.getText() : result.text) || '').trim();
+      if(raw) showDetectedResult(session, raw);
+    }
+  });
+}
+
 async function startGenericScan(onDetected){
   if(activeScanSession){
     showToast('请先关闭当前扫码窗口');
@@ -4367,13 +4392,21 @@ async function startGenericScan(onDetected){
     const session = await prepareOverlaySession(onDetected);
     try{
       await startHtml5ScanEngine(session);
+      showToast('已启用兼容扫码模式');
       return;
     }catch(err){
       console.error(err);
     }
     try{
       await startBarcodeDetectorFallback(session);
-      showToast('当前设备已切换到兼容扫码模式');
+      showToast('已自动切换到浏览器扫码模式');
+      return;
+    }catch(err){
+      console.error(err);
+    }
+    try{
+      await startZXingScanEngine(session);
+      showToast('已自动切换到 ZXing 兼容模式');
       return;
     }catch(err){
       console.error(err);
