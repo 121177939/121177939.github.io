@@ -1536,12 +1536,35 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script>
-const store = {
+const FIXED_STORE = {
   load(key, fallback){
     try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback}
   },
   save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
 };
+let activeVariant = localStorage.getItem('jxc_active_variant') || 'b';
+function namespacedKey(key){
+  if(!String(key || '').startsWith('jxc_')) return key;
+  if(key === 'jxc_current_user' || key === 'jxc_login_stats' || String(key).startsWith('jxc_backup_') || String(key).startsWith('jxc_legacy_import_done_')){
+    return key;
+  }
+  return key + '__' + activeVariant;
+}
+const store = {
+  load(key, fallback){
+    try{return JSON.parse(localStorage.getItem(namespacedKey(key))) ?? fallback}catch(e){return fallback}
+  },
+  save(key, value){ localStorage.setItem(namespacedKey(key), JSON.stringify(value)); }
+};
+function switchVariant(next){
+  if(next !== 'a' && next !== 'b') return;
+  if(next === activeVariant) return;
+  localStorage.setItem('jxc_active_variant', next);
+  location.reload();
+}
+function currentVariantLabel(){
+  return activeVariant === 'a' ? '页面A（经典）' : '页面B（数量版）';
+}
 
 const state = {
   products: store.load('jxc_products', []),
@@ -1584,6 +1607,7 @@ state.orders = state.orders.map(o => ({
   date: o.date || new Date().toISOString().slice(5,10),
   buyer: o.buyer ?? o.customer ?? '',
   product: o.product ?? '',
+  quantity: Math.max(1, Number(o.quantity ?? 1)),
   orderAmount: Number(o.orderAmount ?? 0),
   rebate: Number(o.rebate ?? o.refund ?? 0),
   freight: Number(o.freight ?? o.shipping ?? 0),
@@ -1601,7 +1625,13 @@ state.tradeinOrders = (state.tradeinOrders || []).map(o => ({
   recyclePrice: Number(o.recyclePrice ?? o.recycleCashback ?? 0),
   refundPrice: Number(o.refundPrice ?? o.refund ?? 0),
   salePrice: Number(o.salePrice ?? o.saleAmount ?? 0),
-  profit: Number(o.profit ?? 0),
+  profit: Number(o.profit ?? calcTradeinProfit(
+    Number(o.newMachinePrice ?? o.newPrice ?? 0),
+    Number(o.oldMachinePrice ?? o.oldPrice ?? 0),
+    Number(o.recyclePrice ?? o.recycleCashback ?? 0),
+    Number(o.refundPrice ?? o.refund ?? 0),
+    Number(o.salePrice ?? o.saleAmount ?? 0)
+  )),
   trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
   remark: o.remark ?? o.notes ?? '',
   dealDone: typeof o.dealDone === 'boolean' ? o.dealDone : Number(o.salePrice ?? o.saleAmount ?? 0) > 0
@@ -1632,17 +1662,33 @@ function unsoldOrders(){
 }
 function todaySales(){
   const today = new Date().toISOString().slice(5,10);
-  return soldOrders().filter(s=>String(s.date).includes(today)).reduce((a,b)=>a+Number(b.saleAmount||0),0);
+  const normalSales = soldOrders()
+    .filter(s => String(s.date).includes(today))
+    .reduce((a,b)=>a+Number(b.saleAmount||0),0);
+  const tradeinSales = soldTradeinOrders()
+    .filter(s => String(s.date).includes(today))
+    .reduce((a,b)=>a+Number(b.newMachinePrice||0),0);
+  return normalSales + tradeinSales;
 }
 function monthSales(){
-  return soldOrders().reduce((a,b)=>a+Number(b.saleAmount||0),0);
+  const normalSales = soldOrders().reduce((a,b)=>a+Number(b.saleAmount||0),0);
+  const tradeinSales = soldTradeinOrders().reduce((a,b)=>a+Number(b.newMachinePrice||0),0);
+  return normalSales + tradeinSales;
 }
 function totalProfit(){
-  return soldOrders().reduce((a,b)=>a+Number(b.profit||0),0);
+  const normalProfit = soldOrders().reduce((a,b)=>a+Number(b.profit||0),0);
+  const tradeinProfit = soldTradeinOrders().reduce((a,b)=>a+Number(b.profit||0),0);
+  return normalProfit + tradeinProfit;
 }
 function currentMonthProfit(){
   const currentMonth = new Date().toISOString().slice(5,7);
-  return soldOrders().filter(s => String(s.date || '').slice(0,2) === currentMonth).reduce((a,b)=>a+Number(b.profit||0),0);
+  const normalProfit = soldOrders()
+    .filter(s => String(s.date || '').slice(0,2) === currentMonth)
+    .reduce((a,b)=>a+Number(b.profit||0),0);
+  const tradeinProfit = soldTradeinOrders()
+    .filter(s => String(s.date || '').slice(0,2) === currentMonth)
+    .reduce((a,b)=>a+Number(b.profit||0),0);
+  return normalProfit + tradeinProfit;
 }
 function monthProfit(){
   return totalProfit();
@@ -1650,13 +1696,20 @@ function monthProfit(){
 function tradeinList(){
   return sortByDateDesc(state.tradeinOrders || []);
 }
+function activeTradeinOrders(){
+  return sortByDateDesc((state.tradeinOrders || []).filter(o => !o.dealDone));
+}
 function soldTradeinOrders(){
   return sortByDateDesc((state.tradeinOrders || []).filter(o => !!o.dealDone));
 }
 function totalPrincipal(){
-  return soldOrders().reduce((a,b)=>{
+  const normalPrincipal = soldOrders().reduce((a,b)=>{
     return a + Number(b.orderAmount||0) + Number(b.rebate||0) - Number(b.freight||0);
   },0);
+  const tradeinPrincipal = soldTradeinOrders().reduce((a,b)=>{
+    return a + calcTradeinActualCost(b.newMachinePrice, b.oldMachinePrice, b.recyclePrice, b.refundPrice);
+  },0);
+  return normalPrincipal + tradeinPrincipal;
 }
 function profitRate(){
   const principal = totalPrincipal();
@@ -1991,11 +2044,24 @@ function normalizeDate(v){
   return v;
 }
 
-function calcProfit(orderAmount, rebate, freight, saleAmount){
-  const sale = Number(saleAmount||0);
+function calcProfit(orderAmount, rebate, freight, saleAmount, quantity=1){
+  const qty = Math.max(1, Number(quantity || 1));
+  const sale = Number(saleAmount || 0) * qty;
   if(sale <= 0) return 0;
-  return sale - Number(orderAmount||0) - Number(rebate||0) - Number(freight||0);
+  return sale - Number(orderAmount || 0) * qty - Number(rebate || 0) * qty - Number(freight || 0);
 }
+function calcPendingProfit(orderAmount, rebate, freight, saleAmount, quantity=1){
+  const qty = Math.max(1, Number(quantity || 1));
+  return Number(saleAmount || 0) * qty - Number(orderAmount || 0) * qty - Number(rebate || 0) * qty - Number(freight || 0);
+}
+function recalcAllOrderProfits(){
+  (state.orders || []).forEach(function(order){
+    if(!order) return;
+    order.quantity = Math.max(1, Number(order.quantity || 1));
+    order.profit = calcPendingProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount, order.quantity);
+  });
+}
+recalcAllOrderProfits();
 function calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice){
   return Number(newMachinePrice||0) - Number(recyclePrice||0) + Number(oldMachinePrice||0) + Number(refundPrice||0);
 }
@@ -2008,6 +2074,7 @@ function orderDraftDefaults(){
     date: new Date().toISOString().slice(0,10),
     buyer:'',
     product:'',
+    quantity:'1',
     orderAmount:'',
     rebate:'0',
     freight:'0',
@@ -2019,7 +2086,7 @@ function orderDraftDefaults(){
 
 function saveOrderDraftFromForm(form){
   if(!form) return;
-  const fields = ['date','buyer','product','orderAmount','rebate','freight','saleAmount','trackingNo','remark'];
+  const fields = ['date','buyer','product','quantity','orderAmount','rebate','freight','saleAmount','trackingNo','remark'];
   const draft = {};
   fields.forEach(name => {
     const el = form.querySelector(`[name="${name}"]`);
@@ -2043,7 +2110,7 @@ function hydrateOrderForm(form){
   });
   const preview = form.querySelector('#profitPreview');
   if(preview){
-    const p = calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount).toFixed(2);
+    const p = calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount, draft.quantity).toFixed(2);
     preview.value = '¥' + p;
   }
 }
@@ -2222,23 +2289,26 @@ function useProductTemplate(form){
     const rebate = form.querySelector('[name="rebate"]');
     const freight = form.querySelector('[name="freight"]');
     const sale = form.querySelector('[name="saleAmount"]');
-    preview.value = '¥' + calcProfit(order?.value, rebate?.value, freight?.value, sale?.value).toFixed(2);
+    const qty = form.querySelector('[name="quantity"]');
+    preview.value = '¥' + calcProfit(order?.value, rebate?.value, freight?.value, sale?.value, qty?.value).toFixed(2);
   }
 }
 
 function addOrder(form, mode='normal'){
   const fd = new FormData(form);
+  const quantity = Math.max(1, Number(fd.get('quantity')||1));
   const orderAmount = Number(fd.get('orderAmount')||0);
   const rebate = Number(fd.get('rebate')||0);
   const freight = Number(fd.get('freight')||0);
   const saleAmount = Number(fd.get('saleAmount')||0);
-  const profit = calcProfit(orderAmount, rebate, freight, saleAmount);
+  const profit = calcProfit(orderAmount, rebate, freight, saleAmount, quantity);
   state.orders.unshift({
     id: id(),
     status: mode === 'advance' ? 'advance' : 'normal',
     date: normalizeDate(fd.get('date') || new Date().toISOString().slice(0,10)),
     buyer: fd.get('buyer'),
     product: fd.get('product'),
+    quantity,
     orderAmount,
     rebate,
     freight,
@@ -2256,6 +2326,8 @@ function addOrder(form, mode='normal'){
   const freightInput = form.querySelector('[name="freight"]');
   if(rebateInput) rebateInput.value = '0';
   if(freightInput) freightInput.value = '0';
+  const quantityInput = form.querySelector('[name="quantity"]');
+  if(quantityInput) quantityInput.value = '1';
   const preview = form.querySelector('#profitPreview');
   if(preview) preview.value = '¥0.00';
   render();
@@ -2350,12 +2422,18 @@ function renderReportPager(meta, type){
   </div>`;
 }
 
+function recalcOrderProfit(order){
+  if(!order) return 0;
+  order.profit = calcPendingProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount, order.quantity);
+  return order.profit;
+}
+
 function updateOrderField(orderId, field, value){
   const order = state.orders.find(o => o.id === orderId);
   if(!order) return;
-  if(['orderAmount','rebate','freight','saleAmount'].includes(field)){
-    order[field] = value === '' ? 0 : Number(value || 0);
-    order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount);
+  if(['quantity','orderAmount','rebate','freight','saleAmount'].includes(field)){
+    order[field] = field === 'quantity' ? Math.max(1, Number(value || 1)) : (value === '' ? 0 : Number(value || 0));
+    recalcOrderProfit(order);
   }else{
     order[field] = value;
   }
@@ -2363,16 +2441,39 @@ function updateOrderField(orderId, field, value){
 }
 
 function refreshRowAfterNumericEdit(inputEl, orderId, field, value){
-  updateOrderField(orderId, field, value);
   const row = inputEl && inputEl.closest ? inputEl.closest('tr') : null;
+  const order = state.orders.find(o => o.id === orderId);
+  if(!order) return;
+  if(['quantity','orderAmount','rebate','freight','saleAmount'].includes(field)){
+    order[field] = value === '' ? 0 : Number(value || 0);
+    if(row){
+      const getRowNumber = function(name, fallback){
+        const el = row.querySelector('input[oninput*="\'' + name + '\'"]');
+        return el ? Number(el.value || 0) : Number(fallback || 0);
+      };
+      order.quantity = Math.max(1, getRowNumber('quantity', order.quantity || 1));
+      order.orderAmount = getRowNumber('orderAmount', order.orderAmount);
+      order.rebate = getRowNumber('rebate', order.rebate);
+      order.freight = getRowNumber('freight', order.freight);
+      order.saleAmount = getRowNumber('saleAmount', order.saleAmount);
+    }
+    recalcOrderProfit(order);
+  }else{
+    order[field] = value;
+  }
+  persist();
   if(row){
     const profitBox = row.querySelector('.profit-box');
-    const order = state.orders.find(o => o.id === orderId);
-    if(profitBox && order) profitBox.textContent = '¥' + money(order.profit);
+    if(profitBox){
+      profitBox.textContent = '¥' + money(order.profit);
+      profitBox.classList.toggle('negative', Number(order.profit || 0) < 0);
+    }
   }
 }
 
 function finalizeOrderRow(orderId){
+  const order = state.orders.find(o => o.id === orderId);
+  if(order) recalcOrderProfit(order);
   persist();
   render();
 }
@@ -2589,7 +2690,7 @@ function homeView(){
       ${menuCard('i1','🧾','录入订单','订单录入',"setTab('orders')")}
       ${menuCard('i2','💰','未售出','待填写售出金额',"setTab('sale')", unsoldOrders().length)}
       ${menuCard('i3','💳','垫付中心','待发货 / 退款',"setTab('advance')", advanceOrders().length)}
-      ${menuCard('i4','🔁','以旧换新','单独表格',"setTab('tradein')", tradeinList().length)}
+      ${menuCard('i4','🔁','以旧换新','单独表格',"setTab('tradein')", activeTradeinOrders().length)}
       ${menuCard('i5','📦','进货','待开发',"showToast('进货待开发')")}
       ${menuCard('i6','🧾','其他支出','待开发',"showToast('其他支出待开发')")}
       ${menuCard('i7','⭐','VIP会员','待开发',"showToast('VIP会员待开发')")}
@@ -2623,9 +2724,10 @@ function goodsView(){
 
 function saleView(){
   const list = filteredOrders(unsoldOrders());
+  const unsoldTotal = list.reduce((sum, o) => sum + Math.max(1, Number(o.quantity || 1)) * (Number(o.orderAmount || 0) + Number(o.rebate || 0)), 0);
   return `<div class="phone">
     <div class="order-panel" style="margin-top:14px">
-      ${sectionHeader('未售出','填写售出金额后自动进入报表')}
+      ${sectionHeader('未售出','未售出' + money(unsoldTotal) + '元')}
       <div class="order-toolbar">
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
@@ -2641,6 +2743,7 @@ function saleView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -2682,9 +2785,10 @@ function addSale(form){
 
 function advanceView(){
   const list = filteredOrders(advanceOrders());
+  const advanceTotal = list.reduce((sum, o) => sum + Math.max(1, Number(o.quantity || 1)) * (Number(o.orderAmount || 0) + Number(o.rebate || 0)), 0);
   return `<div class="phone">
     <div class="order-panel" style="margin-top:14px">
-      ${sectionHeader('垫付中心','发货后转回未售出，退款则删除')}
+      ${sectionHeader('垫付中心','一共垫付' + money(advanceTotal) + '元')}
       <div class="order-toolbar">
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
@@ -2700,6 +2804,7 @@ function advanceView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -2720,7 +2825,7 @@ function advanceView(){
 
 function detailView(){
   const fullList = filterByReportMonth(filteredOrders(soldOrders()));
-  const fullTradein = filterByReportMonth(filteredTradeinOrders().filter(function(item){ return item.dealDone === true; }));
+  const fullTradein = filterByReportMonth(soldTradeinOrders());
   const normalMeta = getPagedList(fullList, state.reportPage, 50);
   const tradeinMeta = getPagedList(fullTradein, state.reportTradeinPage, 50);
   const list = normalMeta.list;
@@ -2774,6 +2879,7 @@ function detailView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -3113,6 +3219,14 @@ function moreView(){
       <div class="admin-actions" style="padding:0 14px 14px">
         <button class="admin-btn create" type="button" onclick="openChangePasswordModal()">修改密码</button>
       </div>
+      <div class="sheet" style="margin:14px">
+        <div class="sheet-hd"><span>版本切换</span><span class="small">当前：${currentVariantLabel()}</span></div>
+        <div class="order-note">页面A和页面B数据独立保存，互不覆盖。</div>
+        <div class="admin-actions" style="padding:10px 0 0">
+          <button class="admin-btn create" type="button" onclick="switchVariant('a')">切换到页面A（经典）</button>
+          <button class="admin-btn create" type="button" onclick="switchVariant('b')">切换到页面B（数量版）</button>
+        </div>
+      </div>
     </div>
     <div class="sheet">
       <div class="sheet-hd"><span>首页滚动公告</span><span class="small">一行一条</span></div>
@@ -3187,7 +3301,7 @@ function tradeinView(){
         <input class="search-input" placeholder="搜索下单人 / 快递单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
       </div>
-      <div class="order-note">以旧换新表格独立保存，不进入首页统计；报表页会单独显示换新订单板块。按当前公式：实际总成本 = 新机价格 - 回收返现 + 旧机价格 + 返款；利润 = 售出价格 - 实际总成本。</div>
+      <div class="order-note">这里只显示未成交的以旧换新订单；点击成交后会自动移出当前列表并进入报表。已成交订单的利润会计入首页总利润和当月利润，首页总销售额按新机价格累计。公式：实际总成本 = 新机价格 - 回收返现 + 旧机价格 + 返款；利润 = 售出价格 - 实际总成本。</div>
       <div class="order-table-wrap">
         ${list.length ? `
         <table class="order-table report-table">
@@ -3248,7 +3362,7 @@ function addTradeinOrder(form){
 
 function filteredTradeinOrders(){
   const q = state.orderSearch.trim().toLowerCase();
-  const list = tradeinList();
+  const list = activeTradeinOrders();
   if(!q) return list;
   return list.filter(function(o){
     return [o.date,o.buyer,o.trackingNo,o.remark].join(' ').toLowerCase().includes(q);
@@ -3456,7 +3570,7 @@ function openBatchSaleAmountModal(){
       }
       selected.forEach(function(order){
         order.saleAmount = saleAmount;
-        order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, saleAmount);
+        order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, saleAmount, order.quantity);
       });
       const removeIds = new Set(selected.map(function(order){ return order.id; }));
       state.selectedOrderIds = (state.selectedOrderIds || []).filter(function(id){ return !removeIds.has(id); });
@@ -3475,6 +3589,7 @@ function renderOrderRow(o){
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" min="1" step="1" value="${Math.max(1, Number(o.quantity || 1))}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','quantity',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -3496,6 +3611,7 @@ function renderAdvanceRow(o){
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" min="1" step="1" value="${Math.max(1, Number(o.quantity || 1))}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','quantity',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -3519,12 +3635,13 @@ function ordersView(){
         <div class="form-grid">
           <div class="field"><label>日期</label><input name="date" type="date" value="${escapeHtml(draft.date || new Date().toISOString().slice(0,10))}" required /></div>
           <div class="field"><label>下单人</label><div class="autocomplete-wrap"><input name="buyer" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" autocomplete="off" /><div class="autocomplete-panel" id="buyerAutocomplete"></div></div></div>
-          <div class="field full"><label>产品</label><div class="field-inline"><div class="autocomplete-wrap"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入产品名称" autocomplete="off" /><div class="autocomplete-panel" id="productAutocomplete"></div></div><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出下单价</button></div></div>
+          <div class="field"><label>产品</label><div class="autocomplete-wrap"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入产品名称" autocomplete="off" /><div class="autocomplete-panel" id="productAutocomplete"></div></div></div>
+          <div class="field"><label>数量</label><input name="quantity" type="number" min="1" step="1" value="${escapeHtml(draft.quantity || '1')}" placeholder="输入数量" /></div>
           <div class="field"><label>下单金额</label><input name="orderAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.orderAmount || '')}" required placeholder="0.00" /></div>
           <div class="field"><label>返款</label><input name="rebate" type="number" min="0" step="0.01" value="${escapeHtml(draft.rebate || '0')}" /></div>
           <div class="field"><label>运费</label><input name="freight" type="number" min="0" step="0.01" value="${escapeHtml(draft.freight || '0')}" /></div>
           <div class="field"><label>售出金额</label><input name="saleAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.saleAmount || '')}" placeholder="未售出可先不填" /></div>
-          <div class="field"><label>利润</label><input id="profitPreview" type="text" value="¥${money(calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount))}" disabled /></div>
+          <div class="field"><label>利润</label><input id="profitPreview" type="text" value="¥${money(calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount, draft.quantity))}" disabled /></div>
           <div class="field"><label>物流单号</label><input name="trackingNo" value="${escapeHtml(draft.trackingNo || '')}" placeholder="输入物流单号" /></div>
           <div class="field full"><label>备注</label><div class="remark-form-row"><input name="remark" value="${escapeHtml(draft.remark || '')}" placeholder="输入备注" /><button class="scan-icon-btn" type="button" onclick="startDraftRemarkScan(this.form)" title="扫码">📷</button></div></div>
         </div>
@@ -3533,7 +3650,7 @@ function ordersView(){
           <button class="btn btn-alt" type="button" onclick="addOrder(this.form,'advance')">垫付保存</button>
         </div>
       </form>
-      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；支持历史下单人快捷按钮；点“带出下单价”会自动带入下单金额和商品售价</div>
+      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；支持历史下单人快捷按钮；支持数量录入，旧数据默认按 1 处理</div>
     </div>
 
     <div class="sheet">
@@ -3559,6 +3676,7 @@ function mapImportedOrder(row){
     raw[normalizeImportedKey(key)] = row[key];
   });
   const dateValue = raw['日期'] ?? raw['下单日期'] ?? raw['时间'] ?? '';
+  const quantity = Math.max(1, Number(raw['数量'] ?? raw['件数'] ?? 1));
   const orderAmount = Number(raw['下单金额'] ?? raw['进价'] ?? 0);
   const rebate = Number(raw['返款'] ?? raw['退款'] ?? 0);
   const freight = Number(raw['运费'] ?? raw['邮费'] ?? 0);
@@ -3571,11 +3689,12 @@ function mapImportedOrder(row){
     date: normalizeDate(dateValue),
     buyer: String(raw['下单人'] ?? raw['客户'] ?? ''),
     product: String(raw['产品'] ?? raw['商品'] ?? ''),
+    quantity,
     orderAmount,
     rebate,
     freight,
     saleAmount,
-    profit: profitCell === undefined || profitCell === null || profitCell === '' ? calcProfit(orderAmount, rebate, freight, saleAmount) : Number(profitCell || 0),
+    profit: profitCell === undefined || profitCell === null || profitCell === '' ? calcProfit(orderAmount, rebate, freight, saleAmount, quantity) : Number(profitCell || 0),
     trackingNo: String(raw['物流单号'] ?? raw['单号'] ?? ''),
     remark: String(raw['备注'] ?? raw['说明'] ?? '')
   };
@@ -3629,6 +3748,7 @@ function exportOrders(){
     '日期': o.date,
     '下单人': o.buyer,
     '产品': o.product,
+    '数量': Math.max(1, Number(o.quantity || 1)),
     '下单金额': Number(o.orderAmount || 0),
     '返款': Number(o.rebate || 0),
     '运费': Number(o.freight || 0),
@@ -3638,7 +3758,7 @@ function exportOrders(){
     '备注': o.remark || ''
   }));
   const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{
-    '订单状态':'','日期':'','下单人':'','产品':'','下单金额':'','返款':'','运费':'','售出金额':'','利润':'','物流单号':'','备注':''
+    '订单状态':'','日期':'','下单人':'','产品':'','数量':'','下单金额':'','返款':'','运费':'','售出金额':'','利润':'','物流单号':'','备注':''
   }]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, '订单利润数据');
@@ -3852,7 +3972,8 @@ document.addEventListener('input', function(e){
   const sale = form.querySelector('[name="saleAmount"]');
   const preview = form.querySelector('#profitPreview');
   if(order && rebate && freight && sale && preview){
-    const p = calcProfit(order.value, rebate.value, freight.value, sale.value).toFixed(2);
+    const qty = form.querySelector('[name="quantity"]');
+    const p = calcProfit(order.value, rebate.value, freight.value, sale.value, qty?.value).toFixed(2);
     preview.value = '¥' + p;
   }
 });
@@ -4031,7 +4152,7 @@ window.onNativeScanResult = handleNativeScanResult;
 window.onAppScanResult = handleNativeScanResult;
 
 
-window.APP_HTML_VERSION="v2026.03.22-ios-fix-r8";
+window.APP_HTML_VERSION="v2026.03.21-ios-merge-safe-r5";
 let activeScanSession = null;
 
 async function ensureJsQrReady(){
@@ -4060,16 +4181,6 @@ async function ensureJsQrReady(){
 }
 
 async function createScanEngine(){
-  const preferHtml5 = isIOSWeb();
-  if(preferHtml5){
-    const html5Ready = await ensureHtml5QrcodeReady();
-    if(html5Ready){
-      return {
-        mode:'html5-qrcode',
-        scanner:null
-      };
-    }
-  }
   if(typeof BarcodeDetector !== 'undefined'){
     const formats = BarcodeDetector.getSupportedFormats ? await BarcodeDetector.getSupportedFormats() : detectorFormats();
     const usableFormats = detectorFormats().filter(f => formats.includes(f));
@@ -4169,11 +4280,10 @@ function isIOSWeb(){
 }
 
 function getSafeHtml5BarcodeConfig(){
-  const side = Math.min(Math.floor(window.innerWidth * 0.68), 260);
   return {
-    fps: 12,
-    qrbox: { width: side, height: side },
-    aspectRatio: 1.333334,
+    fps: 14,
+    qrbox: { width: 320, height: 140 },
+    aspectRatio: 2.3,
     disableFlip: false,
     experimentalFeatures: {
       useBarCodeDetectorIfSupported: true
@@ -4193,7 +4303,6 @@ function getSafeHtml5DefaultConfig(){
 function getSafeBarcodeFormats(){
   const F = window.Html5QrcodeSupportedFormats || {};
   return [
-    F.QR_CODE,
     F.EAN_13,
     F.EAN_8,
     F.CODE_128,
@@ -4201,10 +4310,7 @@ function getSafeBarcodeFormats(){
     F.UPC_E,
     F.CODE_39,
     F.ITF,
-    F.CODABAR,
-    F.DATA_MATRIX,
-    F.PDF_417,
-    F.AZTEC
+    F.CODABAR
   ].filter(v => typeof v !== 'undefined');
 }
 
@@ -4626,30 +4732,6 @@ window.closeRemarkScan = closeRemarkScan;
 window.startDraftRemarkScan = startDraftRemarkScan;
 window.startTradeinRemarkScan = startTradeinRemarkScan;
 
-
-(function(){
-  function renderVersionBadge(){
-    try{
-      if(document.querySelector('.app-version-badge[data-fixed-version="1"]')) return;
-      var badge = document.createElement('button');
-      badge.type = 'button';
-      badge.className = 'app-version-badge';
-      badge.setAttribute('data-fixed-version','1');
-      badge.textContent = window.APP_HTML_VERSION || 'unknown';
-      badge.onclick = function(){
-        alert('当前版本: ' + (window.APP_HTML_VERSION || 'unknown') + '
-本版修复：苹果可开相机但扫码无效、右下角版本号不显示');
-      };
-      document.body.appendChild(badge);
-    }catch(e){}
-  }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', renderVersionBadge, {once:true});
-  }else{
-    renderVersionBadge();
-  }
-})();
-
 const authState = {
   ready:false,
   user:null,
@@ -4761,7 +4843,8 @@ function normalizeOrderItem(item){
     rebate: rebate,
     freight: freight,
     saleAmount: saleAmount,
-    profit: next.status === 'advance' ? 0 : calcProfit(orderAmount, rebate, freight, saleAmount),
+    quantity: Math.max(1, safeNumber(next.quantity ?? next.qty ?? 1, 1)),
+    profit: next.status === 'advance' ? 0 : calcPendingProfit(orderAmount, rebate, freight, saleAmount, Math.max(1, safeNumber(next.quantity ?? next.qty ?? 1, 1))),
     trackingNo: safeText(next.trackingNo ?? next.trackingNumber, ''),
     remark: safeText(next.remark ?? next.notes, '')
   };
@@ -4775,6 +4858,7 @@ function normalizeTradeinItem(item){
   const refundPrice = safeNumber(next.refundPrice ?? next.refund, 0);
   const salePrice = safeNumber(next.salePrice ?? next.saleAmount, 0);
   const dealDone = typeof next.dealDone === 'boolean' ? next.dealDone : salePrice > 0;
+  const computedProfit = calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice);
   return {
     id: safeText(next.id, id()),
     date: safeText(next.date, new Date().toISOString().slice(5,10)),
@@ -4784,7 +4868,7 @@ function normalizeTradeinItem(item){
     recyclePrice: recyclePrice,
     refundPrice: refundPrice,
     salePrice: salePrice,
-    profit: dealDone ? calcTradeinProfit(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice, salePrice) : 0,
+    profit: safeNumber(next.profit, computedProfit),
     trackingNo: safeText(next.trackingNo ?? next.trackingNumber, ''),
     remark: safeText(next.remark ?? next.notes, ''),
     dealDone: dealDone
@@ -5150,8 +5234,9 @@ function normalizeLegacyOrder(o){
     orderAmount: Number(o.orderAmount ?? o.amount ?? 0),
     rebate: Number(o.rebate ?? o.refund ?? 0),
     freight: Number(o.freight ?? o.shipping ?? 0),
+    quantity: Math.max(1, Number(o.quantity ?? o.qty ?? 1)),
     saleAmount: Number(o.saleAmount ?? o.sellAmount ?? 0),
-    profit: Number(o.profit ?? calcProfit(o.orderAmount ?? o.amount ?? 0, o.rebate ?? o.refund ?? 0, o.freight ?? o.shipping ?? 0, o.saleAmount ?? o.sellAmount ?? 0)),
+    profit: Number(o.profit ?? calcPendingProfit(o.orderAmount ?? o.amount ?? 0, o.rebate ?? o.refund ?? 0, o.freight ?? o.shipping ?? 0, o.saleAmount ?? o.sellAmount ?? 0, Math.max(1, Number(o.quantity ?? o.qty ?? 1)))),
     trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
     remark: o.remark ?? o.notes ?? ''
   };
@@ -5577,6 +5662,7 @@ bootApp();
 })();
 </script>
 
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7939e04a4baf43c8b86a560f74aac60e","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
