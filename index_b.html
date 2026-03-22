@@ -1,37 +1,3 @@
-
-<script>
-async function forceCheckVersion(){
-  const supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  const { data } = await supa.auth.getUser();
-  const user = data?.user;
-
-  if(!user){
-    location.href = './index.html';
-    return;
-  }
-
-  const { data: profile } = await supa
-    .from('user_profiles')
-    .select('app_version')
-    .eq('id', user.id)
-    .single();
-
-  const v = profile?.app_version || 'a';
-
-  if(v === 'b' && location.pathname.includes('index_a')){
-    location.replace('./index_b.html');
-    return;
-  }
-
-  if(v === 'a' && location.pathname.includes('index_b')){
-    location.replace('./index_a.html');
-    return;
-  }
-}
-
-forceCheckVersion();
-</script>
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -1570,11 +1536,27 @@ forceCheckVersion();
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script>
+(function migrateLegacyDataToB(){
+  const keys = [
+    'jxc_products','jxc_sales','jxc_suppliers','jxc_tradein_orders','jxc_orders',
+    'jxc_order_draft','jxc_notice_templates','jxc_home_profit_visible','jxc_selected_order_ids',
+    'jxc_report_tradein_visible','jxc_report_month','jxc_report_page','jxc_report_tradein_page',
+    'jxc_admin_list_visible','jxc_admin_account_search','jxc_admin_login_stats_visible',
+    'jxc_last_data_health','jxc_data_health_visible'
+  ];
+  keys.forEach(function(key){
+    const nextKey = key + '__b';
+    if(localStorage.getItem(nextKey) == null){
+      const oldValue = localStorage.getItem(key);
+      if(oldValue != null) localStorage.setItem(nextKey, oldValue);
+    }
+  });
+})();
 const store = {
   load(key, fallback){
-    try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback}
+    try{return JSON.parse(localStorage.getItem(key + '__b')) ?? fallback}catch(e){return fallback}
   },
-  save(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+  save(key, value){ localStorage.setItem(key + '__b', JSON.stringify(value)); }
 };
 
 const state = {
@@ -3180,7 +3162,7 @@ function adminView(){
     ${renderAdminLoginStatsCard()}
     <div class="admin-panel" style="margin-top:14px">
       ${sectionHeader('管理员','沿用旧系统管理员功能')}
-      <div class="order-note">可新建账号、重置密码、删除账号、查看账号列表，并禁用或恢复登录</div>
+      <div class="order-note">可新建账号、重置密码、删除账号、查看账号列表，并禁用或恢复登录；也可直接把账号切换为 A版 或 B版。</div>
       <div class="admin-actions">
         <button class="admin-btn create" type="button" onclick="adminCreateUser()">新建账号</button>
         <button class="admin-btn reset" type="button" onclick="adminResetPassword()">重置密码</button>
@@ -3204,7 +3186,7 @@ function adminView(){
       ${state.adminListVisible ? `<div class="order-toolbar" style="padding-top:0"><input class="search-input" placeholder="搜索账号邮箱" value="${escapeHtml(state.adminAccountSearch)}" oninput="setAdminAccountSearch(this.value)" /><span class="small">按邮箱搜索</span></div>` : `<div class="order-note">账号列表默认隐藏，需要时再打开，减少管理员面板信息暴露。</div>`}
       <div class="admin-list-wrap">
         <table class="admin-table">
-          <thead><tr><th>邮箱</th><th>登录状态</th><th>创建时间</th></tr></thead>
+          <thead><tr><th>邮箱</th><th>登录状态</th><th>版本</th><th>创建时间</th></tr></thead>
           <tbody id="adminTbody"><tr><td colspan="3">${state.adminListVisible ? '加载中…' : '账号列表当前已隐藏'}</td></tr></tbody>
         </table>
       </div>
@@ -4748,6 +4730,31 @@ const supa = (window.supabase && SUPABASE_URL && SUPABASE_KEY)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth: {persistSession: true, autoRefreshToken: false, detectSessionInUrl: false}})
   : null;
 
+async function getCurrentUserAppVersion(user){
+  try{
+    if(!supa || !user || !user.id) return 'a';
+    const { data } = await supa.from('user_profiles').select('app_version').eq('id', user.id).maybeSingle();
+    return (data && data.app_version) ? String(data.app_version).toLowerCase() : 'a';
+  }catch(err){
+    return 'a';
+  }
+}
+function getVersionPath(v){
+  return String(v).toLowerCase() === 'b' ? './index_b.html' : './index_a.html';
+}
+async function enforceAppVersionRoute(user){
+  const v = await getCurrentUserAppVersion(user);
+  const target = getVersionPath(v);
+  const isA = window.location.pathname.includes('index_a.html');
+  const isB = window.location.pathname.includes('index_b.html');
+  if((isA && v === 'b') || (isB && v !== 'b')){
+    location.replace(target);
+    return false;
+  }
+  try{ localStorage.setItem('jxc_last_page', target); }catch(err){}
+  return true;
+}
+
 function mountLoginLayer(){
   if(document.getElementById('loginLayer')) return;
   const layer = document.createElement('div');
@@ -4799,7 +4806,10 @@ function applyUserScopedStorage(userId){
 }
 
 function getCloudRowId(){
-  return authState.user ? authState.user.id : '';
+  return authState.user ? (String(authState.user.id) + '__b') : '';
+}
+function getLegacyCloudRowId(){
+  return authState.user ? String(authState.user.id) : '';
 }
 
 function safeText(value, fallback){
@@ -5047,8 +5057,18 @@ async function loadCloudState(showMsg){
   }
   try{
     const rowId = getCloudRowId();
-    const { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
+    let { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
     if(error) throw error;
+    let usedLegacy = false;
+    if(!data || !data.data){
+      const legacyRowId = getLegacyCloudRowId();
+      const fallback = await supa.from('app_state_user').select('data, updated_at').eq('id', legacyRowId).maybeSingle();
+      if(fallback.error) throw fallback.error;
+      if(fallback.data && fallback.data.data){
+        data = fallback.data;
+        usedLegacy = true;
+      }
+    }
     if(!data || !data.data){
       if(showMsg) showToast('云端暂无数据');
       return false;
@@ -5063,7 +5083,10 @@ async function loadCloudState(showMsg){
       if(showMsg) showToast('云端数据格式不兼容');
       return false;
     }
-    if(showMsg) showToast('已从云端拉取');
+    if(usedLegacy){
+      await saveCurrentAppStateToCloud(false);
+    }
+    if(showMsg) showToast(usedLegacy ? '已从旧云端数据迁移到当前版本' : '已从云端拉取');
     return true;
   }catch(err){
     console.error(err);
@@ -5123,7 +5146,16 @@ async function loginSystem(){
     authState.isAdmin = !!(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
     authState.ready = true;
     applyUserScopedStorage(user && user.id);
+    const targetVersion = await getCurrentUserAppVersion(user);
+    const targetPath = getVersionPath(targetVersion);
+    try{ localStorage.setItem('jxc_last_page', targetPath); }catch(err){}
     closeLoginLayer();
+    if(window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')){
+      location.replace(targetPath);
+      return;
+    }
+    const allowStay = await enforceAppVersionRoute(user);
+    if(!allowStay) return;
     const loaded = await loadCloudState(false);
     if(!loaded){
       const imported = await importLegacyOrdersIfNeeded(false);
@@ -5171,6 +5203,15 @@ async function restoreLoginSession(){
       authState.isAdmin = !!(session.user.email && session.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
       applyUserScopedStorage(session.user.id);
       closeLoginLayer();
+      const targetVersion = await getCurrentUserAppVersion(session.user);
+      const targetPath = getVersionPath(targetVersion);
+      try{ localStorage.setItem('jxc_last_page', targetPath); }catch(err){}
+      if(window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/')){
+        location.replace(targetPath);
+        return;
+      }
+      const allowStay = await enforceAppVersionRoute(session.user);
+      if(!allowStay) return;
       const loaded = await loadCloudState(false);
       if(!loaded){
         const imported = await importLegacyOrdersIfNeeded(false);
@@ -5346,10 +5387,10 @@ async function loadAdminList(){
     return;
   }
   const tb = document.getElementById('adminTbody');
-  if(tb) tb.innerHTML = '<tr><td colspan="3">加载中…</td></tr>';
-  const { data, error } = await supa.from('user_profiles').select('id,email,disabled,role,created_at,updated_at').order('created_at',{ascending:false}).limit(500);
+  if(tb) tb.innerHTML = '<tr><td colspan="4">加载中…</td></tr>';
+  const { data, error } = await supa.from('user_profiles').select('id,email,disabled,role,app_version,created_at,updated_at').order('created_at',{ascending:false}).limit(500);
   if(error){
-    if(tb) tb.innerHTML = '<tr><td colspan="3">读取失败：' + escapeHtml(translateSupabaseError(error.message || error)) + '</td></tr>';
+    if(tb) tb.innerHTML = '<tr><td colspan="4">读取失败：' + escapeHtml(translateSupabaseError(error.message || error)) + '</td></tr>';
     return;
   }
   state.adminUsers = Array.isArray(data) ? data : [];
@@ -5360,7 +5401,7 @@ function renderAdminTable(){
   const tb = document.getElementById('adminTbody');
   if(!tb) return;
   if(!state.adminListVisible){
-    tb.innerHTML = '<tr><td colspan="3">账号列表当前已隐藏</td></tr>';
+    tb.innerHTML = '<tr><td colspan="4">账号列表当前已隐藏</td></tr>';
     return;
   }
   const keyword = String(state.adminAccountSearch || '').trim().toLowerCase();
@@ -5369,16 +5410,19 @@ function renderAdminTable(){
     return !keyword || email.includes(keyword);
   });
   if(!rows.length){
-    tb.innerHTML = `<tr><td colspan="3">${keyword ? '暂无匹配账号' : '暂无账号数据'}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="4">${keyword ? '暂无匹配账号' : '暂无账号数据'}</td></tr>`;
     return;
   }
   tb.innerHTML = rows.map(function(r){
     const email = r.email || r.id;
     const enabled = r.disabled !== true;
+    const version = String(r.app_version || 'a').toLowerCase() === 'b' ? 'B版' : 'A版';
+    const versionColor = String(r.app_version || 'a').toLowerCase() === 'b' ? '#7c3aed' : '#1677ff';
     const t = r.created_at ? String(r.created_at).replace('T',' ').slice(0,19) : '';
     return '<tr>' +
       '<td>' + escapeHtml(email) + '</td>' +
       '<td><a class="admin-link" data-uid="' + r.id + '" data-enabled="' + (enabled ? '1':'0') + '">' + (enabled ? '✅ 允许' : '⛔ 禁用') + '</a></td>' +
+      '<td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="display:inline-block;padding:2px 8px;border-radius:999px;background:' + versionColor + ';color:#fff;font-size:12px;font-weight:700">' + version + '</span><a class="admin-link-version" data-uid="' + r.id + '" data-next="a">设A</a><a class="admin-link-version" data-uid="' + r.id + '" data-next="b">设B</a></div></td>' +
       '<td>' + escapeHtml(t) + '</td>' +
     '</tr>';
   }).join('');
@@ -5389,6 +5433,16 @@ function renderAdminTable(){
       const next = !cur;
       const { error: upE } = await supa.from('user_profiles').update({ disabled: !next }).eq('id', uid);
       if(upE){ showToast('更新失败：' + translateSupabaseError(upE.message || upE)); return; }
+      loadAdminList();
+    };
+  });
+  tb.querySelectorAll('a.admin-link-version').forEach(function(a){
+    a.onclick = async function(){
+      const uid = a.getAttribute('data-uid');
+      const next = a.getAttribute('data-next') === 'b' ? 'b' : 'a';
+      const { error: upE } = await supa.from('user_profiles').update({ app_version: next }).eq('id', uid);
+      if(upE){ showToast('切换失败：' + translateSupabaseError(upE.message || upE)); return; }
+      showToast('已切换为' + (next === 'b' ? 'B版' : 'A版'));
       loadAdminList();
     };
   });
