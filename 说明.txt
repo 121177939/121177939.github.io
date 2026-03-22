@@ -1,9 +1,1 @@
-部署说明
-1. 直接上传 index.html、index_a.html、index_b.html、select.html、.nojekyll 到 GitHub Pages 仓库根目录
-2. 已按 user_profiles.app_version 控制账号进入 A/B
-3. 管理员后台账号列表里新增 设A / 设B 按钮
-4. app_version 为空时默认进入 A版
-5. 云端数据也已按 A/B 隔离：
-   - A版使用 app_state_user 表里的 user_id__a
-   - B版使用 app_state_user 表里的 user_id__b
-6. 为了不影响旧数据，首次进入 A/B 时，如果对应版本云端行不存在，会自动从旧的 user_id 行读取并迁移到当前版本，不会删除旧云端数据
+修复管理员后台版本列显示与设A/设B按钮显示问题。

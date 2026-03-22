@@ -3183,11 +3183,11 @@ function adminView(){
         ${state.dataHealthVisible ? getDataHealthHtml() : '<div class="order-note">数据安全状态默认关闭，需要时再打开。</div>'}
       </div>
       <div class="sheet-hd" style="border-top:1px solid var(--line)"><span>账号列表</span><div style="display:flex;gap:8px;"><button class="back-btn" onclick="toggleAdminListVisible()">${state.adminListVisible ? '隐藏' : '打开'}</button><button class="back-btn" onclick="loadAdminList()">刷新</button></div></div>
-      ${state.adminListVisible ? `<div class="order-toolbar" style="padding-top:0"><input class="search-input" placeholder="搜索账号邮箱" value="${escapeHtml(state.adminAccountSearch)}" oninput="setAdminAccountSearch(this.value)" /><span class="small">按邮箱搜索</span></div>` : `<div class="order-note">账号列表默认隐藏，需要时再打开，减少管理员面板信息暴露。</div>`}
+      ${state.adminListVisible ? `<div class="order-toolbar" style="padding-top:0"><input class="search-input" placeholder="搜索账号邮箱" value="${escapeHtml(state.adminAccountSearch)}" oninput="setAdminAccountSearch(this.value)" /><span class="small">按邮箱搜索</span></div>` : `<div class="order-note">账号列表默认隐藏，需要时再打开。打开后可直接看见每个账号当前是 A版 还是 B版，并可点按钮修改。</div>`}
       <div class="admin-list-wrap">
         <table class="admin-table">
           <thead><tr><th>邮箱</th><th>登录状态</th><th>版本</th><th>创建时间</th></tr></thead>
-          <tbody id="adminTbody"><tr><td colspan="3">${state.adminListVisible ? '加载中…' : '账号列表当前已隐藏'}</td></tr></tbody>
+          <tbody id="adminTbody"><tr><td colspan="4">${state.adminListVisible ? '加载中…' : '账号列表当前已隐藏'}</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -5424,7 +5424,7 @@ function renderAdminTable(){
     return '<tr>' +
       '<td>' + escapeHtml(email) + '</td>' +
       '<td><a class="admin-link" data-uid="' + r.id + '" data-enabled="' + (enabled ? '1':'0') + '">' + (enabled ? '✅ 允许' : '⛔ 禁用') + '</a></td>' +
-      '<td><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="small">' + version + '</span><a class="admin-link-version" data-uid="' + r.id + '" data-next="a">设A</a><a class="admin-link-version" data-uid="' + r.id + '" data-next="b">设B</a></div></td>' +
+      '<td><div class="version-switcher"><span class="version-pill ' + (String(r.app_version || 'a').toLowerCase() === 'b' ? 'b' : 'a') + '">' + version + '</span><button class="admin-mini-btn ' + (String(r.app_version || 'a').toLowerCase() === 'a' ? 'active-a' : '') + '" type="button" data-uid="' + r.id + '" data-next="a">设A</button><button class="admin-mini-btn ' + (String(r.app_version || 'a').toLowerCase() === 'b' ? 'active-b' : '') + '" type="button" data-uid="' + r.id + '" data-next="b">设B</button></div></td>' +
       '<td>' + escapeHtml(t) + '</td>' +
     '</tr>';
   }).join('');
@@ -5438,7 +5438,7 @@ function renderAdminTable(){
       loadAdminList();
     };
   });
-  tb.querySelectorAll('a.admin-link-version').forEach(function(a){
+  tb.querySelectorAll('button.admin-mini-btn, a.admin-link-version').forEach(function(a){
     a.onclick = async function(){
       const uid = a.getAttribute('data-uid');
       const next = a.getAttribute('data-next') === 'b' ? 'b' : 'a';
