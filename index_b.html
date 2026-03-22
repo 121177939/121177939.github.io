@@ -13,7 +13,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>不砍不盾 - 登录入口</title>
+  <title>不砍不盾</title>
   <style>
     :root{
       --bg:#f4f5f7;
@@ -1536,7 +1536,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script>
-(function migrateLegacyDataToA(){
+(function migrateLegacyDataToB(){
   const keys = [
     'jxc_products','jxc_sales','jxc_suppliers','jxc_tradein_orders','jxc_orders',
     'jxc_order_draft','jxc_notice_templates','jxc_home_profit_visible','jxc_selected_order_ids',
@@ -1545,7 +1545,7 @@
     'jxc_last_data_health','jxc_data_health_visible'
   ];
   keys.forEach(function(key){
-    const nextKey = key + '__a';
+    const nextKey = key + '__b';
     if(localStorage.getItem(nextKey) == null){
       const oldValue = localStorage.getItem(key);
       if(oldValue != null) localStorage.setItem(nextKey, oldValue);
@@ -1554,9 +1554,9 @@
 })();
 const store = {
   load(key, fallback){
-    try{return JSON.parse(localStorage.getItem(key + '__a')) ?? fallback}catch(e){return fallback}
+    try{return JSON.parse(localStorage.getItem(key + '__b')) ?? fallback}catch(e){return fallback}
   },
-  save(key, value){ localStorage.setItem(key + '__a', JSON.stringify(value)); }
+  save(key, value){ localStorage.setItem(key + '__b', JSON.stringify(value)); }
 };
 
 const state = {
@@ -1600,6 +1600,7 @@ state.orders = state.orders.map(o => ({
   date: o.date || new Date().toISOString().slice(5,10),
   buyer: o.buyer ?? o.customer ?? '',
   product: o.product ?? '',
+  quantity: Math.max(1, Number(o.quantity ?? 1)),
   orderAmount: Number(o.orderAmount ?? 0),
   rebate: Number(o.rebate ?? o.refund ?? 0),
   freight: Number(o.freight ?? o.shipping ?? 0),
@@ -2036,14 +2037,24 @@ function normalizeDate(v){
   return v;
 }
 
-function calcProfit(orderAmount, rebate, freight, saleAmount){
-  const sale = Number(saleAmount||0);
+function calcProfit(orderAmount, rebate, freight, saleAmount, quantity=1){
+  const qty = Math.max(1, Number(quantity || 1));
+  const sale = Number(saleAmount || 0) * qty;
   if(sale <= 0) return 0;
-  return sale - Number(orderAmount||0) - Number(rebate||0) - Number(freight||0);
+  return sale - Number(orderAmount || 0) * qty - Number(rebate || 0) * qty - Number(freight || 0);
 }
-function calcPendingProfit(orderAmount, rebate, freight, saleAmount){
-  return Number(saleAmount||0) - Number(orderAmount||0) - Number(rebate||0) - Number(freight||0);
+function calcPendingProfit(orderAmount, rebate, freight, saleAmount, quantity=1){
+  const qty = Math.max(1, Number(quantity || 1));
+  return Number(saleAmount || 0) * qty - Number(orderAmount || 0) * qty - Number(rebate || 0) * qty - Number(freight || 0);
 }
+function recalcAllOrderProfits(){
+  (state.orders || []).forEach(function(order){
+    if(!order) return;
+    order.quantity = Math.max(1, Number(order.quantity || 1));
+    order.profit = calcPendingProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount, order.quantity);
+  });
+}
+recalcAllOrderProfits();
 function calcTradeinActualCost(newMachinePrice, oldMachinePrice, recyclePrice, refundPrice){
   return Number(newMachinePrice||0) - Number(recyclePrice||0) + Number(oldMachinePrice||0) + Number(refundPrice||0);
 }
@@ -2056,6 +2067,7 @@ function orderDraftDefaults(){
     date: new Date().toISOString().slice(0,10),
     buyer:'',
     product:'',
+    quantity:'1',
     orderAmount:'',
     rebate:'0',
     freight:'0',
@@ -2067,7 +2079,7 @@ function orderDraftDefaults(){
 
 function saveOrderDraftFromForm(form){
   if(!form) return;
-  const fields = ['date','buyer','product','orderAmount','rebate','freight','saleAmount','trackingNo','remark'];
+  const fields = ['date','buyer','product','quantity','orderAmount','rebate','freight','saleAmount','trackingNo','remark'];
   const draft = {};
   fields.forEach(name => {
     const el = form.querySelector(`[name="${name}"]`);
@@ -2091,7 +2103,7 @@ function hydrateOrderForm(form){
   });
   const preview = form.querySelector('#profitPreview');
   if(preview){
-    const p = calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount).toFixed(2);
+    const p = calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount, draft.quantity).toFixed(2);
     preview.value = '¥' + p;
   }
 }
@@ -2270,23 +2282,26 @@ function useProductTemplate(form){
     const rebate = form.querySelector('[name="rebate"]');
     const freight = form.querySelector('[name="freight"]');
     const sale = form.querySelector('[name="saleAmount"]');
-    preview.value = '¥' + calcProfit(order?.value, rebate?.value, freight?.value, sale?.value).toFixed(2);
+    const qty = form.querySelector('[name="quantity"]');
+    preview.value = '¥' + calcProfit(order?.value, rebate?.value, freight?.value, sale?.value, qty?.value).toFixed(2);
   }
 }
 
 function addOrder(form, mode='normal'){
   const fd = new FormData(form);
+  const quantity = Math.max(1, Number(fd.get('quantity')||1));
   const orderAmount = Number(fd.get('orderAmount')||0);
   const rebate = Number(fd.get('rebate')||0);
   const freight = Number(fd.get('freight')||0);
   const saleAmount = Number(fd.get('saleAmount')||0);
-  const profit = calcProfit(orderAmount, rebate, freight, saleAmount);
+  const profit = calcProfit(orderAmount, rebate, freight, saleAmount, quantity);
   state.orders.unshift({
     id: id(),
     status: mode === 'advance' ? 'advance' : 'normal',
     date: normalizeDate(fd.get('date') || new Date().toISOString().slice(0,10)),
     buyer: fd.get('buyer'),
     product: fd.get('product'),
+    quantity,
     orderAmount,
     rebate,
     freight,
@@ -2304,6 +2319,8 @@ function addOrder(form, mode='normal'){
   const freightInput = form.querySelector('[name="freight"]');
   if(rebateInput) rebateInput.value = '0';
   if(freightInput) freightInput.value = '0';
+  const quantityInput = form.querySelector('[name="quantity"]');
+  if(quantityInput) quantityInput.value = '1';
   const preview = form.querySelector('#profitPreview');
   if(preview) preview.value = '¥0.00';
   render();
@@ -2400,15 +2417,15 @@ function renderReportPager(meta, type){
 
 function recalcOrderProfit(order){
   if(!order) return 0;
-  order.profit = calcPendingProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount);
+  order.profit = calcPendingProfit(order.orderAmount, order.rebate, order.freight, order.saleAmount, order.quantity);
   return order.profit;
 }
 
 function updateOrderField(orderId, field, value){
   const order = state.orders.find(o => o.id === orderId);
   if(!order) return;
-  if(['orderAmount','rebate','freight','saleAmount'].includes(field)){
-    order[field] = value === '' ? 0 : Number(value || 0);
+  if(['quantity','orderAmount','rebate','freight','saleAmount'].includes(field)){
+    order[field] = field === 'quantity' ? Math.max(1, Number(value || 1)) : (value === '' ? 0 : Number(value || 0));
     recalcOrderProfit(order);
   }else{
     order[field] = value;
@@ -2420,13 +2437,14 @@ function refreshRowAfterNumericEdit(inputEl, orderId, field, value){
   const row = inputEl && inputEl.closest ? inputEl.closest('tr') : null;
   const order = state.orders.find(o => o.id === orderId);
   if(!order) return;
-  if(['orderAmount','rebate','freight','saleAmount'].includes(field)){
+  if(['quantity','orderAmount','rebate','freight','saleAmount'].includes(field)){
     order[field] = value === '' ? 0 : Number(value || 0);
     if(row){
       const getRowNumber = function(name, fallback){
         const el = row.querySelector('input[oninput*="\'' + name + '\'"]');
         return el ? Number(el.value || 0) : Number(fallback || 0);
       };
+      order.quantity = Math.max(1, getRowNumber('quantity', order.quantity || 1));
       order.orderAmount = getRowNumber('orderAmount', order.orderAmount);
       order.rebate = getRowNumber('rebate', order.rebate);
       order.freight = getRowNumber('freight', order.freight);
@@ -2699,9 +2717,10 @@ function goodsView(){
 
 function saleView(){
   const list = filteredOrders(unsoldOrders());
+  const unsoldTotal = list.reduce((sum, o) => sum + Math.max(1, Number(o.quantity || 1)) * (Number(o.orderAmount || 0) + Number(o.rebate || 0)), 0);
   return `<div class="phone">
     <div class="order-panel" style="margin-top:14px">
-      ${sectionHeader('未售出','填写售出金额后自动进入报表')}
+      ${sectionHeader('未售出','未售出' + money(unsoldTotal) + '元')}
       <div class="order-toolbar">
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
@@ -2717,6 +2736,7 @@ function saleView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -2758,9 +2778,10 @@ function addSale(form){
 
 function advanceView(){
   const list = filteredOrders(advanceOrders());
+  const advanceTotal = list.reduce((sum, o) => sum + Math.max(1, Number(o.quantity || 1)) * (Number(o.orderAmount || 0) + Number(o.rebate || 0)), 0);
   return `<div class="phone">
     <div class="order-panel" style="margin-top:14px">
-      ${sectionHeader('垫付中心','发货后转回未售出，退款则删除')}
+      ${sectionHeader('垫付中心','一共垫付' + money(advanceTotal) + '元')}
       <div class="order-toolbar">
         <input class="search-input" placeholder="搜索下单人 / 产品 / 物流单号 / 备注" value="${escapeHtml(state.orderSearch)}" oninput="setOrderSearch(this.value, event)" oncompositionstart="setSearchComposing(true)" oncompositionend="setSearchComposing(false);setOrderSearch(this.value)" />
         <span class="small">${list.length} 条</span>
@@ -2776,6 +2797,7 @@ function advanceView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -2850,6 +2872,7 @@ function detailView(){
               <th onclick="sortOrdersByDateDesc()" style="cursor:pointer">日期 ↓</th>
               <th>下单人</th>
               <th>产品</th>
+              <th>数量</th>
               <th>下单金额</th>
               <th>返款</th>
               <th>运费</th>
@@ -3532,7 +3555,7 @@ function openBatchSaleAmountModal(){
       }
       selected.forEach(function(order){
         order.saleAmount = saleAmount;
-        order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, saleAmount);
+        order.profit = calcProfit(order.orderAmount, order.rebate, order.freight, saleAmount, order.quantity);
       });
       const removeIds = new Set(selected.map(function(order){ return order.id; }));
       state.selectedOrderIds = (state.selectedOrderIds || []).filter(function(id){ return !removeIds.has(id); });
@@ -3551,6 +3574,7 @@ function renderOrderRow(o){
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" min="1" step="1" value="${Math.max(1, Number(o.quantity || 1))}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','quantity',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -3572,6 +3596,7 @@ function renderAdvanceRow(o){
     <td><input class="table-input small" value="${escapeHtml(o.date)}" oninput="updateOrderField('${o.id}','date',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.buyer)}" oninput="updateOrderField('${o.id}','buyer',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input mid" value="${escapeHtml(o.product)}" oninput="updateOrderField('${o.id}','product',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
+    <td><input class="table-input small" type="number" min="1" step="1" value="${Math.max(1, Number(o.quantity || 1))}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','quantity',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.orderAmount}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','orderAmount',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.rebate}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','rebate',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
     <td><input class="table-input small" type="number" value="${o.freight}" oninput="refreshRowAfterNumericEdit(this,'${o.id}','freight',this.value)" onchange="finalizeOrderRow('${o.id}')" /></td>
@@ -3595,12 +3620,13 @@ function ordersView(){
         <div class="form-grid">
           <div class="field"><label>日期</label><input name="date" type="date" value="${escapeHtml(draft.date || new Date().toISOString().slice(0,10))}" required /></div>
           <div class="field"><label>下单人</label><div class="autocomplete-wrap"><input name="buyer" value="${escapeHtml(draft.buyer || '')}" required placeholder="输入下单人" autocomplete="off" /><div class="autocomplete-panel" id="buyerAutocomplete"></div></div></div>
-          <div class="field full"><label>产品</label><div class="field-inline"><div class="autocomplete-wrap"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入产品名称" autocomplete="off" /><div class="autocomplete-panel" id="productAutocomplete"></div></div><button class="mini-btn" type="button" onclick="useProductTemplate(this.form)">带出下单价</button></div></div>
+          <div class="field"><label>产品</label><div class="autocomplete-wrap"><input name="product" value="${escapeHtml(draft.product || '')}" required placeholder="输入产品名称" autocomplete="off" /><div class="autocomplete-panel" id="productAutocomplete"></div></div></div>
+          <div class="field"><label>数量</label><input name="quantity" type="number" min="1" step="1" value="${escapeHtml(draft.quantity || '1')}" placeholder="输入数量" /></div>
           <div class="field"><label>下单金额</label><input name="orderAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.orderAmount || '')}" required placeholder="0.00" /></div>
           <div class="field"><label>返款</label><input name="rebate" type="number" min="0" step="0.01" value="${escapeHtml(draft.rebate || '0')}" /></div>
           <div class="field"><label>运费</label><input name="freight" type="number" min="0" step="0.01" value="${escapeHtml(draft.freight || '0')}" /></div>
           <div class="field"><label>售出金额</label><input name="saleAmount" type="number" min="0" step="0.01" value="${escapeHtml(draft.saleAmount || '')}" placeholder="未售出可先不填" /></div>
-          <div class="field"><label>利润</label><input id="profitPreview" type="text" value="¥${money(calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount))}" disabled /></div>
+          <div class="field"><label>利润</label><input id="profitPreview" type="text" value="¥${money(calcProfit(draft.orderAmount, draft.rebate, draft.freight, draft.saleAmount, draft.quantity))}" disabled /></div>
           <div class="field"><label>物流单号</label><input name="trackingNo" value="${escapeHtml(draft.trackingNo || '')}" placeholder="输入物流单号" /></div>
           <div class="field full"><label>备注</label><div class="remark-form-row"><input name="remark" value="${escapeHtml(draft.remark || '')}" placeholder="输入备注" /><button class="scan-icon-btn" type="button" onclick="startDraftRemarkScan(this.form)" title="扫码">📷</button></div></div>
         </div>
@@ -3609,7 +3635,7 @@ function ordersView(){
           <button class="btn btn-alt" type="button" onclick="addOrder(this.form,'advance')">垫付保存</button>
         </div>
       </form>
-      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；支持历史下单人快捷按钮；点“带出下单价”会自动带入下单金额和商品售价</div>
+      <div class="draft-tip">已升级：录入表单会自动暂存；产品和下单人支持联想；支持历史下单人快捷按钮；支持数量录入，旧数据默认按 1 处理</div>
     </div>
 
     <div class="sheet">
@@ -3635,6 +3661,7 @@ function mapImportedOrder(row){
     raw[normalizeImportedKey(key)] = row[key];
   });
   const dateValue = raw['日期'] ?? raw['下单日期'] ?? raw['时间'] ?? '';
+  const quantity = Math.max(1, Number(raw['数量'] ?? raw['件数'] ?? 1));
   const orderAmount = Number(raw['下单金额'] ?? raw['进价'] ?? 0);
   const rebate = Number(raw['返款'] ?? raw['退款'] ?? 0);
   const freight = Number(raw['运费'] ?? raw['邮费'] ?? 0);
@@ -3647,11 +3674,12 @@ function mapImportedOrder(row){
     date: normalizeDate(dateValue),
     buyer: String(raw['下单人'] ?? raw['客户'] ?? ''),
     product: String(raw['产品'] ?? raw['商品'] ?? ''),
+    quantity,
     orderAmount,
     rebate,
     freight,
     saleAmount,
-    profit: profitCell === undefined || profitCell === null || profitCell === '' ? calcProfit(orderAmount, rebate, freight, saleAmount) : Number(profitCell || 0),
+    profit: profitCell === undefined || profitCell === null || profitCell === '' ? calcProfit(orderAmount, rebate, freight, saleAmount, quantity) : Number(profitCell || 0),
     trackingNo: String(raw['物流单号'] ?? raw['单号'] ?? ''),
     remark: String(raw['备注'] ?? raw['说明'] ?? '')
   };
@@ -3705,6 +3733,7 @@ function exportOrders(){
     '日期': o.date,
     '下单人': o.buyer,
     '产品': o.product,
+    '数量': Math.max(1, Number(o.quantity || 1)),
     '下单金额': Number(o.orderAmount || 0),
     '返款': Number(o.rebate || 0),
     '运费': Number(o.freight || 0),
@@ -3714,7 +3743,7 @@ function exportOrders(){
     '备注': o.remark || ''
   }));
   const worksheet = XLSX.utils.json_to_sheet(rows.length ? rows : [{
-    '订单状态':'','日期':'','下单人':'','产品':'','下单金额':'','返款':'','运费':'','售出金额':'','利润':'','物流单号':'','备注':''
+    '订单状态':'','日期':'','下单人':'','产品':'','数量':'','下单金额':'','返款':'','运费':'','售出金额':'','利润':'','物流单号':'','备注':''
   }]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, '订单利润数据');
@@ -3928,7 +3957,8 @@ document.addEventListener('input', function(e){
   const sale = form.querySelector('[name="saleAmount"]');
   const preview = form.querySelector('#profitPreview');
   if(order && rebate && freight && sale && preview){
-    const p = calcProfit(order.value, rebate.value, freight.value, sale.value).toFixed(2);
+    const qty = form.querySelector('[name="quantity"]');
+    const p = calcProfit(order.value, rebate.value, freight.value, sale.value, qty?.value).toFixed(2);
     preview.value = '¥' + p;
   }
 });
@@ -4776,7 +4806,10 @@ function applyUserScopedStorage(userId){
 }
 
 function getCloudRowId(){
-  return authState.user ? authState.user.id : '';
+  return authState.user ? (String(authState.user.id) + '__b') : '';
+}
+function getLegacyCloudRowId(){
+  return authState.user ? String(authState.user.id) : '';
 }
 
 function safeText(value, fallback){
@@ -4823,7 +4856,8 @@ function normalizeOrderItem(item){
     rebate: rebate,
     freight: freight,
     saleAmount: saleAmount,
-    profit: next.status === 'advance' ? 0 : calcPendingProfit(orderAmount, rebate, freight, saleAmount),
+    quantity: Math.max(1, safeNumber(next.quantity ?? next.qty ?? 1, 1)),
+    profit: next.status === 'advance' ? 0 : calcPendingProfit(orderAmount, rebate, freight, saleAmount, Math.max(1, safeNumber(next.quantity ?? next.qty ?? 1, 1))),
     trackingNo: safeText(next.trackingNo ?? next.trackingNumber, ''),
     remark: safeText(next.remark ?? next.notes, '')
   };
@@ -5023,8 +5057,20 @@ async function loadCloudState(showMsg){
   }
   try{
     const rowId = getCloudRowId();
-    const { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
+    let { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
     if(error) throw error;
+
+    let usedLegacy = false;
+    if(!data || !data.data){
+      const legacyRowId = getLegacyCloudRowId();
+      const fallbackRes = await supa.from('app_state_user').select('data, updated_at').eq('id', legacyRowId).maybeSingle();
+      if(fallbackRes.error) throw fallbackRes.error;
+      if(fallbackRes.data && fallbackRes.data.data){
+        data = fallbackRes.data;
+        usedLegacy = true;
+      }
+    }
+
     if(!data || !data.data){
       if(showMsg) showToast('云端暂无数据');
       return false;
@@ -5039,7 +5085,10 @@ async function loadCloudState(showMsg){
       if(showMsg) showToast('云端数据格式不兼容');
       return false;
     }
-    if(showMsg) showToast('已从云端拉取');
+    if(usedLegacy){
+      await saveCurrentAppStateToCloud(false);
+    }
+    if(showMsg) showToast(usedLegacy ? '已从旧云端数据迁移到当前版本' : '已从云端拉取');
     return true;
   }catch(err){
     console.error(err);
@@ -5232,8 +5281,9 @@ function normalizeLegacyOrder(o){
     orderAmount: Number(o.orderAmount ?? o.amount ?? 0),
     rebate: Number(o.rebate ?? o.refund ?? 0),
     freight: Number(o.freight ?? o.shipping ?? 0),
+    quantity: Math.max(1, Number(o.quantity ?? o.qty ?? 1)),
     saleAmount: Number(o.saleAmount ?? o.sellAmount ?? 0),
-    profit: Number(o.profit ?? calcPendingProfit(o.orderAmount ?? o.amount ?? 0, o.rebate ?? o.refund ?? 0, o.freight ?? o.shipping ?? 0, o.saleAmount ?? o.sellAmount ?? 0)),
+    profit: Number(o.profit ?? calcPendingProfit(o.orderAmount ?? o.amount ?? 0, o.rebate ?? o.refund ?? 0, o.freight ?? o.shipping ?? 0, o.saleAmount ?? o.sellAmount ?? 0, Math.max(1, Number(o.quantity ?? o.qty ?? 1)))),
     trackingNo: o.trackingNo ?? o.trackingNumber ?? '',
     remark: o.remark ?? o.notes ?? ''
   };

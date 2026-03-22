@@ -13,7 +13,7 @@
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <title>不砍不盾 - 登录入口</title>
+  <title>不砍不盾</title>
   <style>
     :root{
       --bg:#f4f5f7;
@@ -4776,7 +4776,10 @@ function applyUserScopedStorage(userId){
 }
 
 function getCloudRowId(){
-  return authState.user ? authState.user.id : '';
+  return authState.user ? (String(authState.user.id) + '__a') : '';
+}
+function getLegacyCloudRowId(){
+  return authState.user ? String(authState.user.id) : '';
 }
 
 function safeText(value, fallback){
@@ -5023,8 +5026,20 @@ async function loadCloudState(showMsg){
   }
   try{
     const rowId = getCloudRowId();
-    const { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
+    let { data, error } = await supa.from('app_state_user').select('data, updated_at').eq('id', rowId).maybeSingle();
     if(error) throw error;
+
+    let usedLegacy = false;
+    if(!data || !data.data){
+      const legacyRowId = getLegacyCloudRowId();
+      const fallbackRes = await supa.from('app_state_user').select('data, updated_at').eq('id', legacyRowId).maybeSingle();
+      if(fallbackRes.error) throw fallbackRes.error;
+      if(fallbackRes.data && fallbackRes.data.data){
+        data = fallbackRes.data;
+        usedLegacy = true;
+      }
+    }
+
     if(!data || !data.data){
       if(showMsg) showToast('云端暂无数据');
       return false;
@@ -5039,7 +5054,10 @@ async function loadCloudState(showMsg){
       if(showMsg) showToast('云端数据格式不兼容');
       return false;
     }
-    if(showMsg) showToast('已从云端拉取');
+    if(usedLegacy){
+      await saveCurrentAppStateToCloud(false);
+    }
+    if(showMsg) showToast(usedLegacy ? '已从旧云端数据迁移到当前版本' : '已从云端拉取');
     return true;
   }catch(err){
     console.error(err);
